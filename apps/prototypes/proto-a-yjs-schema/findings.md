@@ -10,10 +10,11 @@
 | Workspace install | ✅ pass | 153 packages, 5.9s |
 | TypeScript typecheck (schema + proto-a) | ✅ pass | Strict mode, no errors |
 | Yjs CRDT convergence stress test | ✅ pass | 5 clients × 50 ops = 250 ops, all clients byte-identical, 0 warnings |
-| Manual dual-tab test 1: concurrent atom inserts | ⬜ pending | run in browser |
-| Manual dual-tab test 2: concurrent paragraph + equation edits | ⬜ pending | run in browser |
-| Manual dual-tab test 3: delete + annotation collision | ⬜ pending | run in browser |
-| ADR-0001 → Accepted | ⬜ blocked | gated on the 3 manual tests passing without warnings |
+| Manual single-tab smoke (browser load + atom inserts) | ✅ pass | citation-ref / inline-eq / footnote-ref / computational-cell render correctly; status line shows `y-prosemirror warnings observed: 0` |
+| Manual dual-tab test 1: concurrent atom inserts | ⏸ blocked | requires cross-tab sync — see Issues observed §1.1 |
+| Manual dual-tab test 2: concurrent paragraph + equation edits | ⏸ blocked | same — public webrtc signalling unreachable in user network |
+| Manual dual-tab test 3: delete + annotation collision | ⏸ blocked | same |
+| ADR-0001 → Accepted | 🔶 partially evidenced | schema-recovery part proven 0-warning in single-tab; cross-tab tests blocked on sync issue |
 
 ## How to run the manual tests
 
@@ -70,30 +71,37 @@ These come from prior-art research (y-prosemirror README, blog posts, GitHub iss
 
 After running, fill in below and commit this file again.
 
-### Test 1: concurrent atom inserts
+### 2026-05-08 dual-tab manual test (partial)
 
-- **Steps**: …
-- **Outcome**: pass / fail
-- **Notes**: …
+**Single-tab smoke**: ✅ pass
+- editor loads, all 9 atom NodeView types insert and render
+- Y.Doc body fragment live dump shows correct atom-node serialisation (blockId / citationId / latex / cellId / kernel attrs)
+- status line: `Indexeddb synced: yes · Peers (incl. self): 1 · y-prosemirror warnings observed: 0`
+- **most important evidence: warnings counter stays 0 across multiple atom inserts and edits — y-prosemirror schema recovery did not fire on the heterogeneous schema**
 
-### Test 2: concurrent paragraph + equation edits
-
-- **Steps**: …
-- **Outcome**: pass / fail
-- **Notes**: …
-
-### Test 3: delete + annotation collision
-
-- **Steps**: …
-- **Outcome**: pass / fail
-- **Notes**: …
+**Cross-tab tests 1 / 2 / 3**: ⏸ blocked
+- Browser console showed repeated `WebSocket connection to 'wss://signaling.yjs.dev/' failed` (and the two heroku fallbacks). Public y-webrtc signalling is unreachable in the user's network.
+- `Peers (incl. self): 1` — second tab cannot discover the first via webrtc.
+- Also observed dev-only StrictMode warning `A Yjs Doc connected to room "..." already exists!` and a TipTap warning about `extension-history` conflict.
+- **All four issues are recorded in `plan0/next-session-tasks.md` §1**; they will be fixed in the next session before re-running the dual-tab cases.
 
 ### Browser / version used
+- Chrome (recent, with Grammarly + KaTeX-related extensions)
+- macOS
 
-- …
+### Final verdict on H1 (interim)
 
-### Final verdict on H1
+- ✅ **Single-tab schema recovery part of H1: validated** — 0 warnings across the heterogeneous PM schema with atom nodes and inline marks under live editing
+- ⏸ Cross-tab concurrent merge: **pending** — blocked on sync wiring (next-session-tasks.md §1.1)
+- → ADR-0001 stays at **Proposed**; cannot transition to Accepted until cross-tab tests are unblocked and run.
 
-- ☐ All 3 manual tests pass with 0 warnings → ADR-0001 transitions Proposed → **Accepted**
-- ☐ Some test exposed a y-prosemirror edge case → record below; decide on workaround vs. ADR amendment
-- ☐ Showstopper bug → consider fallback editor (BlockNote / Slate-Yjs) per ADR-0001 §4 `Neutral / Need watching`
+## Issues observed during dual-tab manual test (2026-05-08)
+
+These are recorded here verbatim and indexed in `plan0/next-session-tasks.md` §1 for the next session to pick up. **Not fixed in this session per user direction.**
+
+1. **`[P1]` Public y-webrtc signalling unreachable** → cross-tab sync impossible. Need a **local y-websocket server** wired into `setup-sync.ts` (matches Phase 1 ADR-0003 §2.3 y-sweet path).
+2. **`[P1]` React StrictMode dev double-render** triggers `A Yjs Doc connected to room "..." already exists!` from y-webrtc's module-level rooms map. Move `setupSync` into `useEffect` with `bundle.destroy()` cleanup.
+3. **`[P2]` TipTap warning**: `@tiptap/extension-collaboration comes with its own history support and is not compatible with @tiptap/extension-history`. Remove `History` from `extensions/all.ts`.
+4. **`[P3]` `computationalCell.sourceCode` literal `\n` in Y.Xml attr serialisation** (cosmetic; rendering OK because `textContent` doesn't process escapes). Consider migrating ComputationalCell from atom to PM-content node in Phase 1.
+
+The ChromeExtension-related errors (`Could not establish connection. Receiving end does not exist`) come from user's installed extensions (Grammarly etc.) and are not application bugs.

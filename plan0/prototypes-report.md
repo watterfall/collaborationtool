@@ -104,7 +104,9 @@
 - [x] D1 ADR-0001 评审通过 ← Proposed，可 review；正式 Accepted 待 D3 手测
 - [x] D2 ADR-0002 的 3 个 Phase 3 场景全部走通（不缺概念）
 - [x] D3 压力测试通过；findings 写下了关注的 y-prosemirror 边角风险
-- [ ] D3 双 tab 三手测（**用户跑**）
+- [🔶] D3 浏览器手测（2026-05-08 部分完成）：
+  - ✅ **单 tab schema 实证 0 warnings** — y-prosemirror 没触发 schema recovery，是 H1 schema 部分的最强证据
+  - ⏸ 双 tab 同步实测**被阻塞**：用户网络下公共 webrtc 信令不可达。详见 `plan0/next-session-tasks.md` §1（含 4 个 P1-P3 问题清单）
 - [x] D4 印刷 backend 决策落地（Typst 印刷 + MyST web/Word/JATS）
 - [x] D5 端到端跑通 + Provenance 行字段完整 + Skill 通过 description 被发现
 - [x] D6 ADR-0003 7 项技术栈决策全部锁定（含 deferred 字段：Agent.runtime / ComputationalCell.kernel）
@@ -189,8 +191,8 @@ pnpm proto-a:dev
 ## 8. 给项目所有者的下一步建议
 
 - **review 4 个 ADR**：0001 / 0002 / 0003 + 本报告。任何想挑战的决策点请在 review 中标注，或对应 commit 上 review。
-- **跑 D3 双 tab 手测**（5-15 分钟）：解锁 ADR-0001 → Accepted 的最后一个 gate。
-- **决定 Phase 1 起点**：是按 `§5.1 立即落地` 顺序推进，还是先做"两人协作 MVP"的端到端骨架（同步网关 + better-auth + 编辑器侧 + 一个 export 路径）。
+- **下一 session 第一件事**：读 `plan0/next-session-tasks.md`——它含 D3 手测中发现的 4 个具体问题（P1-P3），按优先级修完后再跑双 tab 手测，0 warning 就把 ADR-0001 转 Accepted。
+- **决定 Phase 1 起点**：是按 §5.1 立即落地顺序推进，还是先做"两人协作 MVP"的端到端骨架（同步网关 + better-auth + 编辑器侧 + 一个 export 路径）。
 - **可选的 deferred 决策**：D6 的 7 项 alternative 任何一项有挑战意见现在说，免得 Phase 1 走深了再换技术栈。
 
 ---
