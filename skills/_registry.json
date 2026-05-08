@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "skills": [
+    {
+      "id": "citation-lookup",
+      "path": "citation-lookup/SKILL.md",
+      "phase": 1,
+      "status": "active",
+      "agentKinds": ["citation"]
+    }
+  ]
+}

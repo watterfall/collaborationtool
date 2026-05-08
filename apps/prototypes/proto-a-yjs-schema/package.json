@@ -1,0 +1,47 @@
+{
+  "name": "@collaborationtool/proto-a-yjs-schema",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "stress": "tsx src/stress/run-stress.ts"
+  },
+  "dependencies": {
+    "@collaborationtool/schema": "workspace:*",
+    "@tiptap/core": "^2.10.3",
+    "@tiptap/extension-document": "^2.10.3",
+    "@tiptap/extension-paragraph": "^2.10.3",
+    "@tiptap/extension-text": "^2.10.3",
+    "@tiptap/extension-heading": "^2.10.3",
+    "@tiptap/extension-bold": "^2.10.3",
+    "@tiptap/extension-italic": "^2.10.3",
+    "@tiptap/extension-history": "^2.10.3",
+    "@tiptap/extension-collaboration": "^2.10.3",
+    "@tiptap/pm": "^2.10.3",
+    "@tiptap/react": "^2.10.3",
+    "katex": "^0.16.11",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "uuid": "^11.0.3",
+    "y-indexeddb": "^9.0.12",
+    "y-prosemirror": "^1.2.15",
+    "y-protocols": "^1.0.6",
+    "y-webrtc": "^10.3.0",
+    "yjs": "^13.6.21"
+  },
+  "devDependencies": {
+    "@types/katex": "^0.16.7",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}

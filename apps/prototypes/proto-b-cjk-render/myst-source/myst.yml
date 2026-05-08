@@ -1,0 +1,10 @@
+version: 1
+project:
+  title: 'proto-b · CJK render comparison'
+  authors:
+    - name: D4 prototype
+  language: zh
+  toc:
+    - file: index.md
+site:
+  template: book-theme

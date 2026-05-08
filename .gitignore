@@ -21,3 +21,32 @@ rad.json
 *.flf
 #Test results file
 TestResults.xml
+
+### Node / TypeScript / pnpm ###
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+.cache/
+.tsbuildinfo
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+
+### macOS ###
+.DS_Store
+
+### Editor ###
+.idea/
+*.swp
+
+### Prototype-local CLI binaries (don't commit) ###
+apps/prototypes/proto-b-cjk-render/typst-bin
+apps/prototypes/proto-b-cjk-render/output/
+apps/prototypes/proto-b-cjk-render/myst-source/_build/
+
+### Prototype-local SQLite databases ###
+apps/prototypes/proto-c-mcp-skill/*.sqlite
+apps/prototypes/proto-c-mcp-skill/*.sqlite-*
