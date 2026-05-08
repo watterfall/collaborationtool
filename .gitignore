@@ -50,3 +50,7 @@ apps/prototypes/proto-b-cjk-render/myst-source/_build/
 ### Prototype-local SQLite databases ###
 apps/prototypes/proto-c-mcp-skill/*.sqlite
 apps/prototypes/proto-c-mcp-skill/*.sqlite-*
+
+### Playwright run artefacts ###
+apps/prototypes/proto-a-yjs-schema/test-results/
+apps/prototypes/proto-a-yjs-schema/playwright-report/

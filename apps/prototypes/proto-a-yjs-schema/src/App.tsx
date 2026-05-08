@@ -6,7 +6,13 @@ import * as Y from 'yjs';
 import { setupSync, type SyncBundle } from './sync/setup-sync';
 import { PROTO_A_EXTENSIONS } from './extensions/all';
 
-const ROOM_NAME = 'proto-a-yjs-schema-default-room';
+// Default room; the Playwright dual-tab harness overrides via `?room=...`
+// so each test runs against an isolated relay-side state.
+const ROOM_NAME = (() => {
+  if (typeof window === 'undefined') return 'proto-a-yjs-schema-default-room';
+  const param = new URLSearchParams(window.location.search).get('room');
+  return param && param.length > 0 ? param : 'proto-a-yjs-schema-default-room';
+})();
 
 const SAMPLE_LATEX = String.raw`E = mc^2`;
 const SAMPLE_INLINE_LATEX = String.raw`\alpha + \beta`;

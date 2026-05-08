@@ -1,10 +1,10 @@
 # ADR-0001: 数据模型 & CRDT/Postgres 拆分
 
-- **Status**: Proposed
-- **Date**: 2026-05-08
+- **Status**: Accepted
+- **Date**: 2026-05-08（Proposed），2026-05-08（Accepted，gate 解锁）
 - **Phase**: 0（关键路径 D1）
 - **Deciders**: <项目所有者>
-- **Gated on**: D3（Prototype A：y-prosemirror 异构 schema 双 tab 验证）通过后才转 Accepted
+- **Gate cleared by**: D3 双 tab 验证 — 由 Playwright headless 自动化覆盖（`apps/prototypes/proto-a-yjs-schema/tests/dual-tab.spec.ts`，3 个 case 全 PASS / 0 y-prosemirror warnings；详见 `apps/prototypes/proto-a-yjs-schema/findings.md`）。原方案为人手开两 tab，被等价的自动化替代以纳入 CI。
 
 ---
 
