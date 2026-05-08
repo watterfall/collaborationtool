@@ -203,7 +203,7 @@ if (SHOULD_SKIP) {
         id: documentId,
         ownerPrincipalId: demoUserPrincipalId,
         primaryLanguage: 'en',
-        slug: `doc-${documentId.slice(0, 8)}`,
+        slug: `doc-${documentId.replace(/-/g, "").slice(0, 24)}`,
       });
 
       const pmSteps = new Uint8Array([0x01, 0x02, 0xff, 0xfe, 0x00, 0x42]);
@@ -245,7 +245,7 @@ if (SHOULD_SKIP) {
         id: documentId,
         ownerPrincipalId: demoUserPrincipalId,
         primaryLanguage: 'zh-Hans',
-        slug: `cycle-${documentId.slice(0, 8)}`,
+        slug: `cycle-${documentId.replace(/-/g, "").slice(0, 24)}`,
       });
 
       const provenanceId = newId();
@@ -305,7 +305,7 @@ if (SHOULD_SKIP) {
         id: documentId,
         ownerPrincipalId: demoUserPrincipalId,
         primaryLanguage: 'en',
-        slug: `nopv-${documentId.slice(0, 8)}`,
+        slug: `nopv-${documentId.replace(/-/g, "").slice(0, 24)}`,
       });
 
       await assert.rejects(
@@ -367,7 +367,7 @@ if (SHOULD_SKIP) {
         id: documentId,
         ownerPrincipalId: demoUserPrincipalId,
         primaryLanguage: 'en',
-        slug: `ann-${documentId.slice(0, 8)}`,
+        slug: `ann-${documentId.replace(/-/g, "").slice(0, 24)}`,
       });
 
       const threadId = newId();
@@ -424,7 +424,7 @@ if (SHOULD_SKIP) {
         id: documentId,
         ownerPrincipalId: demoUserPrincipalId,
         primaryLanguage: 'en',
-        slug: `acl-${documentId.slice(0, 8)}`,
+        slug: `acl-${documentId.replace(/-/g, "").slice(0, 24)}`,
       });
 
       const verbs = [
@@ -490,7 +490,7 @@ if (SHOULD_SKIP) {
         id: documentId,
         ownerPrincipalId: demoUserPrincipalId,
         primaryLanguage: 'en',
-        slug: `gin-${documentId.slice(0, 8)}`,
+        slug: `gin-${documentId.replace(/-/g, "").slice(0, 24)}`,
       });
 
       const provenanceId = newId();

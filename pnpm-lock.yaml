@@ -149,6 +149,43 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  apps/sync-gateway:
+    dependencies:
+      '@collaborationtool/drizzle':
+        specifier: workspace:*
+        version: link:../../infra/drizzle
+      '@collaborationtool/permissions':
+        specifier: workspace:*
+        version: link:../../packages/permissions
+      '@collaborationtool/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+      drizzle-orm:
+        specifier: ^0.36.4
+        version: 0.36.4(@types/better-sqlite3@7.6.13)(@types/react@18.3.28)(better-sqlite3@11.10.0)(postgres@3.4.9)(react@18.3.1)
+      ws:
+        specifier: ^8.18.0
+        version: 8.20.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.18
+      '@types/uuid':
+        specifier: ^10.0.0
+        version: 10.0.0
+      '@types/ws':
+        specifier: ^8.5.13
+        version: 8.18.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.21.0
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      uuid:
+        specifier: ^11.0.3
+        version: 11.1.1
+
   infra/drizzle:
     dependencies:
       '@collaborationtool/schema':
@@ -189,6 +226,37 @@ importers:
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
+
+  packages/permissions:
+    dependencies:
+      '@collaborationtool/drizzle':
+        specifier: workspace:*
+        version: link:../../infra/drizzle
+      '@collaborationtool/schema':
+        specifier: workspace:*
+        version: link:../schema
+      drizzle-orm:
+        specifier: ^0.36.4
+        version: 0.36.4(@types/better-sqlite3@7.6.13)(@types/react@18.3.28)(better-sqlite3@11.10.0)(postgres@3.4.9)(react@18.3.1)
+      jose:
+        specifier: ^5.9.6
+        version: 5.10.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.18
+      '@types/uuid':
+        specifier: ^10.0.0
+        version: 10.0.0
+      tsx:
+        specifier: ^4.19.2
+        version: 4.21.0
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      uuid:
+        specifier: ^11.0.3
+        version: 11.1.1
 
   packages/schema: {}
 
@@ -1696,6 +1764,9 @@ packages:
 
   isomorphic.js@0.2.5:
     resolution: {integrity: sha512-PIeMbHqMt4DnUP3MA/Flc0HElYjMXArsw1qwJZcm9sqR8mq3l8NYizFMty0pWwE/tzIGH3EKK5+jes5mAr85yw==}
+
+  jose@5.10.0:
+    resolution: {integrity: sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==}
 
   jose@6.2.3:
     resolution: {integrity: sha512-YYVDInQKFJfR/xa3ojUTl8c2KoTwiL1R5Wg9YCydwH0x0B9grbzlg5HC7mMjCtUJjbQ/YnGEZIhI5tCgfTb4Hw==}
@@ -3602,6 +3673,8 @@ snapshots:
   isexe@2.0.0: {}
 
   isomorphic.js@0.2.5: {}
+
+  jose@5.10.0: {}
 
   jose@6.2.3: {}
 

@@ -21,7 +21,13 @@
     "db:migrate": "pnpm --filter @collaborationtool/drizzle migrate",
     "db:seed": "pnpm --filter @collaborationtool/drizzle seed",
     "db:test": "pnpm --filter @collaborationtool/drizzle test",
-    "db:typecheck": "pnpm --filter @collaborationtool/drizzle typecheck"
+    "db:typecheck": "pnpm --filter @collaborationtool/drizzle typecheck",
+    "perms:test": "pnpm --filter @collaborationtool/permissions test",
+    "perms:typecheck": "pnpm --filter @collaborationtool/permissions typecheck",
+    "gateway:dev": "pnpm --filter @collaborationtool/sync-gateway dev",
+    "gateway:start": "pnpm --filter @collaborationtool/sync-gateway start",
+    "gateway:test": "pnpm --filter @collaborationtool/sync-gateway test",
+    "gateway:typecheck": "pnpm --filter @collaborationtool/sync-gateway typecheck"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

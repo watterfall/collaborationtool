@@ -4,3 +4,7 @@ packages:
   - 'apps/prototypes/*'
   - 'mcp-servers/*'
   - 'infra/drizzle'
+
+# `apps/sync-gateway` matches `apps/*` and is therefore included
+# automatically; `apps/prototypes/*` is the nested glob for Phase 0
+# prototypes that share the workspace.
