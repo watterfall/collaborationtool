@@ -195,3 +195,11 @@ pnpm proto-a:e2e        # Playwright 自动起 sync-server + Vite，3/3 pass
 ---
 
 > Phase 0 的核心承诺是"三个月后不重写"。本 session 的 4 个 ADR + 3 个原型 + 8 实体 schema + 36 capability 词汇 + Provenance 闭环实证，把这个承诺落到了实证层。剩下的是 Phase 1 把图纸变成产品的工程量。
+
+---
+
+## 9. Phase 1 衔接
+
+Phase 1 计划见 `plan0/phase-1-execution-plan.md`（10 个交付物 D7–D16，5 周预算，两人协作 MVP 验收门槛已列）。Phase 1 起手前用户需 review §九 的 8 个开放问题。
+
+项目级活跃状态见 `STATUS.md`（living dashboard）。
