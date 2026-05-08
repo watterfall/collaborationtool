@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-08（claude/analyze-project-status-jZyUu，D11 完成）
+最后更新：2026-05-08（claude/analyze-project-status-jZyUu，D12 完成）
 
 ---
 
@@ -11,9 +11,9 @@
 
 **Phase 0：✅ 完成**（6/6 交付物，3 个原型实证，4 个 ADR 落地）
 
-**Phase 1：⏳ 进行中**（D7 ✅ + D8 ✅ + D9 ✅ + D10 ✅ + D11 ✅）
+**Phase 1：⏳ 进行中**（D7 ✅ + D8 ✅ + D9 ✅ + D10 ✅ + D11 ✅ + D12 ✅）
 
-下一动作：D12（`packages/render-{myst, typst, typography}` + `templates/myst/` 镜像）。
+下一动作：D13（`mcp-servers/` 真实 + `packages/ai-runtime` + Citation Agent + Inline Editor Agent）。
 
 ---
 
@@ -55,7 +55,8 @@
 | D9 | `apps/web` Next.js 15 + better-auth + Principal bridge | ✅ | W2 | D7-D8 |
 | D10 | `packages/editor-core`（从 proto-a 提炼）+ snapshot worker | ✅ | W3 | proto-a / D7 |
 | D11 | y-sweet 自托管 + S3-compat 持久化 | ✅ | W2-W3 | D8 / D10 |
-| D12 | `packages/render-{myst, typst, typography}` + templates/myst | 🔜 next | W3-W4 | D10 |
+| D12 | `packages/render-{myst, typst, typography}` + templates/myst | ✅ | W3-W4 | D10 |
+| D13 | `mcp-servers/` 真实 + `packages/ai-runtime` + 2 个 agent | 🔜 next | W3-W4 | D8 / D10 |
 | D10 | `packages/editor-core`（从 proto-a 提炼）+ snapshot worker | ⏸ | W3 | proto-a / D7 |
 (状态例：⏸ pending / 🔜 next / ✅ done / 🚧 wip)
 | D12 | `packages/render-{myst, typst, typography}` + templates 镜像 | ⏸ | W3-W4 | D10（与 D13 并行） |
@@ -79,9 +80,13 @@ collaborationtool/
 ├── packages/schema/           # 8 实体 single source of truth（11 个 .ts，~330 LOC）
 ├── packages/permissions/      # ⭐ D8/D9 — 36 capability vocab + 5 role bundles + JWT + ACL loader + Principal bridge
 ├── packages/editor-core/      # ⭐ D10 — TipTap 9 extensions + paperSchema + commit serializer + Editor.tsx + sync-gateway transport
+├── packages/typography/       # ⭐ D12 — CJK pre-pass: spacing + smart-quote-by-lang + font tokens
+├── packages/render-myst/      # ⭐ D12 — PM JSON → MyST AST → HTML/JATS/Markdown
+├── packages/render-typst/     # ⭐ D12 — PM JSON → Typst source + typst CLI compile wrapper
 ├── apps/sync-gateway/         # ⭐ D8/D11 — WebSocket capability gate + InMemory/YSweet body backends + y-sweet HTTP client
-├── apps/web/                  # ⭐ D9/D10 — Next.js 15 + better-auth + organization plugin + Editor + /api/sync-token
+├── apps/web/                  # ⭐ D9/D10/D12 — Next.js 15 + better-auth + Editor + /api/sync-token + /api/export/<docId>/<format>
 ├── apps/snapshot-worker/      # ⭐ D10/D11 — periodic Y.Doc snapshot service + y-sweet HTTP fetcher
+├── templates/                 # ⭐ D12 — myst/default style baseline (Phase 1.5: full mystmd templates mirror)
 ├── infra/                     # ⭐ D7/D9/D11 — docker-compose (Postgres 16 + MinIO + y-sweet) + Drizzle
 │   ├── docker/                # docker-compose.yml + postgres-init/
 │   └── drizzle/               # 13 + 7 better-auth 表 schema + 2 migrations + 18 round-trip tests
@@ -153,8 +158,15 @@ pnpm snapshot:typecheck
 pnpm db:up                  # 起 docker-compose（Postgres + MinIO + y-sweet）
 # YSWEET_URL=http://localhost:8080 + YSWEET_AUTH=... 切换 gateway 至 YSweetBackend
 
+# Phase 1 / D12：渲染三剑客
+pnpm typo:test              # 22 个 CJK / smart-quote / font tokens 测试
+pnpm render-myst:test       # 24 个 PM-to-AST + HTML + JATS round-trip 测试
+pnpm render-typst:test      # 17 个 source generation + escape 测试
+# 端到端导出（GET /api/export/<docId>/<format>）：html / jats / markdown / typst-source / pdf
+# PDF 需要服务器装 typst CLI；其他格式纯 TS
+
 # 全 workspace typecheck
-pnpm typecheck              # 10 packages 全 PASS
+pnpm typecheck              # 13 packages 全 PASS
 ```
 
 ---
@@ -214,7 +226,7 @@ pnpm typecheck              # 10 packages 全 PASS
 | `main` | ✅ 主线（Phase 0 已 merge） | — |
 | `claude/review-project-plans-oRIn8` | merged via PR #1 | Phase 0 D1–D6 + 综合报告 |
 | `claude/d3-websocket-strictmode-UfP6w` | merged via PR #2/#3 | proto-a D3 follow-ups + Playwright 自动化 |
-| `claude/analyze-project-status-jZyUu` | 当前 | Phase 1 plan + STATUS + D7 + D8 + D9 + D10 + D11 |
+| `claude/analyze-project-status-jZyUu` | 当前 | Phase 1 plan + STATUS + D7 + D8 + D9 + D10 + D11 + D12 |
 
 ---
 

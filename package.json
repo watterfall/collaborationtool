@@ -37,7 +37,13 @@
     "snapshot:tick": "pnpm --filter @collaborationtool/snapshot-worker tick",
     "snapshot:start": "pnpm --filter @collaborationtool/snapshot-worker start",
     "snapshot:test": "pnpm --filter @collaborationtool/snapshot-worker test",
-    "snapshot:typecheck": "pnpm --filter @collaborationtool/snapshot-worker typecheck"
+    "snapshot:typecheck": "pnpm --filter @collaborationtool/snapshot-worker typecheck",
+    "typo:test": "pnpm --filter @collaborationtool/typography test",
+    "typo:typecheck": "pnpm --filter @collaborationtool/typography typecheck",
+    "render-myst:test": "pnpm --filter @collaborationtool/render-myst test",
+    "render-myst:typecheck": "pnpm --filter @collaborationtool/render-myst typecheck",
+    "render-typst:test": "pnpm --filter @collaborationtool/render-typst test",
+    "render-typst:typecheck": "pnpm --filter @collaborationtool/render-typst typecheck"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

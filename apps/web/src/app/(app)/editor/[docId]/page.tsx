@@ -11,6 +11,7 @@ import { getDb } from '@/lib/db';
 import { getPrincipalIdForUser } from '@/lib/principal';
 
 import EditorClient from './editor-client';
+import ExportDrawer from './components/ExportDrawer';
 
 export default async function EditorPage({
   params,
@@ -71,6 +72,8 @@ export default async function EditorPage({
       </header>
 
       <EditorClient documentId={doc.id} />
+
+      <ExportDrawer documentId={doc.id} />
 
       <Link href="/docs" className="mt-6 inline-block text-sm underline">
         ← 返回文档列表
