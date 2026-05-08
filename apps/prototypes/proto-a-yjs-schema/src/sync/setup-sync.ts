@@ -1,42 +1,42 @@
 // Yjs setup for proto-a:
 //   * Y.Doc per document
 //   * y-indexeddb for local persistence (Local-first principle)
-//   * y-webrtc for cross-tab sync (no backend needed for this prototype)
+//   * y-websocket for cross-tab / cross-browser sync via a local relay
+//     (`pnpm proto-a:sync`, see server/sync-server.mjs)
 //
-// Multiple browser tabs on the same origin will discover each other via
-// the WebRTC signalling rooms; in practice this also works through
-// BroadcastChannel for same-origin tabs without external signalling.
+// Same-origin tabs in the same browser also sync via BroadcastChannel
+// (built into WebsocketProvider), so the dev server need only be running
+// for cross-browser tests. Public signalling servers were dropped (D3
+// follow-up P1) — Phase 1 will replace this relay with the real sync
+// gateway, but the wire protocol stays the same.
 
 import * as Y from 'yjs';
 import { IndexeddbPersistence } from 'y-indexeddb';
-import { WebrtcProvider } from 'y-webrtc';
+import { WebsocketProvider } from 'y-websocket';
 
 export interface SyncBundle {
   ydoc: Y.Doc;
   persistence: IndexeddbPersistence;
-  webrtc: WebrtcProvider;
+  websocket: WebsocketProvider;
   ready: Promise<void>;
   destroy(): void;
 }
 
 export interface SyncOptions {
   roomName: string;
-  signalingServers?: string[];
+  websocketUrl?: string;
 }
 
-const DEFAULT_SIGNALING = [
-  // Public Yjs signalling servers; fine for prototype.
-  'wss://signaling.yjs.dev',
-  'wss://y-webrtc-signaling-eu.herokuapp.com',
-  'wss://y-webrtc-signaling-us.herokuapp.com',
-];
+const DEFAULT_WEBSOCKET_URL = 'ws://localhost:1234';
 
 export function setupSync(opts: SyncOptions): SyncBundle {
   const ydoc = new Y.Doc();
   const persistence = new IndexeddbPersistence(opts.roomName, ydoc);
-  const webrtc = new WebrtcProvider(opts.roomName, ydoc, {
-    signaling: opts.signalingServers ?? DEFAULT_SIGNALING,
-  });
+  const websocket = new WebsocketProvider(
+    opts.websocketUrl ?? DEFAULT_WEBSOCKET_URL,
+    opts.roomName,
+    ydoc
+  );
 
   const ready = new Promise<void>((resolve) => {
     persistence.once('synced', () => resolve());
@@ -45,10 +45,10 @@ export function setupSync(opts: SyncOptions): SyncBundle {
   return {
     ydoc,
     persistence,
-    webrtc,
+    websocket,
     ready,
     destroy() {
-      webrtc.destroy();
+      websocket.destroy();
       persistence.destroy();
       ydoc.destroy();
     },

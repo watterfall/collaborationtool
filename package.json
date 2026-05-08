@@ -11,6 +11,7 @@
     "typecheck": "pnpm -r --parallel typecheck",
     "build": "pnpm -r --filter '@collaborationtool/schema' run build",
     "proto-a:dev": "pnpm --filter @collaborationtool/proto-a-yjs-schema dev",
+    "proto-a:sync": "pnpm --filter @collaborationtool/proto-a-yjs-schema sync-server",
     "proto-a:stress": "pnpm --filter @collaborationtool/proto-a-yjs-schema stress",
     "proto-a:typecheck": "pnpm --filter @collaborationtool/proto-a-yjs-schema typecheck"
   },

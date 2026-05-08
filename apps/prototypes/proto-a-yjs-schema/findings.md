@@ -3,6 +3,24 @@
 > Phase 0 D3 prototype: y-prosemirror + heterogeneous schema + dual-tab manual + stress test.
 > Verifies hypothesis **H1**: ProseMirror schema with atom node references can survive concurrent CRDT merge.
 
+## D3 follow-ups (applied before manual test)
+
+The first cut surfaced three issues that would have polluted the manual-test
+warning counter and made the prototype rely on third-party infrastructure:
+
+- **P1** Public y-webrtc signalling (`wss://signaling.yjs.dev` + Heroku
+  servers) was replaced with a local y-websocket relay (`server/sync-server.mjs`,
+  run via `pnpm proto-a:sync`). Same-origin tabs additionally sync through
+  BroadcastChannel automatically. Phase 1 will swap this relay out for the
+  real sync gateway — wire protocol stays the same.
+- **P2** `setupSync` used to run synchronously in render via a ref, which
+  leaks under React 18 StrictMode (mount → unmount → remount cycle creates
+  a dangling Y.Doc). It now lives in a `useEffect` with a `destroy()` cleanup
+  and the editor is split into a child component that only renders once
+  `sync` is set.
+- **P3** `@tiptap/extension-history` was removed; `Collaboration` provides
+  its own undo/redo via Yjs UndoManager and TipTap warns when both load.
+
 ## Status summary
 
 | Check | Status | Notes |
@@ -17,16 +35,25 @@
 
 ## How to run the manual tests
 
+You need **two terminals** for the local sync setup (D3 follow-up P1 — public
+webrtc signalling was dropped):
+
 ```bash
 # from repo root
 pnpm install            # if not done already
-pnpm proto-a:dev        # starts Vite dev server, default http://localhost:5173
+
+# terminal 1 — local y-websocket relay (no persistence, just a relay)
+pnpm proto-a:sync       # listens on ws://localhost:1234
+
+# terminal 2 — Vite dev server
+pnpm proto-a:dev        # default http://localhost:5173
 ```
 
-Open the URL **in two browser tabs** (or one regular tab + one private/incognito tab — same origin, different IndexedDB / awareness clients). Both tabs join the same y-webrtc room (`proto-a-yjs-schema-default-room`) via the public Yjs signalling servers.
+Open the URL **in two browser tabs** (or one regular tab + one private/incognito tab — same origin, different IndexedDB / awareness clients). Both tabs join the same room (`proto-a-yjs-schema-default-room`); for cross-browser tests they sync through the local `ws://localhost:1234` relay, and same-origin tabs in the same browser also fall back to BroadcastChannel automatically.
 
 The status line shows:
 - **Indexeddb synced**: did local persistence catch up
+- **WS status**: `connecting` / `connected` / `disconnected` against the relay
 - **Peers**: count from awareness (you should see 2 once both tabs are in)
 - **y-prosemirror warnings observed**: count of console.warn calls mentioning "prosemirror" — should stay at **0**
 
@@ -64,7 +91,7 @@ These come from prior-art research (y-prosemirror README, blog posts, GitHub iss
 1. **Concurrent inline-atom inserts at the same position** can occasionally produce visually-duplicated nodes if both tabs reuse the same `blockId`. Our `newBlockId()` is `uuidv7()` so collisions need extreme clock skew; if you see duplicates, capture the IDs from the JSON dump.
 2. **Schema recovery deleting content silently** — y-prosemirror tries to fix invalid PM docs by dropping nodes that don't fit. The patched `console.warn` in `App.tsx` counts these. If the counter ticks, we want to know the trigger.
 3. **NodeView caching across removes/inserts** — when a node is removed and re-inserted via remote update, TipTap may or may not call `addNodeView` again. Equation rendering can drift if it caches DOM aggressively. The current implementation re-renders KaTeX in every `addNodeView` call, which is the safe default.
-4. **`y-webrtc` signalling failure**. If the public signalling servers in `setup-sync.ts` are unreachable, peers won't discover each other. Each tab still works independently against IndexedDB, just no cross-tab sync. Look for `Peers: 1` after both tabs are open.
+4. **`y-websocket` relay down**. If the local relay isn't running (`pnpm proto-a:sync`) you'll see `WS status: disconnected` and cross-browser tabs won't sync. Same-origin tabs in the same browser still sync through BroadcastChannel; each tab still works independently against IndexedDB. Look for `Peers: 1` if cross-browser sync drops.
 
 ## Manual test result template
 
