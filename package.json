@@ -31,7 +31,13 @@
     "web:dev": "pnpm --filter @collaborationtool/web dev",
     "web:build": "pnpm --filter @collaborationtool/web build",
     "web:start": "pnpm --filter @collaborationtool/web start",
-    "web:typecheck": "pnpm --filter @collaborationtool/web typecheck"
+    "web:typecheck": "pnpm --filter @collaborationtool/web typecheck",
+    "editor:test": "pnpm --filter @collaborationtool/editor-core test",
+    "editor:typecheck": "pnpm --filter @collaborationtool/editor-core typecheck",
+    "snapshot:tick": "pnpm --filter @collaborationtool/snapshot-worker tick",
+    "snapshot:start": "pnpm --filter @collaborationtool/snapshot-worker start",
+    "snapshot:test": "pnpm --filter @collaborationtool/snapshot-worker test",
+    "snapshot:typecheck": "pnpm --filter @collaborationtool/snapshot-worker typecheck"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

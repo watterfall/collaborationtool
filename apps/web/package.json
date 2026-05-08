@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@collaborationtool/drizzle": "workspace:*",
+    "@collaborationtool/editor-core": "workspace:*",
     "@collaborationtool/permissions": "workspace:*",
     "@collaborationtool/schema": "workspace:*",
     "better-auth": "^1.2.7",

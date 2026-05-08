@@ -10,7 +10,9 @@ import { auth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { getPrincipalIdForUser } from '@/lib/principal';
 
-export default async function EditorPlaceholderPage({
+import EditorClient from './editor-client';
+
+export default async function EditorPage({
   params,
 }: {
   params: Promise<{ docId: string }>;
@@ -36,9 +38,7 @@ export default async function EditorPlaceholderPage({
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <h1 className="text-2xl font-medium">404</h1>
-        <p className="text-sm text-zinc-600">
-          文档不存在或已被删除。
-        </p>
+        <p className="text-sm text-zinc-600">文档不存在或已被删除。</p>
         <Link href="/docs" className="mt-4 inline-block text-sm underline">
           返回文档列表
         </Link>
@@ -48,16 +48,12 @@ export default async function EditorPlaceholderPage({
 
   const doc = docRows[0]!;
 
-  // ACL gate. Phase 1: any document.read holder can land here. The
-  // gateway enforces write capability separately.
   const ctx = await loadPrincipalContext(db, principalId, doc.id);
   if (!ctx || !ctx.documentCapabilities.has('document.read')) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <h1 className="text-2xl font-medium">403</h1>
-        <p className="text-sm text-zinc-600">
-          你没有访问此文档的权限。
-        </p>
+        <p className="text-sm text-zinc-600">你没有访问此文档的权限。</p>
         <Link href="/docs" className="mt-4 inline-block text-sm underline">
           返回文档列表
         </Link>
@@ -65,44 +61,16 @@ export default async function EditorPlaceholderPage({
     );
   }
 
-  // Phase 1 D9 placeholder. D10 will replace this with the actual
-  // editor; D14 will wire the approval flow UI.
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <header className="mb-6">
         <h1 className="text-3xl font-medium">{doc.title || doc.slug}</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          {doc.primaryLanguage} · {doc.bilingualMode} ·{' '}
-          /{doc.slug}
+          {doc.primaryLanguage} · {doc.bilingualMode} · /{doc.slug}
         </p>
       </header>
 
-      <section className="rounded-md border border-dashed border-zinc-300 bg-zinc-50 p-6 text-sm">
-        <p className="font-medium text-zinc-800">编辑器占位 · Editor placeholder</p>
-        <p className="mt-2 text-zinc-600">
-          Phase 1 D9 完成 better-auth + Principal bridge + 文档列表，但
-          编辑器内核 (D10) / y-sweet 同步 (D11) / 渲染 (D12) / 审阅流 (D14)
-          尚未接入。当前只验证：
-        </p>
-        <ul className="mt-2 list-disc pl-5 text-zinc-600">
-          <li>
-            ACL 加载成功（capabilities: {ctx.documentCapabilities.size} 条）
-          </li>
-          <li>
-            principal: <code>{principalId}</code>
-          </li>
-          <li>
-            connection mode (gateway 视角):{' '}
-            <strong>
-              {ctx.documentCapabilities.has('block.commit')
-                ? 'writer'
-                : ctx.documentCapabilities.has('block.propose')
-                  ? 'proposer'
-                  : 'reader'}
-            </strong>
-          </li>
-        </ul>
-      </section>
+      <EditorClient documentId={doc.id} />
 
       <Link href="/docs" className="mt-6 inline-block text-sm underline">
         ← 返回文档列表
