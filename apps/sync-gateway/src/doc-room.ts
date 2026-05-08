@@ -1,16 +1,16 @@
-// Per-document room. Tracks active subscribers + a Phase 1 stub for the
-// document body (y-sweet wires up at D11). Proposers write to a separate
-// draft buffer so reviewers/owners can still pull them, but their
-// updates never enter the body buffer until accepted by D14 approval flow.
+// Per-document room. Tracks active subscribers + delegates body
+// persistence to a BodyBackend (in-memory dev / y-sweet production —
+// see `backends/`).
 //
-// IMPORTANT: this is NOT the persistent store. It exists only for the
-// lifetime of the gateway process. D11 swaps the body update path to
-// y-sweet (which persists to S3) and snapshot-worker handles PG dumps.
+// Drafts (proposer mode) stay in-memory until D14 wires them to PG
+// `revision` rows + the approval flow UI.
 
 import type { WebSocket } from 'ws';
 
 import type { ConnectionMode, PrincipalContext } from '@collaborationtool/permissions';
 import type { DocumentId, PrincipalId } from '@collaborationtool/schema';
+
+import type { BodyBackend } from './backends/types';
 
 export interface RoomMember {
   ws: WebSocket;
@@ -32,23 +32,32 @@ export interface DraftUpdate extends BodyUpdate {
   draftId: string;
 }
 
-/**
- * In-process state for a single document. One instance per active doc.
- * Phase 1: we keep the last N body updates so a late-joining client can
- * receive them. Phase D11 replaces this with y-sweet's full history.
- */
 export class DocRoom {
   readonly documentId: DocumentId;
   readonly members = new Set<RoomMember>();
-  /** Phase 1 stub: last 100 body updates. */
-  readonly bodyHistory: BodyUpdate[] = [];
-  /** Phase 1: keep all draft updates until D14 accept/reject lands. */
   readonly drafts: DraftUpdate[] = [];
+  readonly backend: BodyBackend;
 
-  private static readonly MAX_BODY_HISTORY = 100;
+  /** Cleanup the backend's external-update listener registration. */
+  private readonly unsubscribeExternal: () => void;
 
-  constructor(documentId: DocumentId) {
+  constructor(documentId: DocumentId, backend: BodyBackend) {
     this.documentId = documentId;
+    this.backend = backend;
+
+    // Backend reports an update from outside this gateway (e.g. another
+    // gateway instance pushing through y-sweet). Broadcast to local
+    // members so they stay in sync.
+    this.unsubscribeExternal = backend.onExternalUpdate((bytes) => {
+      const synthetic: BodyUpdate = {
+        bytes,
+        fromPrincipalId: 'service:y-sweet' as PrincipalId,
+        receivedAt: new Date(),
+      };
+      for (const m of this.members) {
+        send(m.ws, encodeBodyMessage(synthetic));
+      }
+    });
   }
 
   addMember(m: RoomMember): void {
@@ -61,28 +70,44 @@ export class DocRoom {
 
   /** Append a body update + broadcast to every other connected member. */
   applyBody(update: BodyUpdate, originator: RoomMember): void {
-    this.bodyHistory.push(update);
-    if (this.bodyHistory.length > DocRoom.MAX_BODY_HISTORY) {
-      this.bodyHistory.shift();
-    }
+    void this.backend.persist({
+      bytes: update.bytes,
+      receivedAt: update.receivedAt,
+    });
     for (const m of this.members) {
       if (m === originator) continue;
-      // Only writer / proposer modes can be authors; readers receive.
       send(m.ws, encodeBodyMessage(update));
     }
   }
 
-  /** Append a draft update. Phase 1 broadcast to everyone with block.review. */
+  /** Replay current backend state to a freshly joined member. */
+  async sendBacklog(member: RoomMember): Promise<void> {
+    const state = await this.backend.getState();
+    if (!state || state.byteLength === 0) return;
+    const synthetic: BodyUpdate = {
+      bytes: state,
+      fromPrincipalId: 'service:backlog' as PrincipalId,
+      receivedAt: new Date(),
+    };
+    send(member.ws, encodeBodyMessage(synthetic));
+  }
+
+  /** Append a draft update. Phase 1 broadcast to writer + proposer modes. */
   appendDraft(update: DraftUpdate, originator: RoomMember): void {
     this.drafts.push(update);
     for (const m of this.members) {
       if (m === originator) continue;
-      // Phase 1 simplification: writers see drafts (so author can review).
-      // Phase 1.5 will narrow this to `block.review` capability.
+      // Phase 1 simplification: writers see drafts (so author can
+      // review). Phase 1.5 narrows this to `block.review` capability.
       if (m.mode === 'writer' || m.mode === 'proposer') {
         send(m.ws, encodeDraftMessage(update));
       }
     }
+  }
+
+  async close(): Promise<void> {
+    this.unsubscribeExternal();
+    await this.backend.close();
   }
 }
 

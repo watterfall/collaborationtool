@@ -6,15 +6,25 @@ import { openDatabase } from '@collaborationtool/drizzle';
 
 import { loadEnv } from './env';
 import { runOnce } from './snapshot';
+import { createYSweetFetcher } from './sources/y-sweet';
 
 async function main(): Promise<void> {
   const env = loadEnv();
   const dbHandle = openDatabase({ url: env.databaseUrl, max: 2 });
   try {
+    const fetchYjsBinary =
+      env.ysweetUrl && env.ysweetServerToken
+        ? createYSweetFetcher({
+            baseUrl: env.ysweetUrl,
+            serverAuthToken: env.ysweetServerToken,
+            timeoutMs: env.ysweetTimeoutMs,
+          })
+        : async (): Promise<Uint8Array | null> => null;
+
     const result = await runOnce(dbHandle.db, {
       staleAfterMs: env.staleAfterMs,
       maxPerTick: env.maxPerTick,
-      fetchYjsBinary: async () => null,
+      fetchYjsBinary,
     });
     console.log(
       JSON.stringify(

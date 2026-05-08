@@ -14,6 +14,15 @@ export interface GatewayEnv {
   /** Maximum WebSocket frame size; reject larger to bound memory. 1 MiB default. */
   maxFrameBytes: number;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
+  /**
+   * y-sweet base URL. When unset the gateway falls back to the
+   * in-memory body backend (Phase 1 dev / single-instance default).
+   */
+  ysweetUrl?: string;
+  /** y-sweet server bearer token (matches Y_SWEET_AUTH on y-sweet). */
+  ysweetServerToken?: string;
+  /** Connect timeout for y-sweet handshake at room open. Default 5s. */
+  ysweetConnectTimeoutMs: number;
 }
 
 export function loadEnv(env: NodeJS.ProcessEnv = process.env): GatewayEnv {
@@ -57,7 +66,23 @@ export function loadEnv(env: NodeJS.ProcessEnv = process.env): GatewayEnv {
     throw new Error(`LOG_LEVEL invalid: ${env['LOG_LEVEL']}`);
   }
 
-  return {
+  const ysweetUrl = env['YSWEET_URL'];
+  const ysweetServerToken = env['YSWEET_AUTH'];
+  if (ysweetUrl && !ysweetServerToken) {
+    throw new Error(
+      'YSWEET_URL is set but YSWEET_AUTH is not — both are required to use the y-sweet backend.',
+    );
+  }
+  const ysweetConnectTimeoutMs = Number(
+    env['YSWEET_CONNECT_TIMEOUT_MS'] ?? '5000',
+  );
+  if (!Number.isFinite(ysweetConnectTimeoutMs) || ysweetConnectTimeoutMs < 100) {
+    throw new Error(
+      `YSWEET_CONNECT_TIMEOUT_MS invalid: ${env['YSWEET_CONNECT_TIMEOUT_MS']}`,
+    );
+  }
+
+  const out: GatewayEnv = {
     port,
     host,
     databaseUrl,
@@ -67,5 +92,9 @@ export function loadEnv(env: NodeJS.ProcessEnv = process.env): GatewayEnv {
     heartbeatMs,
     maxFrameBytes,
     logLevel: rawLogLevel,
+    ysweetConnectTimeoutMs,
   };
+  if (ysweetUrl) out.ysweetUrl = ysweetUrl;
+  if (ysweetServerToken) out.ysweetServerToken = ysweetServerToken;
+  return out;
 }

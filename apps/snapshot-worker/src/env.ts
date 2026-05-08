@@ -1,4 +1,5 @@
-// Env validation. The worker reads PG + (D11) the gateway state HTTP.
+// Env validation. The worker reads PG + (when YSWEET_URL set) y-sweet
+// HTTP for the document Yjs binary.
 
 export interface SnapshotEnv {
   databaseUrl: string;
@@ -8,8 +9,12 @@ export interface SnapshotEnv {
   staleAfterMs: number;
   /** Cap candidates per tick (default 100). */
   maxPerTick: number;
-  /** D11 only — gateway state HTTP url. Phase 1 D10: unused. */
-  gatewayStateUrl?: string;
+  /** y-sweet base URL. When set, the worker uses y-sweet HTTP for source. */
+  ysweetUrl?: string;
+  /** y-sweet bearer token (matches Y_SWEET_AUTH on y-sweet). */
+  ysweetServerToken?: string;
+  /** Per-request timeout for y-sweet HTTP. Default 10s. */
+  ysweetTimeoutMs: number;
 }
 
 export function loadEnv(env: NodeJS.ProcessEnv = process.env): SnapshotEnv {
@@ -36,13 +41,27 @@ export function loadEnv(env: NodeJS.ProcessEnv = process.env): SnapshotEnv {
     throw new Error(`SNAPSHOT_MAX_PER_TICK invalid: ${env['SNAPSHOT_MAX_PER_TICK']}`);
   }
 
+  const ysweetUrl = env['YSWEET_URL'];
+  const ysweetServerToken = env['YSWEET_AUTH'];
+  if (ysweetUrl && !ysweetServerToken) {
+    throw new Error(
+      'YSWEET_URL is set but YSWEET_AUTH is not — both required to fetch y-sweet state.',
+    );
+  }
+
+  const ysweetTimeoutMs = Number(env['YSWEET_TIMEOUT_MS'] ?? '10000');
+  if (!Number.isFinite(ysweetTimeoutMs) || ysweetTimeoutMs < 100) {
+    throw new Error(`YSWEET_TIMEOUT_MS invalid: ${env['YSWEET_TIMEOUT_MS']}`);
+  }
+
   const out: SnapshotEnv = {
     databaseUrl,
     intervalMs,
     staleAfterMs,
     maxPerTick,
+    ysweetTimeoutMs,
   };
-  const gatewayStateUrl = env['GATEWAY_STATE_URL'];
-  if (gatewayStateUrl) out.gatewayStateUrl = gatewayStateUrl;
+  if (ysweetUrl) out.ysweetUrl = ysweetUrl;
+  if (ysweetServerToken) out.ysweetServerToken = ysweetServerToken;
   return out;
 }

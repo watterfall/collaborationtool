@@ -90,14 +90,47 @@ const token = await signSyncToken(
 const ws = new WebSocket(`ws://localhost:4321/ws?docId=doc-id&token=${token}`);
 ```
 
+## Body backend (D11)
+
+The room's body persistence is pluggable via `BodyBackend`:
+
+| Backend | When | Persistence | Cross-instance broadcast |
+|---|---|---|---|
+| `InMemoryBodyBackend` | default (no `YSWEET_URL`) | none — gateway process lifetime | no |
+| `YSweetBackend` | `YSWEET_URL` + `YSWEET_AUTH` set | y-sweet → S3-compat (MinIO / R2) | yes (y-sweet broadcast) |
+
+Selection happens per-room at first connection; the factory inspects
+`env.ysweetUrl` and instantiates the appropriate backend (`server.ts`).
+
+### Switching to y-sweet (local docker)
+
+```bash
+docker compose -f infra/docker/docker-compose.yml up -d
+# y-sweet at http://localhost:8080 backed by MinIO at http://localhost:9000
+
+YSWEET_URL=http://localhost:8080 \
+YSWEET_AUTH=dev-y-sweet-auth-token-replace-in-prod \
+SYNC_TOKEN_SECRET=$(openssl rand -base64 32) \
+  pnpm --filter @collaborationtool/sync-gateway start
+```
+
+### Manual integration verification (Phase 1 D11)
+
+1. `docker compose up -d` — Postgres + MinIO + y-sweet healthy
+2. start gateway with `YSWEET_URL` set — log shows
+   `[y-sweet] { documentId, status: 'connected' }` on first room open
+3. Open the editor in browser A; type a paragraph; close the tab
+4. Open the editor in browser B; observe the paragraph appears (state
+   replay through y-sweet, not in-memory)
+5. Restart the gateway; reopen editor; paragraph still there
+6. `pnpm snapshot:tick` writes the merged Yjs binary to PG bytea (verify
+   with `\d document` + `SELECT length(yjs_doc_binary) FROM document`)
+
 ## Phase 1 limitations (deliberate; documented to revisit)
 
 - **Connection-level mode only.** `proposer` writes go to a single draft
   buffer per doc, not per-section drafts; `block.review` capability is
   not yet enforced for who can pull drafts (Phase 1.5).
-- **No y-sweet yet.** Body updates land in an in-memory `bodyHistory`
-  list capped at 100. D11 wires y-sweet's S3-compat persistence and
-  swaps `DocRoom.applyBody` for the y-sweet relay.
 - **No real revision row creation.** `proposer` updates are stored in
   `DocRoom.drafts`; D14 wires this to the `revision` table with PG
   insert + Provenance.

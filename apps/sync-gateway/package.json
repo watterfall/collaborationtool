@@ -15,7 +15,9 @@
     "@collaborationtool/permissions": "workspace:*",
     "@collaborationtool/schema": "workspace:*",
     "drizzle-orm": "^0.45.2",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "y-websocket": "^2.1.0",
+    "yjs": "^13.6.21"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

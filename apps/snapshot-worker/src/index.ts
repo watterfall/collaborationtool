@@ -2,15 +2,16 @@
 // `SNAPSHOT_INTERVAL_MS` and snapshots docs that have been written since
 // their last snapshot.
 //
-// Phase 1 D10: the actual fetch from y-sweet / gateway state HTTP isn't
-// wired yet (D11). The worker still runs the loop and writes
-// `last_snapshot_at` even when the source returns null, so we have the
-// scheduling + DB plumbing working from D10.
+// Phase 1 D11: when YSWEET_URL is set we fetch from y-sweet HTTP. Without
+// y-sweet (e.g. dev with InMemoryBodyBackend on the gateway) the source
+// returns null and the worker logs `no-source` — the schedule loop still
+// runs to validate plumbing.
 
 import { openDatabase } from '@collaborationtool/drizzle';
 
 import { loadEnv } from './env';
 import { runOnce } from './snapshot';
+import { createYSweetFetcher } from './sources/y-sweet';
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -27,16 +28,21 @@ async function main(): Promise<void> {
   });
 
   console.log(
-    `[snapshot-worker] booting; interval=${env.intervalMs}ms stale=${env.staleAfterMs}ms`,
+    `[snapshot-worker] booting; interval=${env.intervalMs}ms stale=${env.staleAfterMs}ms ` +
+      `source=${env.ysweetUrl ? 'y-sweet' : 'stub(none)'}`,
   );
 
-  // D11 will replace this stub with a real source — gateway state HTTP
-  // or y-sweet S3 bytes. For Phase 1 D10 it always returns null (no
-  // change recorded), which keeps the schedule loop testable.
-  async function fetchYjsBinary(_documentId: string): Promise<Uint8Array | null> {
-    void _documentId;
-    return null;
-  }
+  const fetchYjsBinary =
+    env.ysweetUrl && env.ysweetServerToken
+      ? createYSweetFetcher({
+          baseUrl: env.ysweetUrl,
+          serverAuthToken: env.ysweetServerToken,
+          timeoutMs: env.ysweetTimeoutMs,
+        })
+      : async (_documentId: string): Promise<Uint8Array | null> => {
+          void _documentId;
+          return null;
+        };
 
   while (!stopping) {
     const start = Date.now();
@@ -73,3 +79,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
 export { runOnce, snapshotOne, findCandidates } from './snapshot';
 export { loadEnv } from './env';
+export { createYSweetFetcher } from './sources/y-sweet';

@@ -1,18 +1,18 @@
-// Phase 1 sync-gateway — WebSocket server in front of (eventually) y-sweet.
+// Phase 1 sync-gateway — WebSocket server in front of y-sweet.
 //
 // Hot path: client opens `wss://gateway/ws?docId=...&token=<JWT>`. We:
 //   1. parseHandshakeQuery — pull docId + token from URL
 //   2. authenticate — verifySyncToken, loadPrincipalContext, classify mode
 //   3. accept WebSocket; send `mode_set` frame
-//   4. on each frame: gateUpdate → forward / route / reject
-//   5. heartbeat every HEARTBEAT_MS — re-load ACL, reclassify, kick if revoked
-//   6. on close — remove from room
+//   4. send the doc backlog from the body backend so the client catches up
+//   5. on each frame: gateUpdate → forward / route / reject
+//   6. heartbeat every HEARTBEAT_MS — re-load ACL, reclassify, kick if revoked
+//   7. on close — remove from room
 //
-// Phase 1 deliberate omissions (deferred to later D-deliverables):
-//   - y-sweet proxying (D11)
-//   - Real revision row creation on draft (D14)
-//   - PG snapshot worker integration (D11)
-//   - TLS / reverse proxy (D16 + ADR-0004)
+// Phase 1 D11: per-room body persistence is delegated to a
+// `BodyBackend`. Default = InMemoryBodyBackend; YSWEET_URL/YSWEET_AUTH
+// switch to the YSweetBackend (S3-compat persistence + cross-instance
+// broadcast). See backends/README path.
 
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 
@@ -29,6 +29,11 @@ import {
   failureToCloseCode,
   type AuthContext,
 } from './auth';
+import {
+  type BodyBackend,
+  InMemoryBodyBackend,
+  YSweetBackend,
+} from './backends';
 import { gateUpdate } from './capability-gate';
 import {
   DocRoom,
@@ -40,6 +45,7 @@ import {
   type RoomMember,
 } from './doc-room';
 import { type GatewayEnv, loadEnv } from './env';
+import { YSweetClient } from './y-sweet/client';
 
 export interface SyncGatewayHandle {
   close: () => Promise<void>;
@@ -56,6 +62,11 @@ export interface StartGatewayOptions {
   port?: number;
   /** Test hook: custom logger. Default → console. */
   logger?: { debug: Console['debug']; info: Console['info']; warn: Console['warn']; error: Console['error'] };
+  /**
+   * Test hook: build a backend for a given docId. Default behavior:
+   * use YSweetBackend when env.ysweetUrl is set, else InMemoryBodyBackend.
+   */
+  bodyBackendFactory?: (documentId: DocumentId) => Promise<BodyBackend>;
 }
 
 export async function startGateway(
@@ -133,12 +144,23 @@ export async function startGateway(
     }
     const ctx = result.context;
     wss.handleUpgrade(req, socket as never, head, (ws) => {
-      onConnection(ws, ctx);
+      void onConnection(ws, ctx);
     });
   }
 
-  function onConnection(ws: WebSocket, ctx: AuthContext): void {
-    const room = getOrCreateRoom(ctx.documentId);
+  async function onConnection(ws: WebSocket, ctx: AuthContext): Promise<void> {
+    let room: DocRoom;
+    try {
+      room = await getOrCreateRoom(ctx.documentId);
+    } catch (err) {
+      log.error('[backend init failed]', err);
+      try {
+        ws.close(CLOSE_CODES.NO_ACCESS, 'backend-unavailable');
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
 
     const member: RoomMember = {
       ws,
@@ -159,13 +181,11 @@ export async function startGateway(
     // Tell the client which mode they got.
     ws.send(encodeModeSet(ctx.mode), { binary: true });
 
-    // Phase 1: send body history so a late joiner sees prior state. D11
-    // replaces this with y-sweet's protocol (state sync).
-    for (const u of room.bodyHistory) {
-      ws.send(
-        Buffer.concat([Buffer.from([FRAME_KIND.BODY_UPDATE]), Buffer.from(u.bytes)]),
-        { binary: true },
-      );
+    // Send the doc backlog from the body backend so the client catches up.
+    try {
+      await room.sendBacklog(member);
+    } catch (err) {
+      log.warn('[backlog send failed]', err);
     }
 
     // ----- Heartbeat -----
@@ -280,13 +300,56 @@ export async function startGateway(
     member.ws.send(encodePing(), { binary: true });
   }
 
-  function getOrCreateRoom(documentId: DocumentId): DocRoom {
-    let r = rooms.get(documentId);
-    if (!r) {
-      r = new DocRoom(documentId);
-      rooms.set(documentId, r);
+  // ----- backend factory -----
+
+  const ysweetClient =
+    env.ysweetUrl && env.ysweetServerToken
+      ? new YSweetClient({
+          baseUrl: env.ysweetUrl,
+          serverAuthToken: env.ysweetServerToken,
+        })
+      : null;
+
+  const buildBackend =
+    options.bodyBackendFactory ??
+    (async (documentId: DocumentId): Promise<BodyBackend> => {
+      if (ysweetClient) {
+        const backend = new YSweetBackend({
+          documentId,
+          client: ysweetClient,
+          onStatus: (status, detail) =>
+            log.debug('[y-sweet]', { documentId, status, detail }),
+        });
+        await backend.start({
+          connectTimeoutMs: env.ysweetConnectTimeoutMs,
+        });
+        return backend;
+      }
+      return new InMemoryBodyBackend();
+    });
+
+  // In-flight room creations are deduplicated so concurrent connections
+  // for the same doc don't double-init the backend.
+  const pendingRooms = new Map<DocumentId, Promise<DocRoom>>();
+
+  async function getOrCreateRoom(documentId: DocumentId): Promise<DocRoom> {
+    const existing = rooms.get(documentId);
+    if (existing) return existing;
+    const pending = pendingRooms.get(documentId);
+    if (pending) return pending;
+
+    const created = (async () => {
+      const backend = await buildBackend(documentId);
+      const room = new DocRoom(documentId, backend);
+      rooms.set(documentId, room);
+      return room;
+    })();
+    pendingRooms.set(documentId, created);
+    try {
+      return await created;
+    } finally {
+      pendingRooms.delete(documentId);
     }
-    return r;
   }
 
   await new Promise<void>((resolve, reject) => {
@@ -306,6 +369,12 @@ export async function startGateway(
     close: async () => {
       wss.close();
       await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+      // Close backends so y-sweet WebSocket connections drain cleanly.
+      await Promise.all(
+        Array.from(rooms.values()).map((room) =>
+          room.close().catch((err: unknown) => log.warn('[room close]', err)),
+        ),
+      );
       await dbHandle.close();
     },
   };

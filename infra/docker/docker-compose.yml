@@ -18,5 +18,81 @@ services:
       timeout: 3s
       retries: 5
 
+  minio:
+    image: minio/minio:latest
+    container_name: collaborationtool-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: collab
+      MINIO_ROOT_PASSWORD: collab12345
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # web console
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test:
+        - "CMD"
+        - "/usr/bin/mc"
+        - "ready"
+        - "local"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # One-shot job — creates the y-sweet bucket on first boot.
+  minio-bucket-init:
+    image: minio/mc:latest
+    container_name: collaborationtool-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint:
+      - "/bin/sh"
+      - "-c"
+      - >
+        set -e;
+        mc alias set local http://minio:9000 collab collab12345;
+        mc mb --ignore-existing local/y-sweet;
+        echo "[minio-init] bucket y-sweet ready";
+    restart: "no"
+
+  ysweet:
+    image: ghcr.io/jamsocket/y-sweet:latest
+    container_name: collaborationtool-ysweet
+    restart: unless-stopped
+    depends_on:
+      minio:
+        condition: service_healthy
+      minio-bucket-init:
+        condition: service_completed_successfully
+    environment:
+      # y-sweet stores docs at this S3-compat URL. Path-style works
+      # against both MinIO (dev) and most S3-compats (R2 / Tigris).
+      STORAGE: s3://y-sweet/docs
+      AWS_ENDPOINT_URL_S3: http://minio:9000
+      AWS_ACCESS_KEY_ID: collab
+      AWS_SECRET_ACCESS_KEY: collab12345
+      AWS_REGION: us-east-1
+      AWS_S3_FORCE_PATH_STYLE: "true"
+      # Bearer token clients must present. apps/sync-gateway holds the
+      # matching value in its YSWEET_AUTH env so it can issue client
+      # tokens / fetch state. CHANGE THIS IN PRODUCTION.
+      Y_SWEET_AUTH: dev-y-sweet-auth-token-replace-in-prod
+      # Public host the y-websocket clients connect to. Phase 1 dev:
+      # localhost. Phase 1.5 production sets this to the deployment URL.
+      Y_SWEET_HOST: localhost:8080
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "wget -qO- http://localhost:8080/check_store >/dev/null || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
 volumes:
   pg-data:
+  minio-data:

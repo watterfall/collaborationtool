@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-08（claude/analyze-project-status-jZyUu，D10 完成）
+最后更新：2026-05-08（claude/analyze-project-status-jZyUu，D11 完成）
 
 ---
 
@@ -11,9 +11,9 @@
 
 **Phase 0：✅ 完成**（6/6 交付物，3 个原型实证，4 个 ADR 落地）
 
-**Phase 1：⏳ 进行中**（D7 ✅ + D8 ✅ + D9 ✅ + D10 ✅）
+**Phase 1：⏳ 进行中**（D7 ✅ + D8 ✅ + D9 ✅ + D10 ✅ + D11 ✅）
 
-下一动作：D11（y-sweet 自托管 + S3-compat 持久化）。
+下一动作：D12（`packages/render-{myst, typst, typography}` + `templates/myst/` 镜像）。
 
 ---
 
@@ -54,7 +54,8 @@
 | D8 | `packages/permissions` + `apps/sync-gateway` shim | ✅ | W1-W2 | D7 |
 | D9 | `apps/web` Next.js 15 + better-auth + Principal bridge | ✅ | W2 | D7-D8 |
 | D10 | `packages/editor-core`（从 proto-a 提炼）+ snapshot worker | ✅ | W3 | proto-a / D7 |
-| D11 | y-sweet 自托管 + S3-compat 持久化 | 🔜 next | W2-W3 | D8 / D10 |
+| D11 | y-sweet 自托管 + S3-compat 持久化 | ✅ | W2-W3 | D8 / D10 |
+| D12 | `packages/render-{myst, typst, typography}` + templates/myst | 🔜 next | W3-W4 | D10 |
 | D10 | `packages/editor-core`（从 proto-a 提炼）+ snapshot worker | ⏸ | W3 | proto-a / D7 |
 (状态例：⏸ pending / 🔜 next / ✅ done / 🚧 wip)
 | D12 | `packages/render-{myst, typst, typography}` + templates 镜像 | ⏸ | W3-W4 | D10（与 D13 并行） |
@@ -78,10 +79,10 @@ collaborationtool/
 ├── packages/schema/           # 8 实体 single source of truth（11 个 .ts，~330 LOC）
 ├── packages/permissions/      # ⭐ D8/D9 — 36 capability vocab + 5 role bundles + JWT + ACL loader + Principal bridge
 ├── packages/editor-core/      # ⭐ D10 — TipTap 9 extensions + paperSchema + commit serializer + Editor.tsx + sync-gateway transport
-├── apps/sync-gateway/         # ⭐ D8 — WebSocket capability gate（连接级，y-sweet 之前）
+├── apps/sync-gateway/         # ⭐ D8/D11 — WebSocket capability gate + InMemory/YSweet body backends + y-sweet HTTP client
 ├── apps/web/                  # ⭐ D9/D10 — Next.js 15 + better-auth + organization plugin + Editor + /api/sync-token
-├── apps/snapshot-worker/      # ⭐ D10 — periodic Y.Doc snapshot service（fetcher D11 wires）
-├── infra/                     # ⭐ D7/D9
+├── apps/snapshot-worker/      # ⭐ D10/D11 — periodic Y.Doc snapshot service + y-sweet HTTP fetcher
+├── infra/                     # ⭐ D7/D9/D11 — docker-compose (Postgres 16 + MinIO + y-sweet) + Drizzle
 │   ├── docker/                # docker-compose.yml + postgres-init/
 │   └── drizzle/               # 13 + 7 better-auth 表 schema + 2 migrations + 18 round-trip tests
 ├── mcp-servers/crossref-mock/ # mock MCP server (CI / 离线 demo 保留)
@@ -144,9 +145,13 @@ pnpm web:typecheck
 pnpm editor:test            # 21 个 schema/wire/commit round-trip 测试
 pnpm editor:typecheck
 pnpm snapshot:tick          # 单次 snapshot 扫描（CLI）
-pnpm snapshot:start         # daemon
-pnpm snapshot:test          # 5 个 PG 集成测试
+pnpm snapshot:start         # daemon（YSWEET_URL 时走 y-sweet HTTP）
+pnpm snapshot:test          # 11 个测试（5 PG 集成 + 6 y-sweet 源 mock）
 pnpm snapshot:typecheck
+
+# Phase 1 / D11：y-sweet + MinIO 自托管
+pnpm db:up                  # 起 docker-compose（Postgres + MinIO + y-sweet）
+# YSWEET_URL=http://localhost:8080 + YSWEET_AUTH=... 切换 gateway 至 YSweetBackend
 
 # 全 workspace typecheck
 pnpm typecheck              # 10 packages 全 PASS
@@ -209,7 +214,7 @@ pnpm typecheck              # 10 packages 全 PASS
 | `main` | ✅ 主线（Phase 0 已 merge） | — |
 | `claude/review-project-plans-oRIn8` | merged via PR #1 | Phase 0 D1–D6 + 综合报告 |
 | `claude/d3-websocket-strictmode-UfP6w` | merged via PR #2/#3 | proto-a D3 follow-ups + Playwright 自动化 |
-| `claude/analyze-project-status-jZyUu` | 当前 | Phase 1 plan + STATUS + D7 + D8 + D9 + D10 |
+| `claude/analyze-project-status-jZyUu` | 当前 | Phase 1 plan + STATUS + D7 + D8 + D9 + D10 + D11 |
 
 ---
 

@@ -88,6 +88,46 @@ describe('loadEnv', () => {
     assert.equal(env.heartbeatMs, 15000);
     assert.equal(env.logLevel, 'debug');
   });
+
+  it('y-sweet config: both YSWEET_URL + YSWEET_AUTH required together', () => {
+    // YSWEET_URL alone — bail out
+    assert.throws(
+      () =>
+        loadEnv({
+          SYNC_TOKEN_SECRET: VALID_SECRET,
+          YSWEET_URL: 'http://ysweet:8080',
+        }),
+      /YSWEET_URL is set but YSWEET_AUTH/,
+    );
+    // both set — accepted
+    const env = loadEnv({
+      SYNC_TOKEN_SECRET: VALID_SECRET,
+      YSWEET_URL: 'http://ysweet:8080',
+      YSWEET_AUTH: 'srv-token',
+    });
+    assert.equal(env.ysweetUrl, 'http://ysweet:8080');
+    assert.equal(env.ysweetServerToken, 'srv-token');
+    assert.equal(env.ysweetConnectTimeoutMs, 5000);
+  });
+
+  it('y-sweet timeout is configurable + validated', () => {
+    const env = loadEnv({
+      SYNC_TOKEN_SECRET: VALID_SECRET,
+      YSWEET_URL: 'http://ysweet:8080',
+      YSWEET_AUTH: 'srv',
+      YSWEET_CONNECT_TIMEOUT_MS: '7500',
+    });
+    assert.equal(env.ysweetConnectTimeoutMs, 7500);
+
+    assert.throws(
+      () =>
+        loadEnv({
+          SYNC_TOKEN_SECRET: VALID_SECRET,
+          YSWEET_CONNECT_TIMEOUT_MS: 'abc',
+        }),
+      /YSWEET_CONNECT_TIMEOUT_MS invalid/,
+    );
+  });
 });
 
 // the unused-helper hint: keep for future when we add isolated env spec.
