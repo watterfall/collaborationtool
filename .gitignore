@@ -21,3 +21,23 @@ rad.json
 *.flf
 #Test results file
 TestResults.xml
+
+### Node / TypeScript / pnpm ###
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+.cache/
+.tsbuildinfo
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+
+### macOS ###
+.DS_Store
+
+### Editor ###
+.idea/
+*.swp
