@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Collaboration } from '@tiptap/extension-collaboration';
 import * as Y from 'yjs';
@@ -12,32 +12,48 @@ const SAMPLE_LATEX = String.raw`E = mc^2`;
 const SAMPLE_INLINE_LATEX = String.raw`\alpha + \beta`;
 
 function jsonDump(doc: Y.Doc): string {
-  // Compact representation for status panel: PM doc JSON if available;
-  // fallback to fragment toString.
   const fragment = doc.getXmlFragment('body');
   return JSON.stringify(fragment.toJSON(), null, 2);
 }
 
 export function App() {
-  const syncRef = useRef<SyncBundle | null>(null);
+  // StrictMode-safe lifecycle: each mount cycle creates exactly one
+  // SyncBundle and tears it down on unmount. The dev-mode double invoke
+  // builds bundle1 → cleanup destroys bundle1 → builds bundle2; only the
+  // final state is rendered. (D3 follow-up P2.)
+  const [sync, setSync] = useState<SyncBundle | null>(null);
+
+  useEffect(() => {
+    const bundle = setupSync({ roomName: ROOM_NAME });
+    setSync(bundle);
+    return () => {
+      bundle.destroy();
+    };
+  }, []);
+
+  if (!sync) return <div style={{ padding: 24 }}>Loading sync…</div>;
+  return <EditorView sync={sync} />;
+}
+
+function EditorView({ sync }: { sync: SyncBundle }) {
   const [synced, setSynced] = useState(false);
   const [peerCount, setPeerCount] = useState(0);
   const [docDump, setDocDump] = useState('');
   const [warningCount, setWarningCount] = useState(0);
-
-  // Wire sync once.
-  if (!syncRef.current) {
-    syncRef.current = setupSync({ roomName: ROOM_NAME });
-  }
-  const sync = syncRef.current;
+  const [wsStatus, setWsStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
 
   useEffect(() => {
     sync.ready.then(() => setSynced(true));
-    const updatePeers = () => setPeerCount(sync.webrtc.awareness.getStates().size);
-    sync.webrtc.awareness.on('change', updatePeers);
+
+    const updatePeers = () => setPeerCount(sync.websocket.awareness.getStates().size);
+    sync.websocket.awareness.on('change', updatePeers);
     updatePeers();
 
-    // Patch console.warn to count y-prosemirror schema-recovery warnings.
+    const onStatus = ({ status }: { status: 'connecting' | 'connected' | 'disconnected' }) => {
+      setWsStatus(status);
+    };
+    sync.websocket.on('status', onStatus);
+
     const originalWarn = console.warn;
     console.warn = (...args: unknown[]) => {
       const msg = args.map((a) => String(a)).join(' ');
@@ -48,24 +64,25 @@ export function App() {
     };
 
     return () => {
-      sync.webrtc.awareness.off('change', updatePeers);
+      sync.websocket.awareness.off('change', updatePeers);
+      sync.websocket.off('status', onStatus);
       console.warn = originalWarn;
     };
   }, [sync]);
 
-  const editor = useEditor({
-    extensions: useMemo(
-      () => [
+  const editor = useEditor(
+    {
+      extensions: [
         ...PROTO_A_EXTENSIONS,
         Collaboration.configure({
           document: sync.ydoc,
           field: 'body',
         }),
       ],
-      [sync]
-    ),
-    content: '',
-  });
+      content: '',
+    },
+    [sync]
+  );
 
   useEffect(() => {
     if (!editor) return;
@@ -86,7 +103,10 @@ export function App() {
         <small>
           Open this URL in two browser tabs (same origin) to test concurrent
           editing. Sync goes through y-indexeddb (local persistence) +
-          y-webrtc (peer-to-peer via public signalling).
+          y-websocket (local relay at <code>ws://localhost:1234</code>).
+          Same-origin tabs in the same browser also sync through
+          BroadcastChannel automatically — start the relay
+          (<code>pnpm proto-a:sync</code>) for cross-browser tests.
         </small>
       </header>
 
@@ -94,6 +114,11 @@ export function App() {
         <span>
           <span className="label">Indexeddb synced:</span>
           {synced ? 'yes' : 'loading…'}
+        </span>
+        {' · '}
+        <span>
+          <span className="label">WS status:</span>
+          {wsStatus}
         </span>
         {' · '}
         <span>
