@@ -41,3 +41,8 @@ build/
 ### Editor ###
 .idea/
 *.swp
+
+### Prototype-local CLI binaries (don't commit) ###
+apps/prototypes/proto-b-cjk-render/typst-bin
+apps/prototypes/proto-b-cjk-render/output/
+apps/prototypes/proto-b-cjk-render/myst-source/_build/
