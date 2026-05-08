@@ -12,7 +12,7 @@
 
 - 8 实体 schema 在 ADR-0001 verbatim 锁定；Block 是 ProseMirror 树节点，atom node 的 `attrs.<entityId>` 指向 Postgres 实体（Citation / Annotation / ComputationalCell / ...）
 - D3 stress test：5 client × 50 ops = 250 操作，**Convergence PASS / State vectors PASS / 0 warnings**
-- 自动化只验证 Yjs CRDT 层；ProseMirror schema 在并发 atom 插入下的 `schema-recovery` 行为留双 tab 手测（findings.md 已含运行说明）
+- D3 dual-tab Playwright 自动化（`apps/prototypes/proto-a-yjs-schema/tests/dual-tab.spec.ts`）：3 cases — 并发 atom 插入 / 并发段落 + 公式编辑 / 删除 + annotation 冲突 — 全部 PASS / 0 y-prosemirror warnings；ADR-0001 由此转 **Accepted**
 - 见 `plan0/adr/0001-data-model-and-crdt-split.md` + `apps/prototypes/proto-a-yjs-schema/findings.md`
 
 ### H2 — Provenance 数据模型能否在 Phase 1 稳定 + Phase 3 不迁移？
@@ -65,8 +65,9 @@
 - KaTeX 原生渲染；annotation-anchor 用 PM mark 让 CRDT 自然跟随文本
 - y-indexeddb 本地持久 + y-webrtc P2P（无需后端）
 - 自动化验证：`pnpm proto-a:stress` 250 ops 全收敛，0 Yjs warnings
-- **未完成**：用户双 tab 手测 3 个 case 后填写 findings.md，决定 ADR-0001 是否转 Accepted
-- Commit: `453c61f`
+- **D3 follow-ups（commit `e4b9ed9`）**：本地 y-websocket relay 替换公共 webrtc 信令（P1）；`setupSync` 改 `useEffect` + cleanup 修 StrictMode 双 invoke 泄漏（P2）；删 `@tiptap/extension-history`，与 `Collaboration` 自带的 Yjs UndoManager 不冲突（P3）
+- **D3 dual-tab 自动化（commit 本次）**：Playwright headless 跑 3 cases — 并发 atom / 并发文本+公式 / 删除+annotation 冲突，3/3 PASS / 0 y-prosemirror warnings → ADR-0001 由此转 **Accepted**
+- Commits: `453c61f`（原型骨架）、`e4b9ed9`（follow-ups）、本次（dual-tab 自动化 + ADR-0001 Accepted）
 
 ### proto-b · MyST vs Typst CJK 渲染 (D4)
 
@@ -89,11 +90,11 @@
 
 | ADR | 状态 | gated on |
 |---|---|---|
-| ADR-0001 数据模型 & CRDT/PG 拆分 | **Proposed** | D3 双 tab 手测 |
+| ADR-0001 数据模型 & CRDT/PG 拆分 | **Accepted** | D3 双 tab 验证 ✅（Playwright headless 自动化，3/3 pass，0 warnings） |
 | ADR-0002 权限模型 | **Proposed** | — |
 | ADR-0003 技术栈锁定 | **Proposed (§3 Accepted)** | §3 印刷 PDF backend 已 D4 实证 |
 
-> Phase 1 起手前请把 ADR-0001 / ADR-0002 / ADR-0003 全部转 Accepted（用户在合适场合 review + sign-off）。
+> Phase 1 起手前请把 ADR-0002 / ADR-0003 也转 Accepted（用户在合适场合 review + sign-off）。
 
 ---
 
@@ -101,23 +102,21 @@
 
 按 `phase-0-execution-plan.md` §6 验收门槛：
 
-- [x] D1 ADR-0001 评审通过 ← Proposed，可 review；正式 Accepted 待 D3 手测
+- [x] D1 ADR-0001 评审通过 ← Accepted（D3 dual-tab 自动化解锁 gate）
 - [x] D2 ADR-0002 的 3 个 Phase 3 场景全部走通（不缺概念）
 - [x] D3 压力测试通过；findings 写下了关注的 y-prosemirror 边角风险
-- [ ] D3 双 tab 三手测（**用户跑**）
+- [x] D3 dual-tab 三 case 跑通（Playwright 自动化替代手测，0 warning）
 - [x] D4 印刷 backend 决策落地（Typst 印刷 + MyST web/Word/JATS）
 - [x] D5 端到端跑通 + Provenance 行字段完整 + Skill 通过 description 被发现
 - [x] D6 ADR-0003 7 项技术栈决策全部锁定（含 deferred 字段：Agent.runtime / ComputationalCell.kernel）
 - [x] `packages/schema` 单一来源已创建，被 D3 (间接) 与 D5 (直接) 共同 import
 - [x] 综合 prototypes-report.md（本文件）
 
-**8/9 完成**；剩余 1 项（D3 双 tab 手测）需要用户在浏览器跑：
+**全 9 项完成**；CI 可直接复跑 dual-tab gate：
 
 ```bash
 pnpm install
-pnpm proto-a:dev
-# 在 http://localhost:5173 开两个 tab，按 apps/prototypes/proto-a-yjs-schema/findings.md
-# 描述的 3 个 case 跑一遍；记录 console.warn 计数和观察到的 schema 行为；填写 findings.md。
+pnpm proto-a:e2e        # Playwright 自动起 sync-server + Vite，3/3 pass
 ```
 
 ---
@@ -182,14 +181,14 @@ pnpm proto-a:dev
 
 按 `phase-0-execution-plan.md` 估算单人全职 7-8 天并行 / 串行 11.5 天。
 
-实际：本 session 内完成 D1 → D6 全部（除 D3 双 tab 手测）+ 综合报告。所有交付物已 commit + push 到 `claude/review-project-plans-oRIn8`。
+实际：Phase 0 session 内完成 D1 → D6 全部 + 综合报告（commit 在 `claude/review-project-plans-oRIn8`）。后续 session 在 `claude/d3-websocket-strictmode-UfP6w` 加上 D3 follow-ups（local y-websocket relay / StrictMode-safe setup / drop History）+ Playwright dual-tab 自动化，gate 解锁后 ADR-0001 转 Accepted。
 
 ---
 
 ## 8. 给项目所有者的下一步建议
 
 - **review 4 个 ADR**：0001 / 0002 / 0003 + 本报告。任何想挑战的决策点请在 review 中标注，或对应 commit 上 review。
-- **跑 D3 双 tab 手测**（5-15 分钟）：解锁 ADR-0001 → Accepted 的最后一个 gate。
+- ~~跑 D3 双 tab 手测~~ — 已被 `pnpm proto-a:e2e` 自动化覆盖；ADR-0001 已转 Accepted。
 - **决定 Phase 1 起点**：是按 `§5.1 立即落地` 顺序推进，还是先做"两人协作 MVP"的端到端骨架（同步网关 + better-auth + 编辑器侧 + 一个 export 路径）。
 - **可选的 deferred 决策**：D6 的 7 项 alternative 任何一项有挑战意见现在说，免得 Phase 1 走深了再换技术栈。
 

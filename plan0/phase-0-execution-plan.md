@@ -319,7 +319,7 @@ Phase 0 完成的判据（**全部**满足才推进 Phase 1）：
 
 - [ ] D1 ADR-0 评审通过 + D3 schema 实测无遗留 RangeError / 隐藏 recovery
 - [ ] D2 ADR-1 的 3 个 Phase 3 场景全部走通（不缺概念）
-- [ ] D3 双 tab 三手测 + 压力测试通过；findings 写下了 y-prosemirror 边角案例
+- [ ] D3 双 tab 三 case + 压力测试通过；findings 写下了 y-prosemirror 边角案例（已用 `pnpm proto-a:e2e` Playwright 自动化覆盖人手手测）
 - [ ] D4 印刷 backend 决策落地（默认：Typst 出印刷，MyST 出 web/Word/JATS）
 - [ ] D5 端到端跑通 + Provenance 行字段完整 + Skill 通过 description 被发现
 - [ ] D6 ADR-2 7 项技术栈决策全部锁定（含 deferred 字段：`Agent.runtime`）

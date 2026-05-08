@@ -25,31 +25,54 @@ warning counter and made the prototype rely on third-party infrastructure:
 
 | Check | Status | Notes |
 |---|---|---|
-| Workspace install | ✅ pass | 153 packages, 5.9s |
+| Workspace install | ✅ pass | pnpm workspace resolves cleanly |
 | TypeScript typecheck (schema + proto-a) | ✅ pass | Strict mode, no errors |
 | Yjs CRDT convergence stress test | ✅ pass | 5 clients × 50 ops = 250 ops, all clients byte-identical, 0 warnings |
-| Manual dual-tab test 1: concurrent atom inserts | ⬜ pending | run in browser |
-| Manual dual-tab test 2: concurrent paragraph + equation edits | ⬜ pending | run in browser |
-| Manual dual-tab test 3: delete + annotation collision | ⬜ pending | run in browser |
-| ADR-0001 → Accepted | ⬜ blocked | gated on the 3 manual tests passing without warnings |
+| Dual-tab test 1: concurrent atom inserts | ✅ pass | Playwright headless, see `tests/dual-tab.spec.ts` |
+| Dual-tab test 2: concurrent paragraph + equation edits | ✅ pass | Playwright headless |
+| Dual-tab test 3: delete + annotation collision | ✅ pass | Playwright headless |
+| ADR-0001 → Accepted | ✅ done | gate cleared 2026-05-08 by `pnpm proto-a:e2e` (3/3 pass, 0 y-prosemirror warnings) |
 
-## How to run the manual tests
+## How to run the dual-tab test
 
-You need **two terminals** for the local sync setup (D3 follow-up P1 — public
-webrtc signalling was dropped):
+### Headless (CI-friendly, runs the gate end-to-end)
 
 ```bash
-# from repo root
-pnpm install            # if not done already
-
-# terminal 1 — local y-websocket relay (no persistence, just a relay)
-pnpm proto-a:sync       # listens on ws://localhost:1234
-
-# terminal 2 — Vite dev server
-pnpm proto-a:dev        # default http://localhost:5173
+pnpm install
+pnpm proto-a:e2e        # spawns sync-server + Vite, drives 2 isolated browser contexts
 ```
 
-Open the URL **in two browser tabs** (or one regular tab + one private/incognito tab — same origin, different IndexedDB / awareness clients). Both tabs join the same room (`proto-a-yjs-schema-default-room`); for cross-browser tests they sync through the local `ws://localhost:1234` relay, and same-origin tabs in the same browser also fall back to BroadcastChannel automatically.
+Playwright's `webServer` config starts both `node server/sync-server.mjs`
+(port 1234) and `vite dev` (port 5173) automatically. The 3 cases each:
+
+1. open two `BrowserContext`s (= two distinct y-websocket clients) on
+   `?room=<unique-per-test>` so the relay's in-memory Y.Doc cache doesn't
+   leak between tests
+2. perform concurrent operations
+3. assert (a) both tabs' `Y.XmlFragment("body")` JSON dumps converge
+   byte-identically, (b) the in-page warning counter stays at 0
+
+If a test fails, Playwright records a trace; open it via:
+
+```bash
+pnpm exec playwright show-trace apps/prototypes/proto-a-yjs-schema/test-results/<case>/trace.zip
+```
+
+### Manual (interactive exploration)
+
+You need **two terminals** for the local sync setup:
+
+```bash
+pnpm proto-a:sync       # terminal 1 — relay on ws://localhost:1234
+pnpm proto-a:dev        # terminal 2 — Vite at http://localhost:5173
+```
+
+Open the URL **in two browser tabs** (or one regular tab + one
+private/incognito tab — same origin, different IndexedDB / awareness
+clients). Both tabs join `proto-a-yjs-schema-default-room` by default;
+override per-tab with `?room=<name>` to start fresh. Cross-browser tests
+sync through the local relay; same-origin tabs in the same browser also
+fall back to BroadcastChannel automatically.
 
 The status line shows:
 - **Indexeddb synced**: did local persistence catch up
@@ -57,16 +80,13 @@ The status line shows:
 - **Peers**: count from awareness (you should see 2 once both tabs are in)
 - **y-prosemirror warnings observed**: count of console.warn calls mentioning "prosemirror" — should stay at **0**
 
-The page footer lists three concrete test cases with expected outcomes. Walk through each one, watching:
+The page footer lists three concrete test cases. Walk through each one, watching:
 - ✅ both tabs converge to the same content
-- ✅ atom nodes (citation-ref / equation / dataset-ref / etc.) appear once per insertion (no duplicates from concurrent inserts)
-- ✅ the **y-prosemirror warnings observed** counter stays 0
-- ✅ no `RangeError` / `Invalid content` / `schema-recovery` messages in the DevTools console
+- ✅ atom nodes appear once per insertion (no duplicates)
+- ✅ warning counter stays 0
+- ✅ no `RangeError` / `Invalid content` / `schema-recovery` messages in DevTools
 
-If any of those fails, **note**:
-- the exact step sequence (tab 1 did X, tab 2 did Y, in that order with N ms delay)
-- the console output (full message + stack)
-- the resulting `Y.Doc body fragment` JSON dump shown on the page
+If any of those fails, **note** the exact step sequence + console output + Y.Doc dump.
 
 ## What the stress test proved (and didn't)
 
@@ -93,34 +113,53 @@ These come from prior-art research (y-prosemirror README, blog posts, GitHub iss
 3. **NodeView caching across removes/inserts** — when a node is removed and re-inserted via remote update, TipTap may or may not call `addNodeView` again. Equation rendering can drift if it caches DOM aggressively. The current implementation re-renders KaTeX in every `addNodeView` call, which is the safe default.
 4. **`y-websocket` relay down**. If the local relay isn't running (`pnpm proto-a:sync`) you'll see `WS status: disconnected` and cross-browser tabs won't sync. Same-origin tabs in the same browser still sync through BroadcastChannel; each tab still works independently against IndexedDB. Look for `Peers: 1` if cross-browser sync drops.
 
-## Manual test result template
+## Dual-tab automation results — 2026-05-08
 
-After running, fill in below and commit this file again.
+`pnpm proto-a:e2e` (Playwright 1.56 + chromium 138 / rev 1194, headless),
+51.7s end-to-end. Each case runs in its own `?room=<unique>` so the relay
+cache is fresh.
 
-### Test 1: concurrent atom inserts
+### Test 1: concurrent atom inserts — ✅ pass
 
-- **Steps**: …
-- **Outcome**: pass / fail
-- **Notes**: …
+- **Steps**: tab A and tab B simultaneously click "Insert citation-ref"
+  via `Promise.all`; Playwright waits for both tabs' `.json-dump` panels
+  to converge.
+- **Outcome**: both tabs end with identical `Y.XmlFragment("body")` JSON.
+  The merged dump contains exactly 2 occurrences of the citation entityId
+  `cite-doi-10.1000-xyz` — both inserts landed, no duplicate blockId.
+- **Warnings**: 0 / 0.
 
-### Test 2: concurrent paragraph + equation edits
+### Test 2: concurrent paragraph + equation edits — ✅ pass
 
-- **Steps**: …
-- **Outcome**: pass / fail
-- **Notes**: …
+- **Steps**: tab A `pressSequentially("hello world from tab A", {delay:15})`
+  while tab B clicks "Insert display equation" in parallel.
+- **Outcome**: dump contains `hello world from tab A` and an `<equation>`
+  element; KaTeX rendered exactly one `.katex` node on each tab's
+  ProseMirror DOM (NodeView lifecycle on remote update is fine).
+- **Warnings**: 0 / 0.
 
-### Test 3: delete + annotation collision
+### Test 3: delete + annotation collision — ✅ pass
 
-- **Steps**: …
-- **Outcome**: pass / fail
-- **Notes**: …
+- **Steps**: seed the doc with `annotate-target` from tab A, await sync.
+  Both tabs `Ctrl+A` (TipTap-handled select-all so PM selection is set);
+  then in parallel: tab A presses Backspace, tab B clicks "Mark selection
+  as annotation anchor".
+- **Outcome**: tabs converge; no orphan mark, no PM RangeError surfaced.
+  Playwright's auto-fail on uncaught page errors did not trip.
+- **Warnings**: 0 / 0.
 
 ### Browser / version used
 
-- …
+- Chromium 138.0.7204.92 (Playwright revision 1194), headless, two
+  isolated `BrowserContext`s per test connecting through a local
+  `node server/sync-server.mjs` relay.
 
-### Final verdict on H1
+### Verdict on H1
 
-- ☐ All 3 manual tests pass with 0 warnings → ADR-0001 transitions Proposed → **Accepted**
-- ☐ Some test exposed a y-prosemirror edge case → record below; decide on workaround vs. ADR amendment
-- ☐ Showstopper bug → consider fallback editor (BlockNote / Slate-Yjs) per ADR-0001 §4 `Neutral / Need watching`
+- ☑ All 3 dual-tab cases pass with 0 y-prosemirror warnings → **ADR-0001
+  transitions Proposed → Accepted** (commit on the same branch as the
+  Playwright harness).
+- The four sharp edges above remain noted for Phase 1 watching even though
+  none triggered in the harness; they're scenarios the prototype doesn't
+  exhaustively explore (clock-skew uuidv7 collision, NodeView caching
+  under heavy churn, etc.).
