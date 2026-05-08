@@ -23,6 +23,7 @@ import {
   DATABASE_URL,
   SHOULD_SKIP,
   agentPrincipalId,
+  matchPgError,
   newId,
   setupFreshSchema,
   userPrincipalId,
@@ -86,7 +87,7 @@ if (SHOULD_SKIP) {
           displayName: 'Bad',
           userId: 'u-bogus',
         }),
-        /principal_id_prefix_matches_kind/,
+        matchPgError("principal_id_prefix_matches_kind"),
       );
     });
 
@@ -98,7 +99,7 @@ if (SHOULD_SKIP) {
           displayName: 'Bad',
           // missing userId
         }),
-        /principal_kind_link_consistency/,
+        matchPgError("principal_kind_link_consistency"),
       );
     });
 
@@ -190,7 +191,7 @@ if (SHOULD_SKIP) {
           actorKind: 'agent',
           // missing agentContext
         }),
-        /provenance_agent_requires_context/,
+        matchPgError("provenance_agent_requires_context"),
       );
     });
 
@@ -317,7 +318,7 @@ if (SHOULD_SKIP) {
           pmStepsBinary: new Uint8Array(),
           yjsUpdateBinary: new Uint8Array(),
         }),
-        /provenance_id/,
+        matchPgError("provenance_id"),
       );
     });
 
@@ -343,7 +344,7 @@ if (SHOULD_SKIP) {
           verb: 'document.create',
           grantedBy: servicePrincipalId,
         }),
-        /capability_grant_resource_id_consistency/,
+        matchPgError("capability_grant_resource_id_consistency"),
       );
 
       // invalid: non-global without resource_id
@@ -355,7 +356,7 @@ if (SHOULD_SKIP) {
           verb: 'document.read',
           grantedBy: servicePrincipalId,
         }),
-        /capability_grant_resource_id_consistency/,
+        matchPgError("capability_grant_resource_id_consistency"),
       );
     });
 
@@ -455,7 +456,7 @@ if (SHOULD_SKIP) {
           roleId: 'paper-author',
           capabilityVerbs: ['document.read'],
         }),
-        /document_acl_pkey/i,
+        matchPgError("document_acl_pkey"),
       );
     });
 
@@ -478,7 +479,7 @@ if (SHOULD_SKIP) {
           hash: 'sha256:other',
           body: 'other',
         }),
-        /prompt_template_skill_version_uniq/,
+        matchPgError("prompt_template_skill_version_uniq"),
       );
     });
 
@@ -539,7 +540,7 @@ if (SHOULD_SKIP) {
           INSERT INTO principal (id, kind, display_name, user_id)
           VALUES ('user:bogus', 'admin', 'Bad', 'u-bogus')
         `),
-        /invalid input value for enum/i,
+        matchPgError("invalid input value for enum"),
       );
     });
 

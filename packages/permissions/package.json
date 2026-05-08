@@ -18,7 +18,7 @@
   "dependencies": {
     "@collaborationtool/drizzle": "workspace:*",
     "@collaborationtool/schema": "workspace:*",
-    "drizzle-orm": "^0.36.4",
+    "drizzle-orm": "^0.45.2",
     "jose": "^5.9.6"
   },
   "devDependencies": {

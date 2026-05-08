@@ -14,7 +14,7 @@ import { and, eq } from 'drizzle-orm';
 
 import {
   schema,
-  type Database,
+  type DbExecutor,
 } from '@collaborationtool/drizzle';
 import type { DocumentId, PrincipalId } from '@collaborationtool/schema';
 
@@ -30,7 +30,7 @@ export interface LoadAclOptions {
 }
 
 export async function loadPrincipalContext(
-  db: Database,
+  db: DbExecutor,
   principalId: PrincipalId,
   documentId: DocumentId,
   options: LoadAclOptions = {},
@@ -78,7 +78,7 @@ export async function loadPrincipalContext(
  * 1.5 reconcile job will rebuild the entire table from `capability_grant`.
  */
 export async function materialiseRoleBundle(
-  db: Database,
+  db: DbExecutor,
   args: {
     documentId: DocumentId;
     principalId: PrincipalId;

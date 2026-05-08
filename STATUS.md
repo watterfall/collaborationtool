@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-08（claude/analyze-project-status-jZyUu，D8 完成）
+最后更新：2026-05-08（claude/analyze-project-status-jZyUu，D9 完成）
 
 ---
 
@@ -11,9 +11,9 @@
 
 **Phase 0：✅ 完成**（6/6 交付物，3 个原型实证，4 个 ADR 落地）
 
-**Phase 1：⏳ 进行中**（D7 ✅ + D8 ✅）
+**Phase 1：⏳ 进行中**（D7 ✅ + D8 ✅ + D9 ✅）
 
-下一动作：D9（`apps/web` Next.js 15 skeleton + better-auth + Principal bridge）。
+下一动作：D10（`packages/editor-core` 从 proto-a 提炼 + Y.Doc snapshot worker）。
 
 ---
 
@@ -52,9 +52,12 @@
 |---|---|---|---|---|
 | D7 | Postgres + Drizzle schema + migrations | ✅ | W1 | ADR-0001 |
 | D8 | `packages/permissions` + `apps/sync-gateway` shim | ✅ | W1-W2 | D7 |
-| D9 | `apps/web` Next.js 15 + better-auth + Principal bridge | 🔜 next | W2 | D7-D8 |
+| D9 | `apps/web` Next.js 15 + better-auth + Principal bridge | ✅ | W2 | D7-D8 |
+| D10 | `packages/editor-core`（从 proto-a 提炼）+ snapshot worker | 🔜 next | W3 | proto-a / D7 |
 | D10 | `packages/editor-core`（从 proto-a 提炼）+ snapshot worker | ⏸ | W3 | proto-a / D7 |
 | D11 | y-sweet 自托管 + S3-compat 持久化 | ⏸ | W2-W3 | D8 / D10 |
+
+(状态例：⏸ pending / 🔜 next / ✅ done / 🚧 wip)
 | D12 | `packages/render-{myst, typst, typography}` + templates 镜像 | ⏸ | W3-W4 | D10（与 D13 并行） |
 | D13 | `mcp-servers/` 真实 + `packages/ai-runtime` + 2 个 agent | ⏸ | W3-W4 | D8 / D10（与 D12 并行） |
 | D14 | Approval flow UI + commit boundary Provenance 联通 | ⏸ | W4-W5 | D10 / D13 |
@@ -74,11 +77,12 @@ collaborationtool/
 │   ├── proto-b-cjk-render/    # MyST vs Typst 对比
 │   └── proto-c-mcp-skill/     # MCP + Skill + Provenance 闭环
 ├── packages/schema/           # 8 实体 single source of truth（11 个 .ts，~330 LOC）
-├── packages/permissions/      # ⭐ D8 — 36 capability vocab + 5 role bundles + JWT + ACL loader
+├── packages/permissions/      # ⭐ D8/D9 — 36 capability vocab + 5 role bundles + JWT + ACL loader + Principal bridge
 ├── apps/sync-gateway/         # ⭐ D8 — WebSocket capability gate（连接级，y-sweet 之前）
-├── infra/                     # ⭐ D7
+├── apps/web/                  # ⭐ D9 — Next.js 15 + better-auth + organization plugin
+├── infra/                     # ⭐ D7/D9
 │   ├── docker/                # docker-compose.yml + postgres-init/
-│   └── drizzle/               # 13 表 schema + migrations + seed + 18 round-trip tests
+│   └── drizzle/               # 13 + 7 better-auth 表 schema + 2 migrations + 18 round-trip tests
 ├── mcp-servers/crossref-mock/ # mock MCP server (CI / 离线 demo 保留)
 ├── skills/citation-lookup/    # Anthropic-style SKILL.md
 └── plan0/
@@ -122,15 +126,21 @@ pnpm db:typecheck           # tsc --noEmit
 pnpm db:down                # 停 Postgres
 
 # Phase 1 / D8：permissions + sync-gateway
-pnpm perms:test             # 49 个 permissions 测试（含 PG 集成）
+pnpm perms:test             # 60 个 permissions 测试（含 PG 集成 + bridge）
 pnpm perms:typecheck
 pnpm gateway:dev            # tsx watch（需 SYNC_TOKEN_SECRET）
 pnpm gateway:start          # 生产模式
 pnpm gateway:test           # 30 个 E2E + unit + env 测试
 pnpm gateway:typecheck
 
+# Phase 1 / D9：apps/web
+pnpm web:dev                # next dev（需 BETTER_AUTH_SECRET + SYNC_TOKEN_SECRET）
+pnpm web:build              # next build
+pnpm web:start              # next start
+pnpm web:typecheck
+
 # 全 workspace typecheck
-pnpm typecheck              # 7 packages 全 PASS
+pnpm typecheck              # 8 packages 全 PASS
 ```
 
 ---
@@ -190,7 +200,7 @@ pnpm typecheck              # 7 packages 全 PASS
 | `main` | ✅ 主线（Phase 0 已 merge） | — |
 | `claude/review-project-plans-oRIn8` | merged via PR #1 | Phase 0 D1–D6 + 综合报告 |
 | `claude/d3-websocket-strictmode-UfP6w` | merged via PR #2/#3 | proto-a D3 follow-ups + Playwright 自动化 |
-| `claude/analyze-project-status-jZyUu` | 当前 | Phase 1 plan + STATUS + D7 + D8 |
+| `claude/analyze-project-status-jZyUu` | 当前 | Phase 1 plan + STATUS + D7 + D8 + D9 |
 
 ---
 

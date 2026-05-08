@@ -37,6 +37,15 @@ export async function setupFreshSchema(): Promise<void> {
       DROP TABLE IF EXISTS "revision" CASCADE;
       DROP TABLE IF EXISTS "agent" CASCADE;
       DROP TABLE IF EXISTS "principal" CASCADE;
+      -- better-auth (migration 0002)
+      DROP TABLE IF EXISTS "invitation" CASCADE;
+      DROP TABLE IF EXISTS "member" CASCADE;
+      DROP TABLE IF EXISTS "organization" CASCADE;
+      DROP TABLE IF EXISTS "verification" CASCADE;
+      DROP TABLE IF EXISTS "account" CASCADE;
+      DROP TABLE IF EXISTS "session" CASCADE;
+      DROP TABLE IF EXISTS "user" CASCADE;
+      -- enums
       DROP TYPE IF EXISTS "principal_kind" CASCADE;
       DROP TYPE IF EXISTS "agent_kind" CASCADE;
       DROP TYPE IF EXISTS "agent_runtime" CASCADE;
@@ -56,6 +65,24 @@ export async function setupFreshSchema(): Promise<void> {
 
 export function newId(): string {
   return uuidv7();
+}
+
+/**
+ * Drizzle 0.45+ wraps PostgresError as `Error: Failed query: ...` and
+ * stashes the original (with constraint names + sqlState) in `.cause`.
+ * Use this matcher in assert.rejects so we hit the constraint name even
+ * after the wrapping.
+ */
+export function matchPgError(needle: string): (err: unknown) => boolean {
+  return (err: unknown) => {
+    const msgs: string[] = [];
+    let cur: unknown = err;
+    while (cur instanceof Error) {
+      msgs.push(cur.message);
+      cur = (cur as { cause?: unknown }).cause;
+    }
+    return msgs.some((m) => m.includes(needle));
+  };
 }
 
 export function userPrincipalId(): string {

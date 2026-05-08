@@ -29,14 +29,14 @@
   },
   "dependencies": {
     "@collaborationtool/schema": "workspace:*",
-    "drizzle-orm": "^0.36.4",
+    "drizzle-orm": "^0.45.2",
     "postgres": "^3.4.5",
     "uuid": "^11.0.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "@types/uuid": "^10.0.0",
-    "drizzle-kit": "^0.28.1",
+    "drizzle-kit": "^0.30.6",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }

@@ -14,3 +14,4 @@ export * from './connection-mode';
 export * from './checker';
 export * from './jwt';
 export * from './acl-loader';
+export * from './principal-bridge';
