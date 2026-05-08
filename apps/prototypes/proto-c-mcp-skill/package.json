@@ -1,0 +1,26 @@
+{
+  "name": "@collaborationtool/proto-c-mcp-skill",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "demo": "tsx src/run.ts",
+    "demo:dump": "tsx src/run.ts --dump-provenance"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.1",
+    "@collaborationtool/mcp-server-crossref-mock": "workspace:*",
+    "@collaborationtool/schema": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "better-sqlite3": "^11.7.0",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.2",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

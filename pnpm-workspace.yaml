@@ -2,3 +2,4 @@ packages:
   - 'packages/*'
   - 'apps/*'
   - 'apps/prototypes/*'
+  - 'mcp-servers/*'

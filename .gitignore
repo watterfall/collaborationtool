@@ -46,3 +46,7 @@ build/
 apps/prototypes/proto-b-cjk-render/typst-bin
 apps/prototypes/proto-b-cjk-render/output/
 apps/prototypes/proto-b-cjk-render/myst-source/_build/
+
+### Prototype-local SQLite databases ###
+apps/prototypes/proto-c-mcp-skill/*.sqlite
+apps/prototypes/proto-c-mcp-skill/*.sqlite-*
