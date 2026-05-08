@@ -14,7 +14,14 @@
     "proto-a:sync": "pnpm --filter @collaborationtool/proto-a-yjs-schema sync-server",
     "proto-a:stress": "pnpm --filter @collaborationtool/proto-a-yjs-schema stress",
     "proto-a:e2e": "pnpm --filter @collaborationtool/proto-a-yjs-schema test:e2e",
-    "proto-a:typecheck": "pnpm --filter @collaborationtool/proto-a-yjs-schema typecheck"
+    "proto-a:typecheck": "pnpm --filter @collaborationtool/proto-a-yjs-schema typecheck",
+    "db:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "db:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "db:logs": "docker compose -f infra/docker/docker-compose.yml logs -f postgres",
+    "db:migrate": "pnpm --filter @collaborationtool/drizzle migrate",
+    "db:seed": "pnpm --filter @collaborationtool/drizzle seed",
+    "db:test": "pnpm --filter @collaborationtool/drizzle test",
+    "db:typecheck": "pnpm --filter @collaborationtool/drizzle typecheck"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

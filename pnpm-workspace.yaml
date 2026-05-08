@@ -3,3 +3,4 @@ packages:
   - 'apps/*'
   - 'apps/prototypes/*'
   - 'mcp-servers/*'
+  - 'infra/drizzle'

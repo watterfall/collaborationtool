@@ -54,3 +54,7 @@ apps/prototypes/proto-c-mcp-skill/*.sqlite-*
 ### Playwright run artefacts ###
 apps/prototypes/proto-a-yjs-schema/test-results/
 apps/prototypes/proto-a-yjs-schema/playwright-report/
+
+### Drizzle / docker volumes ###
+infra/drizzle/migrations/meta/
+infra/docker/.data/

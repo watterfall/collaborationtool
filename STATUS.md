@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-08（claude/analyze-project-status-jZyUu）
+最后更新：2026-05-08（claude/analyze-project-status-jZyUu，D7 完成）
 
 ---
 
@@ -11,9 +11,9 @@
 
 **Phase 0：✅ 完成**（6/6 交付物，3 个原型实证，4 个 ADR 落地）
 
-**Phase 1：⏳ 起手前**（等用户 review `phase-1-execution-plan.md` §九 的 8 个开放问题）
+**Phase 1：⏳ 进行中**（D7 ✅ 完成）
 
-下一动作：批准 Phase 1 plan → 起 D7（Postgres + Drizzle migrations）。
+下一动作：D8（`packages/permissions` + `apps/sync-gateway` shim）。
 
 ---
 
@@ -50,8 +50,8 @@
 
 | # | 名称 | 状态 | 周 | 依赖 |
 |---|---|---|---|---|
-| D7 | Postgres + Drizzle schema + migrations | ⏸ | W1 | ADR-0001 |
-| D8 | `packages/permissions` + `apps/sync-gateway` shim | ⏸ | W1-W2 | D7 |
+| D7 | Postgres + Drizzle schema + migrations | ✅ | W1 | ADR-0001 |
+| D8 | `packages/permissions` + `apps/sync-gateway` shim | 🔜 next | W1-W2 | D7 |
 | D9 | `apps/web` Next.js 15 + better-auth + Principal bridge | ⏸ | W2 | D7-D8 |
 | D10 | `packages/editor-core`（从 proto-a 提炼）+ snapshot worker | ⏸ | W3 | proto-a / D7 |
 | D11 | y-sweet 自托管 + S3-compat 持久化 | ⏸ | W2-W3 | D8 / D10 |
@@ -74,12 +74,15 @@ collaborationtool/
 │   ├── proto-b-cjk-render/    # MyST vs Typst 对比
 │   └── proto-c-mcp-skill/     # MCP + Skill + Provenance 闭环
 ├── packages/schema/           # 8 实体 single source of truth（11 个 .ts，~330 LOC）
+├── infra/                     # ⭐ D7
+│   ├── docker/                # docker-compose.yml + postgres-init/
+│   └── drizzle/               # 13 表 schema + migrations + seed + 18 round-trip tests
 ├── mcp-servers/crossref-mock/ # mock MCP server (CI / 离线 demo 保留)
 ├── skills/citation-lookup/    # Anthropic-style SKILL.md
 └── plan0/
     ├── adr/                   # 4 个 ADR
     ├── phase-0-execution-plan.md
-    ├── phase-1-execution-plan.md  # ⭐ 本次添加
+    ├── phase-1-execution-plan.md
     ├── prototypes-report.md
     ├── paper-platform-system-prompt.md
     └── paper-platform-landscape.md
@@ -87,29 +90,37 @@ collaborationtool/
 
 ---
 
-## 6. 关键命令（Phase 0 已工作）
+## 6. 关键命令
 
 ```bash
 # 一次性安装
 pnpm install
 
-# proto-a：双 tab 自动化（CI gate）
+# Phase 0 / proto-a：双 tab 自动化（CI gate）
 pnpm proto-a:e2e            # Playwright headless，3/3 PASS / 0 warning，~52s
 
-# proto-a：本地 dev（双 tab 手动）
+# Phase 0 / proto-a：本地 dev（双 tab 手动）
 pnpm proto-a:sync           # terminal 1：y-websocket relay
 pnpm proto-a:dev            # terminal 2：Vite
 
-# proto-a：CRDT 收敛压力测试
+# Phase 0 / proto-a：CRDT 收敛压力测试
 pnpm proto-a:stress         # 5 client × 50 ops，250 ops 全收敛 / 0 warnings
 
-# proto-c：MCP + Skill + Provenance 端到端 demo
+# Phase 0 / proto-c：MCP + Skill + Provenance 端到端 demo
 pnpm --filter @collaborationtool/proto-c-mcp-skill demo            # mock 模式
 pnpm --filter @collaborationtool/proto-c-mcp-skill demo:dump       # 含完整 Provenance JSON
 ANTHROPIC_API_KEY=sk-... pnpm --filter @collaborationtool/proto-c-mcp-skill demo:dump  # 真 API
 
+# Phase 1 / D7：Postgres + Drizzle
+pnpm db:up                  # docker compose up -d Postgres 16
+pnpm db:migrate             # 应用 migrations（idempotent）
+pnpm db:seed                # 写入 seed fixtures（service principal / demo user / citation agent）
+pnpm db:test                # 18 个 round-trip 测试（需 DATABASE_URL）
+pnpm db:typecheck           # tsc --noEmit
+pnpm db:down                # 停 Postgres
+
 # 全 workspace typecheck
-pnpm typecheck
+pnpm typecheck              # 5 packages 全 PASS
 ```
 
 ---
@@ -169,7 +180,7 @@ pnpm typecheck
 | `main` | ✅ 主线（Phase 0 已 merge） | — |
 | `claude/review-project-plans-oRIn8` | merged via PR #1 | Phase 0 D1–D6 + 综合报告 |
 | `claude/d3-websocket-strictmode-UfP6w` | merged via PR #2/#3 | proto-a D3 follow-ups + Playwright 自动化 |
-| `claude/analyze-project-status-jZyUu` | 当前；本次更新 | Phase 1 plan + STATUS dashboard |
+| `claude/analyze-project-status-jZyUu` | 当前 | Phase 1 plan + STATUS dashboard + D7 |
 
 ---
 
