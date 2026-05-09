@@ -46,12 +46,9 @@ D15 USER_GUIDE.md 列的 7 个 known limitation，全部归集到 Phase 1.5。**
 
 ### 3.2 molab / Marimo iframe 的契约
 
-- ADR-0001 §2.3.5 已记录 ComputationalCell 字段（kernel / sourceCode / inputDatasetIds /
-  outputArtifactRefs / executionEnv），Phase 1 仅 schema 占位
-- **未答**：iframe ↔ 主页面的 postMessage 协议（cell 完成 → emit citation / figure 到 PM tree）
-- **未答**：cell 输出的 artifact（PNG / Plot / DataFrame）以什么形式回到 PM 树？
-  新 PM node type `computational-output` 还是 figure with `attrs.sourceCellId`？
-  **必须一个 ADR**（建议 ADR-0007）
+✅ **ADR-0007 已答**：figure with `attrs.sourceCellId`（不引入新 node type）；
+postMessage 协议 6 个 kind（cell.config / execute → ready / progress / executed / error）；
+5 分钟 JWT + 5 MB artifact 上限。详见 `plan0/adr/0007-computational-cell-embedding.md`。
 
 ### 3.3 语义级 diff 的 UI 模型
 
@@ -98,7 +95,8 @@ D15 USER_GUIDE.md 列的 7 个 known limitation，全部归集到 Phase 1.5。**
 ## 六、Phase 2 kickoff 前的准备清单
 
 - [x] Phase 1.5 7 项全部 close（在 `claude/review-project-status-w2iNI` 分支；待 PR / merge）
-- [ ] ADR-0007 + ADR-0008 起草（gate Phase 2 W2 实施）
+- [x] ADR-0007 起草（computational cell embedding + iframe 协议）— 2026-05-09 Proposed
+- [ ] ADR-0008 起草（long-horizon agent runtime）
 - [ ] 选定 long-horizon agent runtime（temporal / pgboss / inngest / 自写）
 - [ ] 选定 diff 库（prosemirror-changeset 评估）
 - [ ] molab embedding 文档读完 + 联系 Marimo 团队（如 iframe 协议有空白）
