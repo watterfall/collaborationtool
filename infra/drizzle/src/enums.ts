@@ -22,6 +22,8 @@ export const principalKindEnum = pgEnum('principal_kind', [
   'org',
 ]);
 
+// Phase 2 W2 ADR-0008: 'reviewer' / 'researcher' added via 0007 migration
+// (ALTER TYPE ADD VALUE — already in 0001 enum literal here for new dbs).
 export const agentKindEnum = pgEnum('agent_kind', [
   'editor',
   'reviewer',
@@ -31,7 +33,21 @@ export const agentKindEnum = pgEnum('agent_kind', [
   'custom',
 ]);
 
-export const agentRuntimeEnum = pgEnum('agent_runtime', ['server', 'client']);
+// Phase 2 W2 ADR-0008: 'long-horizon' added via 0007 migration.
+export const agentRuntimeEnum = pgEnum('agent_runtime', [
+  'server',
+  'client',
+  'long-horizon',
+]);
+
+// Phase 2 W2 ADR-0008: agent_job lifecycle.
+export const agentJobStatusEnum = pgEnum('agent_job_status', [
+  'queued',
+  'running',
+  'done',
+  'error',
+  'cancelled',
+]);
 
 // ---------- Document ----------
 

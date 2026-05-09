@@ -15,6 +15,7 @@
 
 import { sql } from 'drizzle-orm';
 import {
+  bigserial,
   boolean,
   index,
   integer,
@@ -28,6 +29,7 @@ import {
 
 import {
   actorKindEnum,
+  agentJobStatusEnum,
   agentKindEnum,
   agentRuntimeEnum,
   annotationKindEnum,
@@ -678,6 +680,84 @@ export const claimLink = pgTable(
 );
 
 // ============================================================
+// 19. agent_job — Phase 2 W2 ADR-0008 long-horizon agent runtime.
+//     User-visible mirror of pgboss queue state. Worker writes
+//     status/progress here; UI reads via /api/agent/job/<id>.
+// ============================================================
+
+export const agentJob = pgTable(
+  'agent_job',
+  {
+    id: text('id').primaryKey(),
+    kind: text('kind').notNull(),
+    documentId: text('document_id')
+      .notNull()
+      .references(() => document.id, { onDelete: 'cascade' }),
+    triggeringPrincipalId: text('triggering_principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    agentPrincipalId: text('agent_principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    status: agentJobStatusEnum('status').notNull().default('queued'),
+    progressFraction: text('progress_fraction').notNull().default('0'),
+    progressMessage: text('progress_message'),
+    outputRevisionIds: text('output_revision_ids')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    outputThreadIds: text('output_thread_ids')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    costTokenInput: integer('cost_token_input').notNull().default(0),
+    costTokenOutput: integer('cost_token_output').notNull().default(0),
+    costUsdMilli: integer('cost_usd_milli').notNull().default(0),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+    errorClass: text('error_class'),
+    errorMessage: text('error_message'),
+    inputPayload: jsonb('input_payload'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => ({
+    docStatusIdx: index('agent_job_doc_status_idx').on(t.documentId, t.status),
+    triggererIdx: index('agent_job_triggerer_idx').on(
+      t.triggeringPrincipalId,
+      t.createdAt,
+    ),
+  }),
+);
+
+// ============================================================
+// 20. agent_job_event — Phase 2 W2 ADR-0008 SSE re-connect cursor.
+//     Append-only; worker emits progress/partial/done/error here for
+//     /api/agent/job/<id>/stream?cursor=<eventId> to resume.
+// ============================================================
+
+export const agentJobEvent = pgTable(
+  'agent_job_event',
+  {
+    // PG bigserial; Drizzle exposes it as a number (within JS safe int).
+    // For SSE cursor purposes the client treats it as opaque.
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    jobId: text('job_id')
+      .notNull()
+      .references(() => agentJob.id, { onDelete: 'cascade' }),
+    eventKind: text('event_kind').notNull(),
+    payload: jsonb('payload').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => ({
+    jobIdx: index('agent_job_event_job_idx').on(t.jobId, t.id),
+  }),
+);
+
+// ============================================================
 // Type exports — used by application code for fully-typed queries.
 // `db.select().from(document)` returns inferred row types.
 // ============================================================
@@ -700,3 +780,5 @@ export type DbMcpServer = typeof mcpServer.$inferSelect;
 export type DbClaim = typeof claim.$inferSelect;
 export type DbEvidence = typeof evidence.$inferSelect;
 export type DbClaimLink = typeof claimLink.$inferSelect;
+export type DbAgentJob = typeof agentJob.$inferSelect;
+export type DbAgentJobEvent = typeof agentJobEvent.$inferSelect;
