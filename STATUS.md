@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-09（claude/review-project-goals-TpFuH，**Phase 2 W1+W2 实施落地**：(1) 目标对齐 review，5 条差异化轴诊断，第 5 轴"开放平台"显性化；(2) Phase 2 stub 调整为 7 周，§七 技术雷达分主动 spike + 被动 watch；(3) ADR-0010 + ADR-0006 双 Proposed；(4) **W1 末**：drizzle migration 0005 + `mcp_server` 表 + `registry.json` seed + `packages/ai-runtime/src/plugins/` 骨架（types / manifest / loader）+ `yaml` npm 包；(5) **W2 dogfood 准备**：`AgentPluginModule` 运行时契约 + `loadAgentPlugin` 动态导入 + `plugins/citation-agent/`（第一个 reference plugin：plugin.yaml + agent.ts + prompt.md）+ 等价性测试（hardcode invokeCitationAgent vs plugin path 同 promptTemplateId / 同 toolCalls / 同 revisedFragments）+ pnpm-workspace 加 `plugins/*` glob。19 包全 typecheck PASS / ai-runtime 34 测试 PASS。user 哲学 reaffirmed 2026-05-09：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
+最后更新：2026-05-09（claude/review-project-goals-TpFuH，**Phase 2 W1+W2+W3 实施落地 + dogfood gate PASS**：(1) 目标对齐 review，5 条差异化轴诊断，第 5 轴"开放平台"显性化；(2) Phase 2 stub 调整为 7 周；(3) ADR-0010 + ADR-0006 双 Proposed；(4) **W1 末**：drizzle migration 0005 + `mcp_server` 表 + `registry.json` seed + plugins 骨架；(5) **W2**：`AgentPluginModule` 契约 + `loadAgentPlugin` + `plugins/citation-agent/` + 等价性测试；(6) **W3 末 dogfood gate PASS**（ADR-0010 §7 review log 三项 criteria 全过）：`invokeAgentViaPlugin` host 编排 + apps/web `/api/agent/invoke` citation 切到 plugin 路径 + `agents/citation.ts` 删除（no internal-only API）+ 第三方 plugin tmpdir 加载测试 + plugin path correctness 测试 + agents-with-pg 7 个 citation case 切到 wrapper。19 包全 typecheck PASS / ai-runtime 38 测试 PASS。user 哲学 reaffirmed：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
 
 ---
 
@@ -32,7 +32,7 @@
 | 0007 | Computational cell embedding + iframe 协议 | **Proposed** | 2026-05-09 起草；gated on Phase 2 W4 实施 |
 | 0008 | Long-horizon agent runtime + reviewer/researcher agent | **Proposed** | 2026-05-09 起草；gated on Phase 2 W2-W3 实施 |
 | 0009 | Diff library + revision overlay UI + rebase semantics | **Proposed** | 2026-05-09 起草；spike `apps/prototypes/proto-d-diff-library/` 实证；gated on Phase 2 W2-W3 实施 |
-| 0010 | 扩展系统边界 + Plugin API + Skill 元数据扩展 + Dogfood 路径 | **Proposed** | 2026-05-09 起草（Phase 2 W1 头号 / 平台性核心）；gated on Phase 2 W3 末 dogfood 硬 gate（citation agent 切 plugin API） |
+| 0010 | 扩展系统边界 + Plugin API + Skill 元数据扩展 + Dogfood 路径 | **Proposed**（W3 dogfood gate **PASS** 2026-05-09 / 见 §7 review log；待 Phase 2 W4-W5 inline-editor 跟切 + dispatcher 接入后 promote Accepted） | 2026-05-09 起草（Phase 2 W1 头号 / 平台性核心）；W3 末 dogfood gate 三项 criteria 全过：(a) plugin path 正确性 + (b) 第三方 tmpdir plugin 加载 + (c) hardcode citation.ts 删除（no internal-only API） |
 
 ---
 

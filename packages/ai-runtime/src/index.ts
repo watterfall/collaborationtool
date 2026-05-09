@@ -60,12 +60,9 @@ export type {
   ProposedRevisedFragment,
 } from './types';
 
-export {
-  invokeCitationAgent,
-  type InvokeCitationAgentInput,
-  type InvokeCitationAgentOptions,
-  type InvokeCitationAgentResult,
-} from './agents/citation';
+// Citation agent moved to plugins/citation-agent/ (Phase 2 W3 dogfood
+// gate, ADR-0010 §2.7). Callers use `invokeAgentViaPlugin` (below)
+// with `pluginPath: <repo>/plugins/citation-agent`.
 
 export {
   invokeInlineEditorAgent,
@@ -79,9 +76,13 @@ export {
 // hardcoded paths above; W3 dogfood gate switches citation to the
 // plugin path and removes the hardcoded export.
 //
-// Phase 2 W2 (this commit): adds loadAgentPlugin + AgentPluginModule
-// contract. The first reference impl lives in plugins/citation-agent/.
-// agent-runner.ts dual-path (hardcode | plugin) lands in W3.
+// Phase 2 W2: loadAgentPlugin + AgentPluginModule contract. First
+// reference impl: plugins/citation-agent/.
+//
+// Phase 2 W3 (this commit): invokeAgentViaPlugin host helper +
+// dogfood gate flip — citation agent uniformly goes through plugin
+// path; hardcode agents/citation.ts removed (no internal-only API).
+// inline-editor remains hardcoded; W4-W5 follow-up.
 export {
   loadPlugin,
   loadAgentPlugin,
@@ -102,3 +103,10 @@ export {
   type SkillManifest,
   type UiPanelManifest,
 } from './plugins';
+
+export {
+  invokeAgentViaPlugin,
+  type InvokeAgentViaPluginInput,
+  type InvokeAgentViaPluginOptions,
+  type InvokeAgentViaPluginResult,
+} from './plugin-host';

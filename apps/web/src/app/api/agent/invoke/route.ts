@@ -26,7 +26,8 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 
 import {
-  invokeCitationAgent,
+  crossrefMockTransport,
+  invokeAgentViaPlugin,
   invokeInlineEditorAgent,
 } from '@collaborationtool/ai-runtime';
 import { loadPrincipalContext } from '@collaborationtool/permissions';
@@ -108,6 +109,19 @@ export async function POST(request: Request): Promise<NextResponse> {
   // packages/skills (when we move skills under a package).
   const skillsRoot = path.resolve(process.cwd(), '..', '..', 'skills');
 
+  // Plugin root for the citation agent — Phase 2 W3 dogfood path.
+  // ADR-0006 §2.7 (registry table) currently catalogs MCP servers
+  // only; agent-plugin id → path lookup is W4-W5 ADR-0010 review log.
+  // For Phase 2 W3 the route knows there is exactly one agent plugin
+  // (citation) and can hardcode its location.
+  const citationPluginRoot = path.resolve(
+    process.cwd(),
+    '..',
+    '..',
+    'plugins',
+    'citation-agent',
+  );
+
   const distinctId = anonDistinctId(principalId);
   const startedAt = Date.now();
   const observe = (status: string, extra: Record<string, unknown> = {}) => {
@@ -132,20 +146,36 @@ export async function POST(request: Request): Promise<NextResponse> {
             (x): x is string => typeof x === 'string',
           )
         : [];
-      const crossrefMcp = crossrefMcpFromEnv();
-      const result = await invokeCitationAgent(
+      // Build MCP spec list. Mock fallback is created inline because
+      // Phase 1.5 #6 wired the env-var path; W3 keeps that in place
+      // until ADR-0006 mcp_server registry resolution lands W4.
+      const crossrefSpec = crossrefMcpFromEnv() ?? {
+        id: 'crossref-mock',
+        buildTransport: crossrefMockTransport().buildTransport,
+      };
+      const result = await invokeAgentViaPlugin(
         {
+          pluginPath: citationPluginRoot,
           principalContext: userCtx,
           documentId: body.documentId,
           blockId: body.blockId,
           passage: body.passage,
-          flaggedDoiCandidates: flagged,
+          hints: { flaggedDoiCandidates: flagged },
+          skillId: 'citation-lookup',
           skillsRoot,
+          mcpSpecs: [crossrefSpec],
           anthropic,
         },
-        { db, ...(crossrefMcp ? { crossrefMcp } : {}) },
+        { db, persistToDb: true },
       );
-      observe('ok', { hasRevision: !!result.persisted?.revisionId });
+      observe('ok', {
+        hasRevision: !!result.persisted?.revisionId,
+        pluginId: result.pluginManifestId,
+        pluginVersion: result.pluginManifestVersion,
+        // surfaces ADR-0002 vocab warnings + Phase 3 transport notes
+        // up the analytics pipe (PostHog properties capture).
+        pluginWarnings: result.pluginWarnings.length,
+      });
       return NextResponse.json({
         proposal: result.proposal,
         revisionId: result.persisted?.revisionId,

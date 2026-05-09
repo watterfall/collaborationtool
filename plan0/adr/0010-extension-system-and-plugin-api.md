@@ -349,6 +349,73 @@ User 2026-05-09 明确"平台性非常重要"。Phase 3 才补 = 反模式 §348
 
 ## 7. Review log
 
-（W3 末 dogfood gate 后填；预期内容：(a) gate pass/fail；(b) 哪些
-manifest 字段在实施中调整；(c) skill 按需加载 dispatch 在真实 agent 任务
-里的 token 预算结果；(d) §5 open questions 答案）
+### 2026-05-09 · W3 dogfood gate — **PASS**
+
+实施 commits（claude/review-project-goals-TpFuH）：
+- `fb54170` — W1 末骨架（types / manifest 解析 / loader / 33 tests）
+- `64849b8` — W2 dogfood prep（plugins/citation-agent + AgentPluginModule
+  契约 + loadAgentPlugin + equivalence test）
+- 本 commit — W3 末 gate 翻转：`invokeAgentViaPlugin` host 编排 + apps/web
+  citation 切到 plugin 路径 + agents/citation.ts 删除（no internal-only API）
+
+**Gate criteria 三项**：
+
+1. **同一 E2E 测试通过 plugin 路径**：W2 commit `64849b8` 的
+   `plugin-citation-equivalence.test.ts` 已证明 hardcode 路径与 plugin
+   路径产生**完全相同**的 `proposalRationale` / `revisedFragments` /
+   `uncertainties` / `toolCalls` (含 `argumentsHash`) /
+   `agentContext.promptTemplateId`。W3 删除 hardcode 后该等价性测试由
+   `plugin-citation-correctness.test.ts` 替代（验证 plugin 路径单边正确性
+   + 同一 promptTemplateId 不变量）。`agents-with-pg.test.ts` 的 7 个
+   citation case 全部经 `invokeCitation` wrapper 走 plugin 路径，PG
+   round-trip 不变（require DATABASE_URL 才跑，CI 环境自然 skip）。
+
+2. **第三方 plugin 加载验证**：`plugin-third-party.test.ts` 在 tmpdir
+   构造完整 plugin（manifest + prompt + 自含的 agent.ts，**不依赖
+   workspace 包**），证明：
+   - loader 接受任意路径，不绑定 `<repo>/plugins/`
+   - manifest 含 ADR-0002 词汇外的 capability（`mcp.install`, ADR-0006 §6
+     候选）→ warn 不 reject（plugin 与 capability 词汇可独立演化）
+   - `invokeAgentViaPlugin` 对第三方 plugin 工作完全相同（同 host 编排，
+     同 capability gate，同 MCP 生命周期）
+
+3. **No internal-only API**：`packages/ai-runtime/src/agents/citation.ts`
+   已删除。`plugins/citation-agent/agent.ts` **只 import** `@collaborationtool
+   /ai-runtime` 包公开导出（`runAnthropicAgent` / `runMockAgent` /
+   类型）—— 任何第三方 plugin 都能用这同一组 API。`invokeCitationAgent`
+   导出从 `src/index.ts` 移除；调用方迁移到 `invokeAgentViaPlugin`。
+
+**实施中的设计调整**（vs §2 草案）：
+
+- §2.3 `provides_capabilities`：Phase 2 默认空数组；非 W3 阻塞
+- §2.4 dispatch：W3 仍是 caller-supplied `skillId`；trigger_patterns 召回
+  + LLM 二次判定推 W4-W5（plugin loader 已读 `triggerPatterns`，dispatch
+  消费器还没接）
+- §2.5 用户安装：完全推 Phase 3，本 ADR 不再实施（ADR-0006 §2.5 同步推延）
+- 新增 `invokeAgentViaPlugin` host 编排函数（§2.7 step 3 实施时发现需要）：
+  统一 capability check / skill load / MCP build / persist / cleanup，
+  这样 caller（apps/web 路由 + 集成测试）不重复写编排逻辑
+
+**§5 open questions 答案**（截至 W3 末）：
+
+- **YAML vs TOML**：YAML（与 SKILL.md frontmatter 一致；`yaml` npm 包）
+- **Capability 命名空间**：`document.read.citations` 点号（沿用 ADR-0002）
+- **Plugin id 命名**：`@owner/name` 强制（manifest 解析器 warn 不符合）
+- **trigger_patterns OR vs AND**：默认 OR；可在 manifest 写 `match_all: true`
+- **dual-path 重构节奏**：取消（直接切，不留 dual-path；user 哲学"避免
+  过多兼容性"）
+
+**未答 / 推迟到下一次 review log**：
+
+- skill 按需加载 dispatch 的 token 预算实测（W4-W5 实施 ADR-0010 §2.4 时填）
+- agent-plugin id → path 注册表的 schema（W4 起步时考虑：`plugin` PG 表 vs
+  `plugins/registry.json` 静态 seed，与 ADR-0006 `mcp_server` 表对照决定）
+- plugin install 流程的实战经验（推 Phase 3）
+
+### 后续 W4-W5 跟切
+
+- inline-editor 切到 plugin 路径（plugins/inline-editor-agent/，与 W4
+  reviewer / researcher agent 起手时一并做）
+- `triggerPatterns` 召回 + LLM 二次判定的 dispatcher 实施（ADR-0010 §2.4
+  完整路径）
+- 把 `plugins/registry.json` 加进来（agent-plugin id → path）
