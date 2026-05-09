@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-09（claude/review-project-status-w2iNI，**Phase 1.5 全部 7 项 close** + **ADR-0009 起草** + **proto-d-diff-library spike 跑通**：phase-2-plan-stub §3.3 三件事全部答完，diff 库锁定 prosemirror-changeset）
+最后更新：2026-05-09（claude/review-project-goals-TpFuH，**目标对齐 review** vs `paper-platform-{system-prompt,landscape}.md`：5 条差异化轴诊断 → 第 5 轴"开放平台"明显落后 → Phase 2 stub 调整 +1 周（7 周）：W1 加 ADR-0006/0010 起草、W3 末 dogfood gate（citation agent 切 plugin API）、W6 加 Typst-first 项目导入 + LaTeX 迁移导入 + Auto-Fix Retry Loop、W7 验收 e2e。§3.4 spatial canvas 已答 Phase 3 起步，§3.5/3.6 新增，§七 技术雷达新增（含 user 点名 refactoringhq/tolaria）。)
 
 ---
 
@@ -15,7 +15,7 @@
 
 **Phase 1.5：✅ 完成**（7/7 patch 全部 close；见 `plan0/phase-2-plan-stub.md §二`）。
 
-**Phase 2 kickoff prep：进行中**。phase-2-plan-stub §三 开放问题进度：§3.1 ADR-0008 / §3.2 ADR-0007 / §3.3 ADR-0009（含 `apps/prototypes/proto-d-diff-library/` spike 实证）；§3.4 spatial canvas 仍待用户定 Phase 2 / Phase 3。
+**Phase 2 kickoff prep：进行中**。phase-2-plan-stub §三 开放问题进度：§3.1 ADR-0008 / §3.2 ADR-0007 / §3.3 ADR-0009（含 `apps/prototypes/proto-d-diff-library/` spike 实证）/ §3.4 spatial canvas → **Phase 3 起步**（review-project-goals-TpFuH 答）/ §3.5 扩展系统边界 → **Phase 2 W1 ADR-0010 + W3 dogfood gate**（review-project-goals-TpFuH 答；system-prompt §75 dogfooding 硬约束执行）/ §3.6 Typst-first 项目导入 + LaTeX 迁移导入 + Auto-Fix Retry Loop → **Phase 2 W6**（review-project-goals-TpFuH 答；项目哲学：偏 Typst + 崇尚颠覆性新技术）。Phase 2 节奏调整为 7 周（+16%，守门 30% 内）。
 
 ---
 

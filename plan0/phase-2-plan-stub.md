@@ -59,11 +59,60 @@ resolve 三栏 UI。实证 `apps/prototypes/proto-d-diff-library/` + ADR-0009
 
 ### 3.4 spatial canvas（"研究地图"）
 
-- system-prompt §15 第二个差异化锚点
-- **未答**：是 Phase 2 还是 Phase 3 起步？议程是"先做长 horizon agent → spatial canvas
-  在 Phase 3 解锁"还是"Phase 2 做 minimum spatial canvas 即可"
-- 若 Phase 2 做：以 Document graph（contribution DAG + cross-document citation 图）
-  为后端，前端 Cytoscape.js / d3-force / sigma.js 选一
+✅ **已答（2026-05-09 review-project-goals）**：**Phase 3 起步**。
+理由：(a) Phase 2 W1-W5 已被 long-horizon agent + molab + diff UI 占满；
+(b) spatial canvas 后端依赖 contribution DAG + cross-document citation graph
+两个图，前者要等 Phase 2 多 reviewer rebase 跑通后形态才稳；
+(c) 优先用 W6/W7 补 §3.5 + §3.6 两个差异化必备（扩展系统 + 迁移摩擦）。
+
+### 3.5 扩展系统边界（kernel vs plugin） — 从 review 中新增
+
+✅ **已答（2026-05-09 review-project-goals）**：**Phase 2 W1 起草 ADR-0010
++ W3 末 dogfood gate**。
+
+**Why now**：system-prompt §六 + landscape §六/七 把扩展系统列为 Phase 0/1
+硬约束；Phase 1 D7-D16 没显式做（agents hardcode 在 `packages/ai-runtime/src/agents/`，
+SKILL.md 缺 `trigger_patterns` + `provides_tools`，kernel vs plugin 未划线）。
+反模式 §348 警告"先做 MVP 再加扩展系统"——再推到 Phase 3 等于回头重构
+ai-runtime + mcp-client + skills-loader。
+
+**ADR-0010 必答**：
+- 哪些 packages 是 core（候选：`schema` / `permissions` / `editor-core` /
+  `render-myst|typst|typography` / `ai-runtime` 的 runtime 部分），哪些是
+  built-in plugin（`agents/citation` / `agents/inline-editor` / `mcp-servers/*` / `skills/*`）
+- Plugin manifest 格式（capability 声明 + lifecycle + 加载入口）
+- SKILL.md 元数据补 `trigger_patterns` + `provides_tools`（landscape §七 草图）
+- AI agent 按需加载多 skill 的 dispatch 协议（取代当前"启动时单一加载"）
+- 用户挂自定义 plugin 的安装/卸载/审计流程（registry JSON + Git URL 起手；marketplace 推 Phase 4+）
+
+**W3 末 dogfood gate**：把 `packages/ai-runtime/src/agents/citation.ts` 改造成
+"通过 ADR-0010 plugin API 加载的第一个 reference 实现"。如果 API 不能让
+citation agent 用同样接口跑通——**停下来重新设计 ADR-0010**，不要将就
+（system-prompt §75 硬约束）。
+
+### 3.6 项目导入（Typst-first） + Auto-Fix Retry Loop — 从 review 中新增
+
+✅ **已答（2026-05-09 review-project-goals）**：**Phase 2 W6 一并做**。
+
+**哲学约束**：项目偏好 **Typst > LaTeX**（与 Phase 0 proto-b D4 决策一致，Typst
+印刷胜出 / 0 warning / <1s 编译 vs mystmd LaTeX 远端 fragile）。同时崇尚"非常新但
+有颠覆潜力"的技术（如 refactoringhq/tolaria 这一类）——技术雷达放在 §六，对
+新候选保持 review trigger 而非锁死。
+
+- **Typst 项目导入（一等公民）**：unzip Typst project（`.typ` 主文件 + 子文件 +
+  资源）→ Typst CLI 解析 AST → 转 PM tree → 写入 Document/Block。Phase 0
+  proto-b 已验证 Typst CLI / WASM 可控；Phase 1 D12 已嵌入 typst CLI 渲染管线，
+  导入复用同一基础设施。
+- **LaTeX 项目导入（迁移摩擦减压，不是哲学偏好）**：landscape §157 + 反模式
+  §348 点名"降低迁移摩擦是产品分发的关键"——大多数存量学术用户在 Overleaf 上
+  有几年 LaTeX 积累，**这是分发战术，不是默认范式**。Phase 2 W6 实现：unzip
+  → mystmd CLI（已 Phase 1 D12 嵌入）解析 .tex 树 → 转 PM tree。限制：不解析
+  自定义 macro / TikZ；超出范围时显式报错并保留原 .tex 在 raw 字段。**导入完成后，
+  内部表示与 Typst 导入产物等价（PM tree + 8 实体），用户后续编辑、渲染、导出
+  默认仍走 Typst-first 管线。**
+- **Auto-Fix Retry Loop**（landscape 模式 3）：编译/渲染/引用解析失败 →
+  AI 拿 error + 上下文 → 修正 → 重试 ≤3 次；侧边小角标可见但不打扰；
+  失败后才弹通知。和 ADR-0008 long-horizon agent 复用 pgboss + SSE。
 
 ---
 
@@ -72,7 +121,9 @@ resolve 三栏 UI。实证 `apps/prototypes/proto-d-diff-library/` + ADR-0009
 - **fork / merge UI** —— Phase 3
 - **章节级隔离 / Yjs subdocument 拆分** —— Phase 3
 - **客户端 BYO 模型（local Ollama）** —— Phase 3
-- **用户挂自己的 localhost MCP server** —— Phase 3（安全模型未成熟）
+- **用户挂自己的 localhost MCP server** —— Phase 3（安全模型未成熟；Phase 2 ADR-0010 仅设计 manifest，不开放 user 安装）
+- **spatial canvas / 研究地图** —— Phase 3 起步（§3.4 已答）
+- **plugin marketplace / 商业化** —— Phase 4+（Phase 2 仅 registry JSON + Git URL）
 - **开放评审 / 50+ 协作者** —— Phase 4
 - **Loro / Automerge 3 切换** —— Phase 4
 
@@ -80,11 +131,22 @@ resolve 三栏 UI。实证 `apps/prototypes/proto-d-diff-library/` + ADR-0009
 
 ## 五、Phase 2 路线图节奏（粗）
 
-- **W1**：ADR-0007 (computational cell embedding) + ADR-0008 (long-horizon agent)
-- **W2-W3**：Reviewer agent + Research agent backend；diff UI spike
-- **W4**：molab iframe 集成 + computational-output PM node
+> **2026-05-09 review-project-goals 调整**：原 6 周 → 7 周（+16%，在守门 30% 内）。
+> 加项：ADR-0010 扩展系统（W1）+ dogfood gate（W3）+ LaTeX import + Auto-Fix（W6）。
+> 验收 e2e 由 W6 推到 W7。
+
+- **W1**：ADR-0006（MCP server 注册）+ ADR-0007 / 0008 / 0009 升 Accepted
+  + **ADR-0010（扩展系统边界 / kernel vs plugin / SKILL.md 扩展元数据）**
+- **W2-W3**：Reviewer agent + Research agent backend（pgboss + SSE per ADR-0008）；
+  diff UI（per ADR-0009）；**W3 末 dogfood gate：citation agent 切到 plugin API**
+  ——不通过则停下来重新设计 ADR-0010，不进 W4
+- **W4**：molab iframe 集成 + computational-output PM node（per ADR-0007）
 - **W5**：MathLive + 表格/定理 NodeView；prompt registry UI
-- **W6**：Phase 2 验收 e2e（5 人 + 2 reviewer agent + 1 computational cell + 多 revision rebase）
+- **W6**：**Typst project import**（一等公民，与 Phase 0 D4 决策一致）
+  + **LaTeX import**（迁移摩擦减压，Overleaf .zip → mystmd → PM tree）
+  + **Auto-Fix Retry Loop**（编译/渲染/引用失败 → AI 修正 → 重试 ≤3 次，复用 pgboss）
+- **W7**：Phase 2 验收 e2e（5 人 + 2 reviewer agent + 1 computational cell
+  + 多 revision rebase + LaTeX import demo + 至少 1 个**外部 plugin** 加载验证）
 
 具体 D-list 在 Phase 2 kickoff 时拉满（参考 Phase 1 D7–D16 的粒度）。
 
@@ -97,4 +159,25 @@ resolve 三栏 UI。实证 `apps/prototypes/proto-d-diff-library/` + ADR-0009
 - [x] ADR-0008 起草（long-horizon agent runtime）— 2026-05-09 Proposed；选 pgboss + SSE
 - [x] 选定 long-horizon agent runtime —— **pgboss + SSE**（ADR-0008 §2.1）
 - [x] 选定 diff 库（**prosemirror-changeset**，ADR-0009 + `apps/prototypes/proto-d-diff-library/` spike）
+- [x] spatial canvas timing 已答 —— **Phase 3 起步**（§3.4，2026-05-09 review）
+- [ ] **ADR-0006 起草**（MCP server 注册与发现）— Phase 2 W1
+- [ ] **ADR-0010 起草**（扩展系统边界 / kernel vs plugin / Plugin manifest / SKILL.md 扩展元数据）— Phase 2 W1，§3.5 必答清单 5 项
 - [ ] molab embedding 文档读完 + 联系 Marimo 团队（如 iframe 协议有空白）
+
+## 七、技术雷达（Phase 2 期间持续观察，不承诺切换）
+
+> 项目哲学：**偏 Typst、崇尚"非常新但有颠覆潜力"的技术**（user 2026-05-09）。
+> 不是"追新即上"——是给颠覆候选留 review trigger，避免锁死在中庸方案上。
+> 与 landscape §五"长期跟踪"重叠的不重复列。
+
+| 候选 | 类型 | 我们关注什么 | 触发再评估的信号 |
+|---|---|---|---|
+| **refactoringhq/tolaria** | user 点名的"颠覆性"参考 | 用户哲学锚点；具体技术细节 Phase 2 W1 一并查 | 若与 collab/diff/agent runtime 任一线相关 → ADR review |
+| **Typst 0.x → 1.0** | 渲染管线主线 | 1.0 稳定 API；package 生态成熟度 | 1.0 release / package registry 上量 |
+| **Typst.ts WASM bundle** | 浏览器编译 | bundle size、跨语言宏支持 | <5MB 时 Phase 3 浏览器侧切 |
+| **Loro / Automerge 3** | CRDT 升级路径 | 大规模协作 + 长 history + 跨设备同步 | Loro 作者 declare production-ready |
+| **TypeTeX** (landscape 第二梯队) | Typst-first AI 学术编辑器 | 直接对照赛道 | 推出 Phase 2 / Phase 3 重点功能时再评估差异化 |
+| **MyST CLI Node API** | 渲染管线辅线 | API 稳定性、模板生态 | 新版 breaking 时考虑 fork |
+
+**Watch cadence**：Phase 2 每月一次（W3 / W7 末），列入 STATUS §1 当前阶段段尾。
+任何 ADR review 都新建 ADR 而非改既存（既存 ADR 状态从 Accepted 不回退）。
