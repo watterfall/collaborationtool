@@ -60,16 +60,11 @@ export type {
   ProposedRevisedFragment,
 } from './types';
 
-// Citation agent moved to plugins/citation-agent/ (Phase 2 W3 dogfood
-// gate, ADR-0010 §2.7). Callers use `invokeAgentViaPlugin` (below)
-// with `pluginPath: <repo>/plugins/citation-agent`.
-
-export {
-  invokeInlineEditorAgent,
-  type InvokeInlineEditorAgentInput,
-  type InvokeInlineEditorAgentOptions,
-  type InvokeInlineEditorAgentResult,
-} from './agents/inline-editor';
+// Both built-in agents (citation + inline-editor) moved to plugins/:
+//   - citation: Phase 2 W3 dogfood gate (ADR-0010 §2.7)
+//   - inline-editor: Phase 2 W5 follow-up (ADR-0010 review log W4-W5)
+// Callers use `invokeAgentViaPlugin` (below) with the appropriate
+// `pluginPath`. There is no longer any hardcoded agent in this package.
 
 // Phase 2 W1 ADR-0010: plugin loader skeleton.
 // Phase 1 agents (citation / inline-editor) still wired through the

@@ -28,7 +28,6 @@ import { headers } from 'next/headers';
 import {
   crossrefMockTransport,
   invokeAgentViaPlugin,
-  invokeInlineEditorAgent,
 } from '@collaborationtool/ai-runtime';
 import { loadPrincipalContext } from '@collaborationtool/permissions';
 
@@ -109,17 +108,24 @@ export async function POST(request: Request): Promise<NextResponse> {
   // packages/skills (when we move skills under a package).
   const skillsRoot = path.resolve(process.cwd(), '..', '..', 'skills');
 
-  // Plugin root for the citation agent — Phase 2 W3 dogfood path.
-  // ADR-0006 §2.7 (registry table) currently catalogs MCP servers
-  // only; agent-plugin id → path lookup is W4-W5 ADR-0010 review log.
-  // For Phase 2 W3 the route knows there is exactly one agent plugin
-  // (citation) and can hardcode its location.
+  // Plugin roots — Phase 2 W3+W5 dogfood. ADR-0006 §2.7 (registry
+  // table) currently catalogs MCP servers only; agent-plugin id → path
+  // lookup is the Phase 2 W7 + ADR-0010 review log follow-up. For now
+  // the route knows there are exactly two agent plugins (citation +
+  // inline-editor) and can hardcode their locations.
   const citationPluginRoot = path.resolve(
     process.cwd(),
     '..',
     '..',
     'plugins',
     'citation-agent',
+  );
+  const inlineEditorPluginRoot = path.resolve(
+    process.cwd(),
+    '..',
+    '..',
+    'plugins',
+    'inline-editor-agent',
   );
 
   const distinctId = anonDistinctId(principalId);
@@ -183,7 +189,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       });
     }
 
-    // kind === 'inline-editor'
+    // kind === 'inline-editor' (W5 dogfood: through plugin path)
     const userInstruction =
       typeof body.userInstruction === 'string' ? body.userInstruction : '';
     if (!userInstruction.trim()) {
@@ -193,19 +199,27 @@ export async function POST(request: Request): Promise<NextResponse> {
         { status: 400 },
       );
     }
-    const result = await invokeInlineEditorAgent(
+    const result = await invokeAgentViaPlugin(
       {
+        pluginPath: inlineEditorPluginRoot,
         principalContext: userCtx,
         documentId: body.documentId,
         blockId: body.blockId,
         passage: body.passage,
-        userInstruction,
+        hints: { userInstruction },
+        skillId: 'inline-editor',
         skillsRoot,
+        mcpSpecs: [], // inline-editor uses no MCP tools
         anthropic,
       },
-      { db },
+      { db, persistToDb: true },
     );
-    observe('ok', { hasRevision: !!result.persisted?.revisionId });
+    observe('ok', {
+      hasRevision: !!result.persisted?.revisionId,
+      pluginId: result.pluginManifestId,
+      pluginVersion: result.pluginManifestVersion,
+      pluginWarnings: result.pluginWarnings.length,
+    });
     return NextResponse.json({
       proposal: result.proposal,
       revisionId: result.persisted?.revisionId,

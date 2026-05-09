@@ -1,0 +1,31 @@
+id: "@official/inline-editor-agent"
+version: "0.1.0"
+type: agent
+title:
+  zh: "行内编辑 agent"
+  en: "Inline editor agent"
+description:
+  zh: "按用户指令重写一段文字（如'更正式'/'更简洁'），保留所有 citation/equation/footnote 标记。propose-mode（ADR-0002 role 4）输出，从不直接 commit。"
+  en: "Rewrite a passage per the user's instruction (e.g. 'more formal' / 'more concise'); preserves all citation/equation/footnote markers verbatim. Emits propose-mode revisions (ADR-0002 role 4); never auto-commits."
+authors:
+  - "@official"
+license: Apache-2.0
+homepage: https://github.com/watterfall/collaborationtool
+required_capabilities:
+  - block.read
+  - block.propose
+  - agent.invoke:editor
+runtime:
+  kernel_version: "^2.0.0"
+  target: node
+  node: ">=20"
+
+# Agent-specific
+kind: editor
+prompt_template: ./prompt.md
+tools:
+  - builtin:proposeRevision
+runtime_mode: propose
+quota:
+  daily_invocations: 200
+  timeout_seconds: 30

@@ -1,9 +1,9 @@
-// Integration test for the public agent helpers. Citation goes through
-// the Phase 2 W3 plugin path (`invokeAgentViaPlugin` + plugins/
-// citation-agent); inline-editor still goes through hardcoded
-// `invokeInlineEditorAgent` (W4-W5 follow-up per ADR-0010 §2.1).
-// Both confirm the full runner → persistProposal → PG path
-// materialises Provenance + Revision rows.
+// Integration test for the public agent helpers. Both citation and
+// inline-editor now go through the Phase 2 W3+W5 plugin path
+// (`invokeAgentViaPlugin` + plugins/<agent>); no more hardcoded
+// agents in `packages/ai-runtime/src/agents/` (ADR-0010 §2.7 + W4-W5
+// review log follow-up). Both confirm the full runner →
+// persistProposal → PG path materialises Provenance + Revision rows.
 //
 // Skipped without DATABASE_URL.
 
@@ -28,7 +28,6 @@ import {
   acceptRevisionToContribution,
   crossrefMockTransport,
   invokeAgentViaPlugin,
-  invokeInlineEditorAgent,
   listPendingRevisions,
   rejectRevision,
   supersedeRevisionWithModified,
@@ -44,6 +43,13 @@ const CITATION_PLUGIN_ROOT = path.resolve(
   '..',
   'plugins',
   'citation-agent',
+);
+const INLINE_EDITOR_PLUGIN_ROOT = path.resolve(
+  process.cwd(),
+  '..',
+  '..',
+  'plugins',
+  'inline-editor-agent',
 );
 
 /** Citation-shaped wrapper around invokeAgentViaPlugin. Tests still
@@ -76,6 +82,36 @@ async function invokeCitation(
           buildTransport: crossrefMockTransport().buildTransport,
         },
       ],
+    },
+    options,
+  );
+}
+
+/** Inline-editor-shaped wrapper around invokeAgentViaPlugin (W5
+ * dogfood follow-up). Tests express intent in inline-editor terms; the
+ * plugin path is exercised uniformly. */
+async function invokeInlineEditor(
+  input: {
+    principalContext: PrincipalContext;
+    documentId: string;
+    blockId: string;
+    passage: string;
+    userInstruction: string;
+    skillsRoot?: string;
+  },
+  options: { db: DbExecutor; persistToDb?: boolean },
+): Promise<InvokeAgentViaPluginResult> {
+  return invokeAgentViaPlugin(
+    {
+      pluginPath: INLINE_EDITOR_PLUGIN_ROOT,
+      principalContext: input.principalContext,
+      documentId: input.documentId,
+      blockId: input.blockId,
+      passage: input.passage,
+      hints: { userInstruction: input.userInstruction },
+      skillId: 'inline-editor',
+      skillsRoot: input.skillsRoot,
+      mcpSpecs: [],
     },
     options,
   );
@@ -242,7 +278,7 @@ if (SHOULD_SKIP) {
     // ---------- inline editor agent ----------
 
     it('invokeInlineEditorAgent: PG provenance + revision rows materialise', async () => {
-      const result = await invokeInlineEditorAgent(
+      const result = await invokeInlineEditor(
         {
           principalContext: userCtx,
           documentId,
