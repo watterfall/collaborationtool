@@ -37,12 +37,10 @@ D15 USER_GUIDE.md 列的 7 个 known limitation，全部归集到 Phase 1.5。**
 
 ### 3.1 Reviewer Agent / Research Agent 的 capability shape
 
-- 现有 `agent.invoke:reviewer` / `agent.invoke:researcher` 词汇已登记（ADR-0002 §2.1）
-- **未答**：异步长 horizon（数分钟–数小时）任务怎么暴露给前端？SSE / pgboss / temporal？
-- **未答**：reviewer agent 是匿名（"Reviewer 1"）还是具名（"Citation Reviewer Agent v1.2"）？
-  影响 Provenance.actorPrincipalId 的 displayName 策略
-- **未答**：reviewer agent 拒一个 revision 时是否产 `annotation_thread{kind:'reviewer-note'}`？
-  现有 schema 已支持，待 UX 决定
+✅ **ADR-0008 已答**：pgboss + SSE 异步运行时（agent_job + agent_job_event 两表）；
+具名 agent（`Citation Reviewer Agent v1.2`，AgentKind enum 加 `reviewer`/`researcher`）；
+reviewer reject 强制配套 `annotation_thread{kind:'reviewer-note'}`。详见
+`plan0/adr/0008-long-horizon-agent-runtime.md`。
 
 ### 3.2 molab / Marimo iframe 的契约
 
@@ -96,7 +94,7 @@ postMessage 协议 6 个 kind（cell.config / execute → ready / progress / exe
 
 - [x] Phase 1.5 7 项全部 close（在 `claude/review-project-status-w2iNI` 分支；待 PR / merge）
 - [x] ADR-0007 起草（computational cell embedding + iframe 协议）— 2026-05-09 Proposed
-- [ ] ADR-0008 起草（long-horizon agent runtime）
-- [ ] 选定 long-horizon agent runtime（temporal / pgboss / inngest / 自写）
+- [x] ADR-0008 起草（long-horizon agent runtime）— 2026-05-09 Proposed；选 pgboss + SSE
+- [x] 选定 long-horizon agent runtime —— **pgboss + SSE**（ADR-0008 §2.1）
 - [ ] 选定 diff 库（prosemirror-changeset 评估）
 - [ ] molab embedding 文档读完 + 联系 Marimo 团队（如 iframe 协议有空白）

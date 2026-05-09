@@ -28,6 +28,7 @@
 | 0005 | Render API 边界 | **Accepted** | D16 直 Accepted；PM JSON wire format + 5 emitter 签名锁定，stable through Phase 2 |
 | 0006 | MCP server 注册与发现 | 推 Phase 2 W1 | Phase 2 kickoff 时与 ADR-0007/8 一起起草 |
 | 0007 | Computational cell embedding + iframe 协议 | **Proposed** | 2026-05-09 起草；gated on Phase 2 W4 实施 |
+| 0008 | Long-horizon agent runtime + reviewer/researcher agent | **Proposed** | 2026-05-09 起草；gated on Phase 2 W2-W3 实施 |
 
 ---
 
