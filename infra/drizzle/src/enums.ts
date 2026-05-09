@@ -111,3 +111,34 @@ export const mcpHealthStatusEnum = pgEnum('mcp_health_status', [
   'degraded',
   'failed',
 ]);
+
+// ---------- Claim / Evidence knowledge object (Phase 2 W5 ADR-0011) ----------
+
+export const claimTypeEnum = pgEnum('claim_type', ['main', 'counter', 'synthesis']);
+
+export const claimStatusEnum = pgEnum('claim_status', [
+  'ai-suggested',
+  'human-reviewed',
+  'approved',
+  'deprecated',
+  'superseded',
+]);
+
+export const claimConfidenceEnum = pgEnum('claim_confidence', [
+  'low',
+  'medium',
+  'high',
+]);
+
+export const evidenceRelationEnum = pgEnum('evidence_relation', [
+  'supports',
+  'challenges',
+  'qualifies',
+]);
+
+export const claimLinkTypeEnum = pgEnum('claim_link_type', [
+  'derives-from',
+  'synthesizes',
+  'contradicts',
+  'refines',
+]);

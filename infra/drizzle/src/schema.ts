@@ -35,6 +35,11 @@ import {
   bilingualModeEnum,
   capabilityResourceTypeEnum,
   citationKindEnum,
+  claimConfidenceEnum,
+  claimLinkTypeEnum,
+  claimStatusEnum,
+  claimTypeEnum,
+  evidenceRelationEnum,
   mcpHealthStatusEnum,
   mcpOriginEnum,
   mcpTransportEnum,
@@ -568,6 +573,111 @@ export const mcpServer = pgTable(
 );
 
 // ============================================================
+// 16. claim — Phase 2 W5 ADR-0011 一等知识对象。
+//     全局 ID（uuidv7），跨文档可复用；text 是权威，PM body 内
+//     paragraph 子树是 denormalised cache。counterpoint / synthesis
+//     是 claim_type 子类型，不是独立表。
+// ============================================================
+
+export const claim = pgTable(
+  'claim',
+  {
+    id: text('id').primaryKey(),
+    text: text('text').notNull(),
+    claimType: claimTypeEnum('claim_type').notNull().default('main'),
+    status: claimStatusEnum('status').notNull().default('ai-suggested'),
+    confidence: claimConfidenceEnum('confidence').notNull().default('medium'),
+    documentOriginId: text('document_origin_id').references(() => document.id, {
+      onDelete: 'set null',
+    }),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    reviewedBy: text('reviewed_by').references(() => principal.id, {
+      onDelete: 'set null',
+    }),
+    deprecatedAt: timestamp('deprecated_at', { withTimezone: true }),
+    supersededByClaimId: text('superseded_by_claim_id'),
+  },
+  (t) => ({
+    statusIdx: index('claim_status_idx').on(t.status),
+    originIdx: index('claim_origin_idx').on(t.documentOriginId),
+    typeIdx: index('claim_type_idx').on(t.claimType),
+  }),
+);
+
+// ============================================================
+// 17. evidence — Phase 2 W5 ADR-0011 证据对象。
+//     每条 evidence 支持 / 反驳 / 限定一个 claim；citationId 软外键
+//     关联资料源。
+// ============================================================
+
+export const evidence = pgTable(
+  'evidence',
+  {
+    id: text('id').primaryKey(),
+    excerpt: text('excerpt').notNull(),
+    supportsClaimId: text('supports_claim_id')
+      .notNull()
+      .references(() => claim.id, { onDelete: 'cascade' }),
+    citationId: text('citation_id').references(() => citation.id, {
+      onDelete: 'set null',
+    }),
+    relation: evidenceRelationEnum('relation').notNull().default('supports'),
+    status: claimStatusEnum('status').notNull().default('ai-suggested'),
+    documentOriginId: text('document_origin_id').references(() => document.id, {
+      onDelete: 'set null',
+    }),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => ({
+    claimIdx: index('evidence_claim_idx').on(t.supportsClaimId),
+    citationIdx: index('evidence_citation_idx').on(t.citationId),
+    relationIdx: index('evidence_relation_idx').on(t.relation),
+    originIdx: index('evidence_origin_idx').on(t.documentOriginId),
+  }),
+);
+
+// ============================================================
+// 18. claim_link — Phase 2 W5 ADR-0011 claim ↔ claim 关系。
+//     synthesis / 组合论证 / 推导链用得到。
+// ============================================================
+
+export const claimLink = pgTable(
+  'claim_link',
+  {
+    id: text('id').primaryKey(),
+    fromClaimId: text('from_claim_id')
+      .notNull()
+      .references(() => claim.id, { onDelete: 'cascade' }),
+    toClaimId: text('to_claim_id')
+      .notNull()
+      .references(() => claim.id, { onDelete: 'cascade' }),
+    linkType: claimLinkTypeEnum('link_type').notNull(),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => ({
+    fromIdx: index('claim_link_from_idx').on(t.fromClaimId),
+    toIdx: index('claim_link_to_idx').on(t.toClaimId),
+    typeIdx: index('claim_link_type_idx').on(t.linkType),
+  }),
+);
+
+// ============================================================
 // Type exports — used by application code for fully-typed queries.
 // `db.select().from(document)` returns inferred row types.
 // ============================================================
@@ -587,3 +697,6 @@ export type DbDocumentAcl = typeof documentAcl.$inferSelect;
 export type DbPromptTemplate = typeof promptTemplate.$inferSelect;
 export type DbDocInvitation = typeof docInvitation.$inferSelect;
 export type DbMcpServer = typeof mcpServer.$inferSelect;
+export type DbClaim = typeof claim.$inferSelect;
+export type DbEvidence = typeof evidence.$inferSelect;
+export type DbClaimLink = typeof claimLink.$inferSelect;
