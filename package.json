@@ -14,7 +14,42 @@
     "proto-a:sync": "pnpm --filter @collaborationtool/proto-a-yjs-schema sync-server",
     "proto-a:stress": "pnpm --filter @collaborationtool/proto-a-yjs-schema stress",
     "proto-a:e2e": "pnpm --filter @collaborationtool/proto-a-yjs-schema test:e2e",
-    "proto-a:typecheck": "pnpm --filter @collaborationtool/proto-a-yjs-schema typecheck"
+    "proto-a:typecheck": "pnpm --filter @collaborationtool/proto-a-yjs-schema typecheck",
+    "db:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "db:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "db:logs": "docker compose -f infra/docker/docker-compose.yml logs -f postgres",
+    "db:migrate": "pnpm --filter @collaborationtool/drizzle migrate",
+    "db:seed": "pnpm --filter @collaborationtool/drizzle seed",
+    "db:test": "pnpm --filter @collaborationtool/drizzle test",
+    "db:typecheck": "pnpm --filter @collaborationtool/drizzle typecheck",
+    "perms:test": "pnpm --filter @collaborationtool/permissions test",
+    "perms:typecheck": "pnpm --filter @collaborationtool/permissions typecheck",
+    "gateway:dev": "pnpm --filter @collaborationtool/sync-gateway dev",
+    "gateway:start": "pnpm --filter @collaborationtool/sync-gateway start",
+    "gateway:test": "pnpm --filter @collaborationtool/sync-gateway test",
+    "gateway:typecheck": "pnpm --filter @collaborationtool/sync-gateway typecheck",
+    "web:dev": "pnpm --filter @collaborationtool/web dev",
+    "web:build": "pnpm --filter @collaborationtool/web build",
+    "web:start": "pnpm --filter @collaborationtool/web start",
+    "web:typecheck": "pnpm --filter @collaborationtool/web typecheck",
+    "editor:test": "pnpm --filter @collaborationtool/editor-core test",
+    "editor:typecheck": "pnpm --filter @collaborationtool/editor-core typecheck",
+    "snapshot:tick": "pnpm --filter @collaborationtool/snapshot-worker tick",
+    "snapshot:start": "pnpm --filter @collaborationtool/snapshot-worker start",
+    "snapshot:test": "pnpm --filter @collaborationtool/snapshot-worker test",
+    "snapshot:typecheck": "pnpm --filter @collaborationtool/snapshot-worker typecheck",
+    "typo:test": "pnpm --filter @collaborationtool/typography test",
+    "typo:typecheck": "pnpm --filter @collaborationtool/typography typecheck",
+    "render-myst:test": "pnpm --filter @collaborationtool/render-myst test",
+    "render-myst:typecheck": "pnpm --filter @collaborationtool/render-myst typecheck",
+    "render-typst:test": "pnpm --filter @collaborationtool/render-typst test",
+    "render-typst:typecheck": "pnpm --filter @collaborationtool/render-typst typecheck",
+    "ai-runtime:test": "pnpm --filter @collaborationtool/ai-runtime test",
+    "ai-runtime:typecheck": "pnpm --filter @collaborationtool/ai-runtime typecheck",
+    "mcp-crossref:test": "pnpm --filter @collaborationtool/mcp-server-crossref test",
+    "mcp-crossref:typecheck": "pnpm --filter @collaborationtool/mcp-server-crossref typecheck",
+    "e2e:test": "pnpm --filter @collaborationtool/e2e test",
+    "e2e:typecheck": "pnpm --filter @collaborationtool/e2e typecheck"
   },
   "devDependencies": {
     "typescript": "^5.7.2"
@@ -23,6 +58,10 @@
     "onlyBuiltDependencies": [
       "better-sqlite3",
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "@types/react": "^19.2.0",
+      "@types/react-dom": "^19.2.0"
+    }
   }
 }

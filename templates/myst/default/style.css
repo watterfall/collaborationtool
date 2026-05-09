@@ -1,0 +1,38 @@
+/*
+ * Phase 1 default export stylesheet for HTML output.
+ *
+ * @collaborationtool/render-myst inlines this content style-by-style
+ * via the typography font tokens so a no-network export still has
+ * sensible CJK + Latin fallbacks. Designers iterate here without
+ * touching the renderer.
+ */
+
+body {
+  max-width: 42rem;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  line-height: 1.7;
+}
+
+h1, h2, h3 {
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.cite::before { content: "["; }
+.cite::after  { content: "]"; }
+
+mark.annotation-anchor {
+  background: #fff7d6;
+  padding: 0 0.1em;
+}
+
+figure {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+figcaption {
+  font-size: 0.9rem;
+  color: #71717a;
+}

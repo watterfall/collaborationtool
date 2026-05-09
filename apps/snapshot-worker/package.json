@@ -1,0 +1,27 @@
+{
+  "name": "@collaborationtool/snapshot-worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "start": "tsx src/index.ts",
+    "tick": "tsx src/cli-tick.ts",
+    "test": "node --test --import tsx tests/*.test.ts"
+  },
+  "dependencies": {
+    "@collaborationtool/drizzle": "workspace:*",
+    "@collaborationtool/editor-core": "workspace:*",
+    "@collaborationtool/schema": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "yjs": "^13.6.21"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "uuid": "^11.0.3"
+  }
+}

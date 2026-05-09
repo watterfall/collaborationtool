@@ -1,0 +1,39 @@
+{
+  "name": "@collaborationtool/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.1",
+    "@collaborationtool/ai-runtime": "workspace:*",
+    "@collaborationtool/drizzle": "workspace:*",
+    "@collaborationtool/editor-core": "workspace:*",
+    "@collaborationtool/permissions": "workspace:*",
+    "@collaborationtool/render-myst": "workspace:*",
+    "@collaborationtool/render-typst": "workspace:*",
+    "@collaborationtool/schema": "workspace:*",
+    "@collaborationtool/typography": "workspace:*",
+    "better-auth": "^1.2.7",
+    "drizzle-orm": "^0.45.2",
+    "next": "^15.1.6",
+    "postgres": "^3.4.5",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.4",
+    "@types/react-dom": "^19.0.2",
+    "@types/uuid": "^10.0.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.2"
+  }
+}

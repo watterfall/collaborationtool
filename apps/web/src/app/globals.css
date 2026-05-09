@@ -1,0 +1,43 @@
+@import 'tailwindcss';
+
+/* Editorial typography baseline. shadcn/ui will land in Phase 2 polish; */
+/* Phase 1 keeps this minimal so the auth flow + docs list don't look */
+/* broken but we also don't pre-bake a design system we'll throw away. */
+
+:root {
+  --color-bg: #fafaf7;
+  --color-fg: #18181b;
+  --color-fg-muted: #71717a;
+  --color-accent: #1c1917;
+  --color-border: #e4e4e7;
+
+  --font-serif: ui-serif, 'Source Han Serif', 'Songti SC', 'Noto Serif CJK SC',
+    Georgia, serif;
+  --font-sans: ui-sans-serif, 'Source Han Sans', 'PingFang SC',
+    'Noto Sans CJK SC', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-feature-settings:
+    'cv01' on,
+    'cv11' on;
+}
+
+body {
+  min-height: 100vh;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings get serif by default — academic / editorial feel. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-serif);
+  letter-spacing: -0.01em;
+}
