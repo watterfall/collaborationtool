@@ -34,25 +34,19 @@
 
 ### 1.3 邀请第二位作者 / Invite a co-author
 
-> ⚠️ Phase 1 不实施 invitation flow（Phase 1.5 加）。
->
-> 临时方案：让另一位用户先 signup，然后由 owner 通过 PG 直接 grant：
->
-> ```sql
-> INSERT INTO document_acl (document_id, principal_id, role_id, capability_verbs)
-> VALUES (
->   '<docId>',
->   '<user:other-principal-id>',
->   'paper-reviewer',  -- 或 'paper-author' / 'commenter'
->   ARRAY[
->     'document.read', 'block.read', 'block.propose', 'block.review',
->     'annotation.create', 'annotation.read', 'annotation.reply',
->     'agent.invoke:citation', 'agent.invoke:editor'
->   ]
-> );
-> ```
->
-> 5 个默认 role bundle 见 ADR-0002 §2.2 + `packages/permissions/src/roles.ts`。
+文档主页右上角点 **分享 / Share**：
+
+1. 输入受邀者的邮箱 + 角色（paper-author / paper-reviewer / commenter）
+2. 服务端创建一条 `doc_invitation` 行（默认 7 天有效），并通过 mailer
+   发送接受链接：
+   - 设了 `MAIL_WEBHOOK_URL` → POST 给 webhook（接 Resend / Postmark / 自托管 SMTP relay）
+   - 未设 → 链接打印到 server stderr，复制给被邀者即可（dev / 自托管常用）
+3. 受邀者打开链接 → 用 *受邀邮箱* 登录（必须邮箱匹配，否则 403）
+4. 后端调 `materialiseRoleBundle` 写入 `document_acl`，进入编辑器
+
+5 个默认 role bundle 见 ADR-0002 §2.2 + `packages/permissions/src/roles.ts`。
+
+> 旧版 Phase 1 临时 SQL grant 方案已废弃；不再需要 `INSERT INTO document_acl`。
 
 ---
 
@@ -168,7 +162,7 @@ computational-cell）。验收时 6 格式都应当能成功导出。
 ## 5. 已知限制 / Phase 1 known limitations
 
 - 章节级隔离：网关连接级鉴权，不能在同一连接里"section A 可写、section B 只读"。Phase 3 加 Yjs subdocument 后解锁。
-- 邀请流程：缺；目前需 SQL 直接 grant role。Phase 1.5 加。
+- 邀请流程：✅ Phase 1.5 #1 已交付（参见 §1.3）。
 - ORCID 登录：缺。Phase 1.5 加。
 - Marimo 嵌入：仅 schema 占位。Phase 1.5/2 接入 molab iframe。
 - MathLive 输入：缺。Phase 2。

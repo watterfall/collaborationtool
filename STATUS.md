@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-09（claude/review-project-status-w2iNI，Phase 1.5 #2 ORCID OAuth + #3 Sentry/PostHog + #6 Real CrossRef stdio MCP + #7 WAL-G 备份 落地）
+最后更新：2026-05-09（claude/review-project-status-w2iNI，**Phase 1.5 全部 7 项 close**：#1 invitation + #2 ORCID + #3 Sentry/PostHog + #4 docx + #5 PmDocInput + #6 CrossRef stdio + #7 WAL-G）
 
 ---
 
@@ -13,7 +13,7 @@
 
 **Phase 1：✅ 完成**（10/10 交付物 D7–D16，5 个 ADR 全部 Accepted，2 篇用户文档，1 个 Phase 2 plan stub）
 
-**Phase 1.5：进行中**（7 项 patch；2 / 3 / 4 / 5 / 6 / 7 已 close，剩 1 invitation flow；见 `plan0/phase-2-plan-stub.md §二`），然后 Phase 2 kickoff。
+**Phase 1.5：✅ 完成**（7/7 patch 全部 close；见 `plan0/phase-2-plan-stub.md §二`）。下一动作：起草 ADR-0007（computational cell embedding）+ ADR-0008（long-horizon agent runtime），答 §三 4 类开放问题，启 Phase 2。
 
 ---
 
@@ -146,7 +146,11 @@ pnpm web:dev                # next dev（需 BETTER_AUTH_SECRET + SYNC_TOKEN_SEC
 pnpm web:build              # next build
 pnpm web:start              # next start
 pnpm web:typecheck
-pnpm web:test               # 16 个单测（observability 8 + ORCID profile mapper 8）
+pnpm web:test               # 23 个单测（observability 8 + ORCID 8 + mailer 3 + invitation 4）
+
+# Phase 1.5 #1：document-level invitation（替代 SQL grant）
+# UI 入口：编辑器右上角 [分享 / Share] 按钮（要 capability.grant 权限）
+# 邮件 backend：MAIL_WEBHOOK_URL 设了 → POST webhook；未设 → 链接 print 到 stderr
 
 # Phase 1 / D10：editor-core + snapshot-worker
 pnpm editor:test            # 21 个 schema/wire/commit round-trip 测试

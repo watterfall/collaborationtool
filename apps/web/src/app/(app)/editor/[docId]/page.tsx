@@ -14,6 +14,7 @@ import EditorClient from './editor-client';
 import ExportDrawer from './components/ExportDrawer';
 import AgentPanel from './components/AgentPanel';
 import RevisionInbox from './components/RevisionInbox';
+import ShareDialog from './components/ShareDialog';
 
 export default async function EditorPage({
   params,
@@ -66,11 +67,16 @@ export default async function EditorPage({
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
-      <header className="mb-6">
-        <h1 className="text-3xl font-medium">{doc.title || doc.slug}</h1>
-        <p className="mt-2 text-sm text-zinc-500">
-          {doc.primaryLanguage} · {doc.bilingualMode} · /{doc.slug}
-        </p>
+      <header className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-medium">{doc.title || doc.slug}</h1>
+          <p className="mt-2 text-sm text-zinc-500">
+            {doc.primaryLanguage} · {doc.bilingualMode} · /{doc.slug}
+          </p>
+        </div>
+        {ctx.documentCapabilities.has('capability.grant') && (
+          <ShareDialog documentId={doc.id} />
+        )}
       </header>
 
       <EditorClient documentId={doc.id} />

@@ -93,6 +93,12 @@ export CROSSREF_MCP_CWD=/path/to/collaborationtool   # 若 web 进程 cwd 不在
 # CROSSREF_USER_AGENT default collaborationtool/0.0 (mailto:dev@…)
 # CROSSREF_TIMEOUT_MS default 8000
 
+# Invitation flow / 邮件（可选；Phase 1.5 #1）
+# 不设走 console-only：邀请链接 print 到 server stderr，docker logs 看
+export MAIL_WEBHOOK_URL=https://api.resend.com/emails   # 或 Postmark / 自家 relay
+export MAIL_WEBHOOK_AUTH=re_xxxxxxxxxxxxxxxxxxxxx       # 可选 Bearer
+export MAIL_FROM='Collaboration Tool <noreply@your-host.example>'
+
 # ORCID OAuth（可选；Phase 1.5 #2）
 # 在 https://orcid.org/developer-tools 注册 public API client，回调地址：
 #   https://<your-host>/api/auth/oauth2/callback/orcid

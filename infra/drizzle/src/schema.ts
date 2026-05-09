@@ -473,6 +473,42 @@ export const promptTemplate = pgTable(
 );
 
 // ============================================================
+// 14. doc_invitation — Phase 1.5 #1 per-document invitation flow.
+//     The owner creates a row scoped to (document, email, role); the
+//     invitee accepts by signed-in click, which calls
+//     materialiseRoleBundle to write the matching document_acl row.
+//     Replaces the SQL-grant workaround in USER_GUIDE.md §1.3.
+// ============================================================
+
+export const docInvitation = pgTable(
+  'doc_invitation',
+  {
+    id: text('id').primaryKey(),
+    documentId: text('document_id')
+      .notNull()
+      .references(() => document.id, { onDelete: 'cascade' }),
+    inviterPrincipalId: text('inviter_principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    email: text('email').notNull(),
+    roleId: text('role_id').notNull(),
+    status: text('status').notNull().default('pending'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    acceptedByPrincipalId: text('accepted_by_principal_id').references(
+      () => principal.id,
+    ),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => ({
+    documentIdx: index('doc_invitation_document_idx').on(t.documentId, t.status),
+    emailIdx: index('doc_invitation_email_idx').on(sql`lower(${t.email})`),
+  }),
+);
+
+// ============================================================
 // Type exports — used by application code for fully-typed queries.
 // `db.select().from(document)` returns inferred row types.
 // ============================================================
@@ -490,3 +526,4 @@ export type DbProvenance = typeof provenance.$inferSelect;
 export type DbCapabilityGrant = typeof capabilityGrant.$inferSelect;
 export type DbDocumentAcl = typeof documentAcl.$inferSelect;
 export type DbPromptTemplate = typeof promptTemplate.$inferSelect;
+export type DbDocInvitation = typeof docInvitation.$inferSelect;
