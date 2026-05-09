@@ -50,12 +50,12 @@ postMessage 协议 6 个 kind（cell.config / execute → ready / progress / exe
 
 ### 3.3 语义级 diff 的 UI 模型
 
-- proto-c 已实证 PM step 序列化 + Yjs binary co-存
-- **未答**：两个 reviewer 各自 propose 修改，UI 怎么并列展示 diff？token-level？
-  block-level？
-- **未答**：rebase 的语义（reviewer A 的 revision 已 accept，reviewer B 的 revision
-  仍 pending —— B 的 PM step 自动 rebase 到新 base 还是要求手动 resolve？）
-- 候选库：`prosemirror-changeset`, `diff-match-patch` （Phase 2 spike 选一）
+✅ **ADR-0009 已答**：选 `prosemirror-changeset`（diff-match-patch 仅作 textContent
+fallback，不进 revision 数据流）；UI granularity 三档同源（block / token / mark-aware
+semantic hint）都派生自 `Change[]`；多 reviewer overlay 各自以 base 为根独立计算 ChangeSet
+不串行；rebase 默认 auto（`Step.map(mapping)` 全成功）/ `step.map===null` 时降级 manual
+resolve 三栏 UI。实证 `apps/prototypes/proto-d-diff-library/` + ADR-0009
++ `pnpm proto-d:demo`。
 
 ### 3.4 spatial canvas（"研究地图"）
 
@@ -96,5 +96,5 @@ postMessage 协议 6 个 kind（cell.config / execute → ready / progress / exe
 - [x] ADR-0007 起草（computational cell embedding + iframe 协议）— 2026-05-09 Proposed
 - [x] ADR-0008 起草（long-horizon agent runtime）— 2026-05-09 Proposed；选 pgboss + SSE
 - [x] 选定 long-horizon agent runtime —— **pgboss + SSE**（ADR-0008 §2.1）
-- [ ] 选定 diff 库（prosemirror-changeset 评估）
+- [x] 选定 diff 库（**prosemirror-changeset**，ADR-0009 + `apps/prototypes/proto-d-diff-library/` spike）
 - [ ] molab embedding 文档读完 + 联系 Marimo 团队（如 iframe 协议有空白）

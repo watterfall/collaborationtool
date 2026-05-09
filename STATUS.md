@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-09（claude/review-project-status-w2iNI，**Phase 1.5 全部 7 项 close**：#1 invitation + #2 ORCID + #3 Sentry/PostHog + #4 docx + #5 PmDocInput + #6 CrossRef stdio + #7 WAL-G）
+最后更新：2026-05-09（claude/review-project-status-w2iNI，**Phase 1.5 全部 7 项 close** + **ADR-0009 起草** + **proto-d-diff-library spike 跑通**：phase-2-plan-stub §3.3 三件事全部答完，diff 库锁定 prosemirror-changeset）
 
 ---
 
@@ -13,7 +13,9 @@
 
 **Phase 1：✅ 完成**（10/10 交付物 D7–D16，5 个 ADR 全部 Accepted，2 篇用户文档，1 个 Phase 2 plan stub）
 
-**Phase 1.5：✅ 完成**（7/7 patch 全部 close；见 `plan0/phase-2-plan-stub.md §二`）。下一动作：起草 ADR-0007（computational cell embedding）+ ADR-0008（long-horizon agent runtime），答 §三 4 类开放问题，启 Phase 2。
+**Phase 1.5：✅ 完成**（7/7 patch 全部 close；见 `plan0/phase-2-plan-stub.md §二`）。
+
+**Phase 2 kickoff prep：进行中**。phase-2-plan-stub §三 开放问题进度：§3.1 ADR-0008 / §3.2 ADR-0007 / §3.3 ADR-0009（含 `apps/prototypes/proto-d-diff-library/` spike 实证）；§3.4 spatial canvas 仍待用户定 Phase 2 / Phase 3。
 
 ---
 
@@ -29,6 +31,7 @@
 | 0006 | MCP server 注册与发现 | 推 Phase 2 W1 | Phase 2 kickoff 时与 ADR-0007/8 一起起草 |
 | 0007 | Computational cell embedding + iframe 协议 | **Proposed** | 2026-05-09 起草；gated on Phase 2 W4 实施 |
 | 0008 | Long-horizon agent runtime + reviewer/researcher agent | **Proposed** | 2026-05-09 起草；gated on Phase 2 W2-W3 实施 |
+| 0009 | Diff library + revision overlay UI + rebase semantics | **Proposed** | 2026-05-09 起草；spike `apps/prototypes/proto-d-diff-library/` 实证；gated on Phase 2 W2-W3 实施 |
 
 ---
 
@@ -71,10 +74,11 @@
 
 ```
 collaborationtool/
-├── apps/prototypes/           # Phase 0 三原型（Phase 1 起 proto-a 复用为 packages/editor-core 基础）
+├── apps/prototypes/           # Phase 0 三原型 + Phase 2 spike（proto-d）
 │   ├── proto-a-yjs-schema/    # y-prosemirror 异构 schema + Playwright e2e
 │   ├── proto-b-cjk-render/    # MyST vs Typst 对比
-│   └── proto-c-mcp-skill/     # MCP + Skill + Provenance 闭环
+│   ├── proto-c-mcp-skill/     # MCP + Skill + Provenance 闭环
+│   └── proto-d-diff-library/  # ⭐ Phase 2 W2 spike — prosemirror-changeset vs diff-match-patch + rebase 语义实证（ADR-0009 实证基础）
 ├── packages/schema/           # 8 实体 single source of truth（11 个 .ts，~330 LOC）
 ├── packages/permissions/      # ⭐ D8/D9 — 36 capability vocab + 5 role bundles + JWT + ACL loader + Principal bridge
 ├── packages/editor-core/      # ⭐ D10 — TipTap 9 extensions + paperSchema + commit serializer + Editor.tsx + sync-gateway transport
@@ -189,6 +193,10 @@ pnpm mcp-crossref:test      # 10 个测试（7 wrapper mocked-fetch + 3 stdio bi
 pnpm e2e:test               # Playwright HTTP-driven full flow，~22s
 # specimen: apps/web/public/demo/specimen-bilingual.{json,md}
 # docs: docs/USER_GUIDE.md + docs/SELF_HOST.md
+
+# Phase 2 / W2 spike：diff library 选型 + rebase 语义（ADR-0009 实证基础）
+pnpm proto-d:demo           # 跑 base / reviewer-A / reviewer-B / 两种 rebase 场景，~3s
+pnpm proto-d:typecheck
 
 # 全 workspace typecheck
 pnpm typecheck              # 15 packages 全 PASS
