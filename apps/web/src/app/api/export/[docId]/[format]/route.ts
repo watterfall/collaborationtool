@@ -212,10 +212,14 @@ function safeBase64DecodeJson(b64: string): unknown | null {
 }
 
 function slugify(s: string): string {
+  // ASCII-only — `content-disposition: filename="..."` header value must
+  // be a ByteString (RFC 7230). Strip CJK and other non-ASCII chars
+  // here. Phase 1.5 may add `filename*=UTF-8''...` encoding to preserve
+  // CJK names in the download.
   return (
     s
       .toLowerCase()
-      .replace(/[^a-z0-9一-鿿]+/g, '-')
+      .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 64) || 'document'
   );

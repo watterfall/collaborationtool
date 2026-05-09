@@ -4,6 +4,7 @@ packages:
   - 'apps/prototypes/*'
   - 'mcp-servers/*'
   - 'infra/drizzle'
+  - 'tests/e2e'
 
 # `apps/sync-gateway` matches `apps/*` and is therefore included
 # automatically; `apps/prototypes/*` is the nested glob for Phase 0

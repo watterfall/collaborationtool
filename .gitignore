@@ -58,3 +58,5 @@ apps/prototypes/proto-a-yjs-schema/playwright-report/
 ### Drizzle / docker volumes ###
 infra/drizzle/migrations/meta/
 infra/docker/.data/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
