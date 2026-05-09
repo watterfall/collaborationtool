@@ -48,6 +48,12 @@ export interface InvokeCitationAgentOptions {
   persistToDb?: boolean;
   /** DB executor — required when persistToDb=true. */
   db?: DbExecutor;
+  /**
+   * The crossref MCP server spec. When omitted, defaults to the in-memory
+   * mock (CI / offline). Production callers pass a stdio spec built from
+   * `stdioServerTransport({ command: 'node', args: [...crossref bin] })`.
+   */
+  crossrefMcp?: McpServerSpec;
   /** Phase 1.5 plumbing: extra MCP servers (arxiv / semantic-scholar). */
   extraMcpServers?: McpServerSpec[];
 }
@@ -93,11 +99,12 @@ export async function invokeCitationAgent(
   const skillsRoot = input.skillsRoot ?? path.resolve(process.cwd(), 'skills');
   const skill = await loadSkill(skillsRoot, 'citation-lookup');
 
+  const crossrefSpec: McpServerSpec = options.crossrefMcp ?? {
+    id: 'crossref-mock',
+    buildTransport: crossrefMockTransport().buildTransport,
+  };
   const mcp = await buildMcpServerSet([
-    {
-      id: 'crossref-mock',
-      buildTransport: crossrefMockTransport().buildTransport,
-    },
+    crossrefSpec,
     ...(options.extraMcpServers ?? []),
   ]);
 

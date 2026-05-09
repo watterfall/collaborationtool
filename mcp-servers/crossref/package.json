@@ -8,10 +8,18 @@
     ".": {
       "types": "./src/server.ts",
       "default": "./src/server.ts"
+    },
+    "./bin": {
+      "types": "./src/bin.ts",
+      "default": "./src/bin.ts"
     }
+  },
+  "bin": {
+    "crossref-mcp": "./src/bin.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "start": "tsx src/bin.ts",
     "test": "node --test --import tsx tests/*.test.ts"
   },
   "dependencies": {

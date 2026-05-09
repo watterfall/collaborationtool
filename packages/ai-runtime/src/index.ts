@@ -20,6 +20,10 @@ export {
 export {
   inMemoryServerTransport,
   crossrefMockTransport,
+  stdioServerTransport,
+  type StdioFactoryParams,
+  type StdioFactoryResult,
+  type InMemoryFactoryResult,
 } from './transports';
 
 export {

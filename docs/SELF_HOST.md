@@ -82,6 +82,16 @@ export YSWEET_AUTH=dev-y-sweet-auth-token-replace-in-prod
 
 # 真 Anthropic API（可选；不设走 mock runner）
 export ANTHROPIC_API_KEY=sk-ant-...
+
+# 真 CrossRef MCP（可选；不设走 in-memory mock 仅认 5 条 fixture DOI）
+# 走 stdio 子进程；Web route 在每次 invoke 时 spawn / 收回。
+export CROSSREF_MCP_COMMAND=tsx
+export CROSSREF_MCP_ARGS='["mcp-servers/crossref/src/bin.ts"]'
+export CROSSREF_MCP_CWD=/path/to/collaborationtool   # 若 web 进程 cwd 不在 repo 根
+# 透传到子进程（mcp-servers/crossref/src/bin.ts 读取）：
+# CROSSREF_BASE_URL  default https://api.crossref.org
+# CROSSREF_USER_AGENT default collaborationtool/0.0 (mailto:dev@…)
+# CROSSREF_TIMEOUT_MS default 8000
 ```
 
 **生产警告**：
@@ -184,7 +194,8 @@ docker volume ls | grep collaborationtool   # 找 volume
 |---|---|---|
 | signup 200 但 docs 列表 redirect 到 login | 中间件没拿到 cookie | 检查 BETTER_AUTH_URL 与你访问的 URL 严格一致 |
 | 编辑器加载中卡住 | `/api/sync-token` 401 | 检查 SYNC_TOKEN_SECRET 在 web 与 gateway 是否同一个 |
-| AI invoke 200 但 proposal 为空 | mock runner 命中无 fixture 的 DOI | crossref-mock 5 条 fixture 仅在 `mcp-servers/crossref-mock/src/server.ts`；改用真 ANTHROPIC_API_KEY 走 real LLM |
+| AI invoke 200 但 proposal 为空 | mock runner 命中无 fixture 的 DOI | crossref-mock 5 条 fixture 仅在 `mcp-servers/crossref-mock/src/server.ts`；改用真 ANTHROPIC_API_KEY 走 real LLM，或设 CROSSREF_MCP_COMMAND 走真 CrossRef |
+| AI invoke 500 `agent-failed` 提到 spawn ENOENT | CROSSREF_MCP_COMMAND 不在 PATH | 用绝对路径（`which tsx`），或不设 → 自动 fallback 到 in-memory mock |
 | PDF 导出 503 typst-binary-unavailable | 未装 typst CLI | 见上面 §2 装 typst |
 | `migration "0001_initial.sql" already applied` 但出错 | 之前部分 apply | `psql ... -c 'DROP TABLE IF EXISTS _drizzle_migrations CASCADE'` 然后重 migrate；准备好丢数据 |
 

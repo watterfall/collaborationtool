@@ -32,6 +32,7 @@ import {
 import { loadPrincipalContext } from '@collaborationtool/permissions';
 
 import { auth } from '@/lib/auth';
+import { crossrefMcpFromEnv } from '@/lib/crossref-mcp';
 import { getDb } from '@/lib/db';
 import { getPrincipalIdForUser } from '@/lib/principal';
 
@@ -108,6 +109,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             (x): x is string => typeof x === 'string',
           )
         : [];
+      const crossrefMcp = crossrefMcpFromEnv();
       const result = await invokeCitationAgent(
         {
           principalContext: userCtx,
@@ -118,7 +120,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           skillsRoot,
           anthropic,
         },
-        { db },
+        { db, ...(crossrefMcp ? { crossrefMcp } : {}) },
       );
       return NextResponse.json({
         proposal: result.proposal,
