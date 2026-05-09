@@ -12,6 +12,7 @@ import { getPrincipalIdForUser } from '@/lib/principal';
 
 import EditorClient from './editor-client';
 import ExportDrawer from './components/ExportDrawer';
+import AgentPanel from './components/AgentPanel';
 
 export default async function EditorPage({
   params,
@@ -72,6 +73,8 @@ export default async function EditorPage({
       </header>
 
       <EditorClient documentId={doc.id} />
+
+      <AgentPanel documentId={doc.id} blockId="blk-cursor" />
 
       <ExportDrawer documentId={doc.id} />
 

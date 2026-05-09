@@ -33,6 +33,8 @@ const DEMO_USER_USER_ID = 'demo-user-0001';
 const DEMO_USER_PRINCIPAL_ID = 'user:00000000-0000-7000-8000-000000000001';
 const CITATION_AGENT_ID = '00000000-0000-7000-8000-00000000a001';
 const CITATION_AGENT_PRINCIPAL_ID = `agent:${CITATION_AGENT_ID}`;
+const INLINE_EDITOR_AGENT_ID = '00000000-0000-7000-8000-00000000b001';
+const INLINE_EDITOR_AGENT_PRINCIPAL_ID = `agent:${INLINE_EDITOR_AGENT_ID}`;
 const CITATION_LOOKUP_PROMPT_TEMPLATE_ID = 'citation-lookup@seed-v1';
 const DEMO_DOCUMENT_ID = '00000000-0000-7000-8000-00000000d001';
 
@@ -61,6 +63,12 @@ export async function seed(databaseUrl?: string): Promise<SeedIds> {
           displayName: 'Citation Lookup Agent',
           agentId: CITATION_AGENT_ID,
         },
+        {
+          id: INLINE_EDITOR_AGENT_PRINCIPAL_ID,
+          kind: 'agent',
+          displayName: 'Inline Editor Agent',
+          agentId: INLINE_EDITOR_AGENT_ID,
+        },
       ])
       .onConflictDoNothing({ target: schema.principal.id });
 
@@ -84,6 +92,24 @@ export async function seed(databaseUrl?: string): Promise<SeedIds> {
         defaultMaxTokens: 4096,
         defaultTimeoutMs: 60000,
         principalId: CITATION_AGENT_PRINCIPAL_ID,
+      })
+      .onConflictDoNothing({ target: schema.agent.id });
+
+    // ----- Inline Editor Agent -----
+    await db
+      .insert(schema.agent)
+      .values({
+        id: INLINE_EDITOR_AGENT_ID,
+        ownerPrincipalId: SERVICE_PRINCIPAL_ID,
+        name: 'Inline Editor',
+        kind: 'editor',
+        runtime: 'server',
+        defaultModelId: 'claude-sonnet-4-6',
+        defaultSkillIds: ['inline-editor'],
+        allowedMcpServerIds: [],
+        defaultMaxTokens: 4096,
+        defaultTimeoutMs: 60000,
+        principalId: INLINE_EDITOR_AGENT_PRINCIPAL_ID,
       })
       .onConflictDoNothing({ target: schema.agent.id });
 

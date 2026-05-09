@@ -62,7 +62,7 @@ if (SHOULD_SKIP) {
 
     // ---------- seed values ----------
 
-    it('seed creates the expected service + demo user + citation agent', async () => {
+    it('seed creates the expected service + demo user + agents', async () => {
       const principals = await dbHandle.db.select().from(schema.principal);
       const ids = principals.map((p) => p.id).sort();
       assert.ok(ids.includes('service:platform'));
@@ -70,10 +70,12 @@ if (SHOULD_SKIP) {
       assert.ok(ids.some((id) => id.startsWith('agent:')));
 
       const agents = await dbHandle.db.select().from(schema.agent);
-      assert.equal(agents.length, 1);
-      assert.equal(agents[0]!.kind, 'citation');
-      assert.equal(agents[0]!.runtime, 'server');
-      assert.deepEqual(agents[0]!.defaultSkillIds, ['citation-lookup']);
+      // Phase 1 D13: seed creates citation + inline-editor agents.
+      assert.equal(agents.length, 2);
+      const kinds = agents.map((a) => a.kind).sort();
+      assert.deepEqual(kinds, ['citation', 'editor']);
+      const runtimes = new Set(agents.map((a) => a.runtime));
+      assert.ok(runtimes.has('server'));
     });
 
     // ---------- principal CHECK constraints ----------

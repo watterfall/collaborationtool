@@ -43,7 +43,11 @@
     "render-myst:test": "pnpm --filter @collaborationtool/render-myst test",
     "render-myst:typecheck": "pnpm --filter @collaborationtool/render-myst typecheck",
     "render-typst:test": "pnpm --filter @collaborationtool/render-typst test",
-    "render-typst:typecheck": "pnpm --filter @collaborationtool/render-typst typecheck"
+    "render-typst:typecheck": "pnpm --filter @collaborationtool/render-typst typecheck",
+    "ai-runtime:test": "pnpm --filter @collaborationtool/ai-runtime test",
+    "ai-runtime:typecheck": "pnpm --filter @collaborationtool/ai-runtime typecheck",
+    "mcp-crossref:test": "pnpm --filter @collaborationtool/mcp-server-crossref test",
+    "mcp-crossref:typecheck": "pnpm --filter @collaborationtool/mcp-server-crossref typecheck"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

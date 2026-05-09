@@ -7,6 +7,13 @@
       "phase": 1,
       "status": "active",
       "agentKinds": ["citation"]
+    },
+    {
+      "id": "inline-editor",
+      "path": "inline-editor/SKILL.md",
+      "phase": 1,
+      "status": "active",
+      "agentKinds": ["editor"]
     }
   ]
 }

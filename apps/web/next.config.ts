@@ -8,8 +8,12 @@ const config: NextConfig = {
     'postgres',
     'drizzle-orm',
     'better-auth',
+    '@anthropic-ai/sdk',
+    '@modelcontextprotocol/sdk',
     '@collaborationtool/drizzle',
     '@collaborationtool/permissions',
+    '@collaborationtool/ai-runtime',
+    '@collaborationtool/mcp-server-crossref-mock',
   ],
   // editor-core ships ESM with TipTap / Yjs / KaTeX deps; we want Next
   // to transpile it as part of the app bundle so pnpm-workspace ESM

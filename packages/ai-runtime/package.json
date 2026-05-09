@@ -1,0 +1,34 @@
+{
+  "name": "@collaborationtool/ai-runtime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --import tsx tests/*.test.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.1",
+    "@collaborationtool/drizzle": "workspace:*",
+    "@collaborationtool/mcp-server-crossref-mock": "workspace:*",
+    "@collaborationtool/permissions": "workspace:*",
+    "@collaborationtool/schema": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "drizzle-orm": "^0.45.2",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
