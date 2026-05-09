@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { signIn } from '@/lib/auth-client';
+import OrcidSignIn from '@/components/orcid-sign-in';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -73,6 +74,7 @@ export default function LoginPage() {
           {pending ? '...' : '登录 / Sign in'}
         </button>
       </form>
+      <OrcidSignIn />
       <p className="text-sm text-zinc-600">
         还没有账户？{' '}
         <Link href="/signup" className="underline">

@@ -93,6 +93,17 @@ export CROSSREF_MCP_CWD=/path/to/collaborationtool   # 若 web 进程 cwd 不在
 # CROSSREF_USER_AGENT default collaborationtool/0.0 (mailto:dev@…)
 # CROSSREF_TIMEOUT_MS default 8000
 
+# ORCID OAuth（可选；Phase 1.5 #2）
+# 在 https://orcid.org/developer-tools 注册 public API client，回调地址：
+#   https://<your-host>/api/auth/oauth2/callback/orcid
+# 测试用 sandbox.orcid.org（独立 client id 注册），ORCID_BASE_URL 改成 sandbox。
+export ORCID_CLIENT_ID=APP-XXXXXXXXXXXXXXXX
+export ORCID_CLIENT_SECRET=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+export ORCID_BASE_URL=https://orcid.org   # 可选；默认 https://orcid.org
+# 客户端 UI 显示按钮的开关（next 编译时读，不能服务器动态切）
+export NEXT_PUBLIC_ORCID_ENABLED=true
+# 不设 client id/secret 则后端不注册 provider；按钮即使勾了也走 PROVIDER_CONFIG_NOT_FOUND
+
 # 观测性 / Observability（可选；ADR-0004 §2.5）
 # Sentry：错误 + 慢请求（>1s）告警；DSN 格式 https://<key>@<host>/<projectId>
 export SENTRY_DSN=https://abc123@o100.ingest.sentry.io/42

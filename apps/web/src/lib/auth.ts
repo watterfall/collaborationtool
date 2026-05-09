@@ -14,10 +14,11 @@ import {
 } from '@collaborationtool/permissions';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { organization } from 'better-auth/plugins';
+import { genericOAuth, organization } from 'better-auth/plugins';
 
 import { getDb } from './db';
 import { env } from './env';
+import { buildOrcidProviderConfig, readOrcidEnv } from './orcid';
 
 const db = getDb();
 
@@ -44,14 +45,10 @@ export const auth = betterAuth({
     requireEmailVerification: false,
     minPasswordLength: 8,
   },
-  // OAuth providers (Google, GitHub, ORCID) deferred to Phase 1.5.
-  plugins: [
-    organization({
-      // Phase 1: organization metadata is bare-bones. Phase 1.5 adds
-      // invitation flow + role beyond owner/member.
-      allowUserToCreateOrganization: true,
-    }),
-  ],
+  // Phase 1.5 #2: ORCID OAuth (env-gated). When ORCID_CLIENT_ID +
+  // _SECRET are unset, the provider list stays empty so the existing
+  // email/password flow is the only sign-in path.
+  plugins: buildPlugins(),
   databaseHooks: {
     user: {
       create: {
@@ -102,4 +99,23 @@ export async function bridgeOrgCreate(args: {
  *  delete is exposed. Currently unused — Phase 1.5. */
 export async function bridgeUserRevoke(userId: string): Promise<void> {
   await revokeUserPrincipal(db, userId);
+}
+
+function buildPlugins() {
+  const plugins: ReturnType<typeof organization>[] = [
+    organization({
+      // Phase 1: organization metadata is bare-bones. Phase 1.5 adds
+      // invitation flow + role beyond owner/member.
+      allowUserToCreateOrganization: true,
+    }),
+  ];
+  const orcidEnv = readOrcidEnv();
+  if (orcidEnv) {
+    plugins.push(
+      genericOAuth({
+        config: [buildOrcidProviderConfig(orcidEnv)],
+      }) as unknown as ReturnType<typeof organization>,
+    );
+  }
+  return plugins;
 }

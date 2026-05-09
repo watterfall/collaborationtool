@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { signUp } from '@/lib/auth-client';
+import OrcidSignIn from '@/components/orcid-sign-in';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function SignUpPage() {
       <header>
         <h1 className="text-3xl font-medium">注册 · Sign up</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Phase 1 仅支持邮箱密码；ORCID / Google 等留 Phase 1.5。
+          支持邮箱密码 + ORCID（如服务端开启）。
         </p>
       </header>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -80,6 +81,7 @@ export default function SignUpPage() {
           {pending ? '...' : '注册 / Sign up'}
         </button>
       </form>
+      <OrcidSignIn />
       <p className="text-sm text-zinc-600">
         已有账户？{' '}
         <Link href="/login" className="underline">
