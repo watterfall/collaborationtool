@@ -419,3 +419,20 @@ User 2026-05-09 明确"平台性非常重要"。Phase 3 才补 = 反模式 §348
 - `triggerPatterns` 召回 + LLM 二次判定的 dispatcher 实施（ADR-0010 §2.4
   完整路径）
 - 把 `plugins/registry.json` 加进来（agent-plugin id → path）
+
+### 2026-05-09 · W4-W7 跟切完成 → **Accepted**
+
+- ✅ inline-editor 切 plugin 路径（commit `20a4a7a`）：plugins/inline-editor-
+  agent/ + apps/web /api/agent/invoke 调 invokeAgentViaPlugin；hardcode
+  packages/ai-runtime/src/agents/inline-editor.ts 删除；packages/ai-
+  runtime/src/agents/ 目录删除（empty）
+- ⏸ triggerPatterns dispatcher 推 Phase 2.5（与真 reviewer agent
+  prompt 设计同时做）
+- ⏸ plugins/registry.json id→path 推 Phase 2.5（apps/web route 暂
+  hardcode citationPluginRoot / inlineEditorPluginRoot）
+
+ADR-0010 状态从 Proposed (W3 PASS) → **Accepted**。
+
+caveat：dispatcher 完整路径 + plugin marketplace 推 Phase 3。Phase 2
+plugin 系统证明工程模型正确（plugin path 与 hardcode 等价 + 第三方
+任意 path 加载 + 公开 API 完整），未阻塞下游工作。

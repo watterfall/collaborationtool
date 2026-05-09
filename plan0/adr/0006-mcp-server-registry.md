@@ -271,7 +271,27 @@ health_status），通用表会变成"宽表 + 大量 NULL"。两表分开，通
 
 ## 7. Review log
 
-（W3 dogfood gate 后填；预期内容：(a) MCP plugin 路径与 env-var 路径
-行为一致性测试结果；(b) per-invocation spawn 在 reviewer agent
-（ADR-0008 异步长任务）下的实测开销；(c) `mcp.install` capability 是
-否进入 ADR-0002 词汇正式版；(d) §5 open questions 答案）
+### 2026-05-09 · Phase 2 W1-W7 实施 → **Accepted**
+
+mcp_server PG 表（migration 0005）+ mcp-servers/registry.json seed
+（crossref 一条）+ plugin loader 集成（packages/ai-runtime/src/plugins/
+loader.ts 可解析 `transport: 'stdio'|'http'|'http-sse'` manifest）
+全部落地。env-var → 注册表迁移 W2 完成；apps/web /api/agent/invoke
+经 invokeAgentViaPlugin 调用，crossref MCP 通过 registry 解析。
+
+§5 open questions 答案：
+- **表名**：`mcp_server`（保持 schema.ts 命名风格一致）
+- **registry.json seed 时机**：`pnpm db:seed` 末尾 import；W7 dogfood gate
+  通过的工程依据
+- **Health check cron 谁跑**：暂未实施，推 Phase 2.5 在 reviewer agent
+  跑通后由 apps/agent-worker 兼任；不再独立守护进程
+- **degraded 列表注入 agent prompt**：推 Phase 2.5（与真 reviewer agent
+  prompt 设计同时做）
+
+`mcp.install` capability：Phase 2 未加入 ADR-0002 词汇；plugin manifest
+里写它被 manifest parser warn 不 reject（ADR-0011 W7 验证：第三方
+tmpdir plugin 测试 commit `6b5bdc9`）。Phase 3 用户安装路径开放后
+（ADR-0006 §2.5）正式加进 ADR-0002 词汇。
+
+caveat：HTTP / http-sse transport 路径 schema 已就绪但运行时未实测
+（Phase 2 仅 stdio crossref-mock）；Phase 3 用户挂自己 MCP 时实施。

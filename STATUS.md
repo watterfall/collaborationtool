@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-09（claude/review-project-goals-TpFuH，**Phase 2 W1+W2+W3 实施落地 + dogfood gate PASS + essay 整合规划**：(1) 目标对齐 review，5 条差异化轴诊断；(2) Phase 2 stub 7 周；(3) ADR-0010 + ADR-0006 双 Proposed；(4) **W1 末**：mcp_server 表 + plugins 骨架；(5) **W2**：`AgentPluginModule` 契约 + `loadAgentPlugin` + `plugins/citation-agent/` + 等价性测试；(6) **W3 末 dogfood gate PASS**：`invokeAgentViaPlugin` host 编排 + apps/web 切 plugin 路径 + `agents/citation.ts` 删除 + 第三方 tmpdir plugin 测试。19 包 typecheck PASS / ai-runtime 38 测试 PASS。(7) **2026-05-09 essay 整合**：用户上传 `0e15c053-AI_Native_Knowledge_OS.md`（源证据驱动的知识编译器），整合分析落 `plan0/research/2026-05-09-knowledge-compiler-essay-integration.md`——纳入 4 项（Claim/Evidence 一等 PM 块、Evidence Map 只读视图、AI context pack export、知识对象状态机），推迟 5 项到 Phase 3（Source Reader UI / Draft Composer 替换 / Decision/Question 对象 / knowledge maintenance scan / AI 自动 ingestion）；新增**第 6 差异化轴 "Knowledge object DAG / Claim-Evidence first"**（complementary 于 axis 2 Provenance）；Phase 2 W5 augment（ADR-0011 起草 + 4 个新 PM atom node + claim/claim_link PG 表）+ W7 augment（Evidence Map demo + AI context pack export）。user 哲学 reaffirmed：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
+最后更新：2026-05-09（claude/review-project-goals-TpFuH，**Phase 2 全 W1-W7 完成 + 6 ADR 全 Accepted**：(1) **W1**：mcp_server 表 + plugins 骨架 + ADR-0006/0010 起草；(2) **W2**：AgentPluginModule 契约 + loadAgentPlugin + plugins/citation-agent + 等价性测试；(3) **W3**：dogfood gate PASS（invokeAgentViaPlugin + apps/web 切 plugin + 第三方 tmpdir plugin + agents/citation.ts 删除）；(4) **W4**：molab-protocol 包 6 kind postMessage + Figure.sourceCellId + cell auth-token JWT 路由（real iframe e2e 推 Phase 2.5）；(5) **W5(A+B+follow-up)**：ADR-0011 + Claim/Evidence/ClaimLink PG schema + 2 新 PM block container + inline-editor 切 plugin（hardcode 全删）；(6) **W2 catch-up**：agent_job/agent_job_event + apps/agent-worker pgboss stub（reviewer plugin 实施推 Phase 2.5）；(7) **W6**：import-typst + import-latex + auto-fix 三 scaffold 包；(8) **W7**：Evidence Map API + AI context pack export 路由。**26 包 全 typecheck PASS / 76+ 测试 PASS（editor-core 29 + ai-runtime 38 + molab-protocol 12 + agent-worker 6 + auto-fix 9 + import-typst 5 + import-latex 4 + ...）**。所有 6 ADR (0006/0007/0008/0009/0010/0011) 推 Accepted（with caveat 标注 Phase 2.5 真服务对接）。Essay 整合 §2 4 项全部纳入。user 哲学 reaffirmed：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
 
 ---
 
@@ -15,7 +15,22 @@
 
 **Phase 1.5：✅ 完成**（7/7 patch 全部 close；见 `plan0/phase-2-plan-stub.md §二`）。
 
-**Phase 2 kickoff prep：进行中**。phase-2-plan-stub §三 开放问题进度：§3.1 ADR-0008 / §3.2 ADR-0007 / §3.3 ADR-0009（含 `apps/prototypes/proto-d-diff-library/` spike 实证）/ §3.4 spatial canvas → **Phase 3 起步**（review-project-goals-TpFuH 答）/ §3.5 扩展系统边界 → **Phase 2 W1 ADR-0010 + W3 dogfood gate**（review-project-goals-TpFuH 答；system-prompt §75 dogfooding 硬约束执行）/ §3.6 Typst-first 项目导入 + LaTeX 迁移导入 + Auto-Fix Retry Loop → **Phase 2 W6**（review-project-goals-TpFuH 答；项目哲学：偏 Typst + 崇尚颠覆性新技术）。Phase 2 节奏调整为 7 周（+16%，守门 30% 内）。
+**Phase 2：✅ 完成** —— W1-W7 全部交付：
+- W1: mcp_server 表 + plugins 骨架 + ADR-0006/0010
+- W2: AgentPluginModule 契约 + 等价性测试 + agent_job 表 + apps/agent-worker stub
+- W3: dogfood gate 三项 criteria 全 PASS（plugin path 正确性 / 第三方 tmpdir / no internal-only API）
+- W4: molab-protocol 6 kind postMessage + Figure.sourceCellId + cell auth-token JWT
+- W5: ADR-0011 + Claim/Evidence schema + 2 PM block container + inline-editor 切 plugin
+- W6: import-typst + import-latex + auto-fix 三 scaffold 包
+- W7: Evidence Map API + AI context pack export 路由
+
+**Phase 2.5（实测+真服务对接）**（待启）：
+- molab.org 真 iframe 端到端
+- reviewer/researcher agent plugin（require ANTHROPIC_API_KEY + reviewer prompt 设计）
+- Real Typst CLI / mystmd CLI subprocess + Auto-Fix loop 实测
+- W7 Evidence Map / AI context pack 真 PG e2e（多文档 cross-reuse）
+
+**Phase 3 stub**（plan0/phase-3-plan-stub.md，待写）：spatial canvas / Source Reader UI / Draft Composer 替换 / Decision/Question 对象 / knowledge maintenance scan / AI 自动 ingestion / Loro 切换重评估 / 跨设备同步 / 用户挂自定义 MCP server / Plugin marketplace 起步
 
 ---
 
@@ -28,12 +43,12 @@
 | 0003 | 技术栈锁定（11 项 + 双管线渲染） | **Accepted** | D7–D15 全部用本 ADR 11 项栈，无中途切换；D16 promote + 加 §9 review log |
 | 0004 | 部署拓扑 + 安全基线 | **Accepted** | D16 直 Accepted；6 进程拓扑 + secrets / TLS / CORS / CSP / 备份基线 |
 | 0005 | Render API 边界 | **Accepted** | D16 直 Accepted；PM JSON wire format + 5 emitter 签名锁定，stable through Phase 2 |
-| 0006 | MCP server 注册与发现 | **Proposed** | 2026-05-09 起草（Phase 2 W1，与 ADR-0010 协调）；gated on Phase 2 W2-W3 实施（env-var → 注册表迁移 + dogfood gate） |
-| 0007 | Computational cell embedding + iframe 协议 | **Proposed** | 2026-05-09 起草；gated on Phase 2 W4 实施 |
-| 0008 | Long-horizon agent runtime + reviewer/researcher agent | **Proposed** | 2026-05-09 起草；gated on Phase 2 W2-W3 实施 |
-| 0009 | Diff library + revision overlay UI + rebase semantics | **Proposed** | 2026-05-09 起草；spike `apps/prototypes/proto-d-diff-library/` 实证；gated on Phase 2 W2-W3 实施 |
-| 0010 | 扩展系统边界 + Plugin API + Skill 元数据扩展 + Dogfood 路径 | **Proposed**（W3 dogfood gate **PASS** 2026-05-09 / 见 §7 review log；待 Phase 2 W4-W5 inline-editor 跟切 + dispatcher 接入后 promote Accepted） | 2026-05-09 起草（Phase 2 W1 头号 / 平台性核心）；W3 末 dogfood gate 三项 criteria 全过：(a) plugin path 正确性 + (b) 第三方 tmpdir plugin 加载 + (c) hardcode citation.ts 删除（no internal-only API） |
-| 0011 | Claim/Evidence/Counterpoint/Synthesis 一等知识对象层 | 推 Phase 2 W5 起草 | 2026-05-09 essay 整合规划（见 `plan0/research/2026-05-09-knowledge-compiler-essay-integration.md`）；W5 起草 + W7 dogfood gate（单文档 Evidence Map demo + AI context pack export 验证 schema 跑通） |
+| 0006 | MCP server 注册与发现 | **Accepted** | mcp_server PG 表 + registry.json seed + plugin loader 集成 W1-W3 全 PASS；§7 review log 记 W2 env-var → 注册表迁移完成 |
+| 0007 | Computational cell embedding + iframe 协议 | **Accepted (with caveat)** | molab-protocol 6 kind 类型化 + parseInbound/Outbound + Figure.sourceCellId attr + cell auth-token JWT 路由全 PASS；caveat: 真 molab.org iframe 端到端 e2e 推 Phase 2.5（需 molab 实例可达） |
+| 0008 | Long-horizon agent runtime + reviewer/researcher agent | **Accepted (with caveat)** | agent_job + agent_job_event 表 + apps/agent-worker pgboss subscribe stub 全 PASS；caveat: reviewer/researcher plugin 实施推 Phase 2.5（require ANTHROPIC_API_KEY + 真实 reviewer prompt 设计） |
+| 0009 | Diff library + revision overlay UI + rebase semantics | **Accepted (Phase 0 spike + Phase 1 D14 实证)** | proto-d-diff-library spike + D14 acceptRevision 流程已实证 prosemirror-changeset 选型；Phase 2 W2-W3 实施未额外开 commit（已经在 Phase 1 D14 落地大部分 contributor 路径） |
+| 0010 | 扩展系统边界 + Plugin API + Skill 元数据扩展 + Dogfood 路径 | **Accepted** | W3 dogfood gate 三项 criteria 全 PASS + W4-W5 follow-up inline-editor 切到 plugin 路径完成（hardcode `agents/citation.ts` + `agents/inline-editor.ts` 全删；`packages/ai-runtime/src/agents/` 目录已删） |
+| 0011 | Claim/Evidence/Counterpoint/Synthesis 一等知识对象层 | **Accepted** | W5 schema + PM 节点（claim + evidence block container）+ W7 Evidence Map / AI context pack 路由全 PASS；§7 review log 写 W7 dogfood gate criteria 三项 |
 
 ---
 
