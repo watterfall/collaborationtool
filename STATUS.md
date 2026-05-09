@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-09（claude/review-project-goals-TpFuH，**目标对齐 review + Phase 2 W1 起手**：5 条差异化轴诊断 → 第 5 轴"开放平台"显性化；Phase 2 stub 调整为 7 周（W1 ADR-0006/0010、W2 Typst.ts WASM spike、W3 Loro spike + dogfood 硬 gate、W6 Typst-first 项目导入 + LaTeX 严格范围迁移 + Auto-Fix、W7 验收 e2e + 至少 1 个外部 plugin）；§七 技术雷达分主动 spike + 被动 watch；**ADR-0010（扩展系统边界 + Plugin API + Skill 元数据扩展 + Dogfood 路径）已 Proposed**——平台性头号决策落档；user 哲学 reaffirmed 2026-05-09：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
+最后更新：2026-05-09（claude/review-project-goals-TpFuH，**目标对齐 review + Phase 2 W1 起手**：5 条差异化轴诊断 → 第 5 轴"开放平台"显性化；Phase 2 stub 调整为 7 周；§七 技术雷达分主动 spike + 被动 watch；**ADR-0010（扩展系统边界 + Plugin API）已 Proposed** + **ADR-0006（MCP 注册表 + 发现 + 生命周期 + capability gating）已 Proposed**——W1 两份头号 ADR 全部落档；user 哲学 reaffirmed 2026-05-09：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
 
 ---
 
@@ -28,7 +28,7 @@
 | 0003 | 技术栈锁定（11 项 + 双管线渲染） | **Accepted** | D7–D15 全部用本 ADR 11 项栈，无中途切换；D16 promote + 加 §9 review log |
 | 0004 | 部署拓扑 + 安全基线 | **Accepted** | D16 直 Accepted；6 进程拓扑 + secrets / TLS / CORS / CSP / 备份基线 |
 | 0005 | Render API 边界 | **Accepted** | D16 直 Accepted；PM JSON wire format + 5 emitter 签名锁定，stable through Phase 2 |
-| 0006 | MCP server 注册与发现 | 推 Phase 2 W1 | Phase 2 kickoff 时与 ADR-0007/8 一起起草 |
+| 0006 | MCP server 注册与发现 | **Proposed** | 2026-05-09 起草（Phase 2 W1，与 ADR-0010 协调）；gated on Phase 2 W2-W3 实施（env-var → 注册表迁移 + dogfood gate） |
 | 0007 | Computational cell embedding + iframe 协议 | **Proposed** | 2026-05-09 起草；gated on Phase 2 W4 实施 |
 | 0008 | Long-horizon agent runtime + reviewer/researcher agent | **Proposed** | 2026-05-09 起草；gated on Phase 2 W2-W3 实施 |
 | 0009 | Diff library + revision overlay UI + rebase semantics | **Proposed** | 2026-05-09 起草；spike `apps/prototypes/proto-d-diff-library/` 实证；gated on Phase 2 W2-W3 实施 |
