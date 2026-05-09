@@ -27,6 +27,12 @@ import {
 
 import { auth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
+import {
+  anonDistinctId,
+  captureError,
+  captureEvent,
+  isSlow,
+} from '@/lib/observability';
 import { getPrincipalIdForUser } from '@/lib/principal';
 
 type ExportFormat =
@@ -132,10 +138,28 @@ export async function GET(
   const title = doc.title || doc.slug;
   const lang = doc.primaryLanguage;
 
+  const distinctId = anonDistinctId(principalId);
+  const startedAt = Date.now();
+  const observeOk = (extra: Record<string, unknown> = {}) => {
+    const durationMs = Date.now() - startedAt;
+    captureEvent({
+      event: 'document.export.ok',
+      distinctId,
+      properties: {
+        format,
+        durationMs,
+        slow: isSlow(durationMs),
+        ...extra,
+      },
+    });
+  };
+
+  try {
   switch (format as ExportFormat) {
     case 'html': {
       const ast = pmToMystAst(pmJson);
       const html = mystAstToHtml(ast, { primaryLanguage: lang, title });
+      observeOk();
       return new Response(html, {
         status: 200,
         headers: {
@@ -147,6 +171,7 @@ export async function GET(
     case 'jats': {
       const ast = pmToMystAst(pmJson);
       const xml = mystAstToJats(ast, { primaryLanguage: lang, title });
+      observeOk();
       return new Response(xml, {
         status: 200,
         headers: {
@@ -158,6 +183,7 @@ export async function GET(
     case 'markdown': {
       const ast = pmToMystAst(pmJson);
       const md = mystAstToMarkdown(ast);
+      observeOk();
       return new Response(md, {
         status: 200,
         headers: {
@@ -168,6 +194,7 @@ export async function GET(
     }
     case 'typst-source': {
       const source = pmToTypstSource(pmJson, { primaryLanguage: lang, title });
+      observeOk();
       return new Response(source, {
         status: 200,
         headers: {
@@ -180,6 +207,7 @@ export async function GET(
       const source = pmToTypstSource(pmJson, { primaryLanguage: lang, title });
       try {
         const result = await compileTypstToPdf(source);
+        observeOk({ typstDurationMs: result.durationMs });
         // Wrap in Buffer so the Response BodyInit type accepts it
         // across Node 22 / Edge fetch typings.
         return new Response(Buffer.from(result.pdfBytes), {
@@ -197,6 +225,11 @@ export async function GET(
             : err instanceof Error
               ? err.message
               : String(err);
+        captureEvent({
+          event: 'document.export.unavailable',
+          distinctId,
+          properties: { format, reason: 'typst-binary-unavailable' },
+        });
         return NextResponse.json(
           {
             error: 'typst-binary-unavailable',
@@ -214,6 +247,7 @@ export async function GET(
         primaryLanguage: lang,
         title,
       });
+      observeOk();
       return new Response(Buffer.from(bytes), {
         status: 200,
         headers: {
@@ -223,6 +257,20 @@ export async function GET(
         },
       });
     }
+  }
+  } catch (err) {
+    captureError(err, {
+      route: 'api.export',
+      principalId: distinctId,
+      tags: { format: String(format) },
+    });
+    return NextResponse.json(
+      {
+        error: 'export-failed',
+        detail: err instanceof Error ? err.message : String(err),
+      },
+      { status: 500 },
+    );
   }
 }
 

@@ -32,6 +32,7 @@
     "web:build": "pnpm --filter @collaborationtool/web build",
     "web:start": "pnpm --filter @collaborationtool/web start",
     "web:typecheck": "pnpm --filter @collaborationtool/web typecheck",
+    "web:test": "pnpm --filter @collaborationtool/web test",
     "editor:test": "pnpm --filter @collaborationtool/editor-core test",
     "editor:typecheck": "pnpm --filter @collaborationtool/editor-core typecheck",
     "snapshot:tick": "pnpm --filter @collaborationtool/snapshot-worker tick",

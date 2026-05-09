@@ -23,13 +23,13 @@ D15 USER_GUIDE.md 列的 7 个 known limitation，全部归集到 Phase 1.5。**
 
 1. **Invitation flow** — better-auth invitation hook + email；不再 SQL 直接 grant
 2. **ORCID OAuth** — 学术身份 + 显示 ORCID iD 在作者列；为 Phase 2 reviewer agent 的"匿名/具名 reviewer"打底
-3. **Sentry + PostHog** — ADR-0004 §2.5 已规划
+3. **Sentry + PostHog** — ✅ 已落地（hand-rolled HTTP capture，零 SDK 依赖；`apps/web/src/lib/observability.ts` 包 `captureError`/`captureEvent`/`anonDistinctId`/`isSlow`；hook 进 `/api/agent/invoke` + `/api/export`；fire-and-forget 不阻塞响应；env 不设自动 no-op；8 个单测 PASS）
 4. **Word (.docx) 导出** — ✅ 已落地（自写 docx emitter + `docx` npm 包，避开 mystmd unified pipeline 依赖；图片 binary fetch 留 Phase 2）
 5. **PmDocInput → @collaborationtool/schema 提取** — ✅ 已落地（消除两个 render 包的重复；ADR-0005 §2.4 deadline 命中）
 6. **Real CrossRef stdio MCP** — ✅ 已落地（`mcp-servers/crossref/src/bin.ts` 通过 `StdioServerTransport` 自托管；`packages/ai-runtime` 加 `stdioServerTransport` 工厂 + `invokeCitationAgent.crossrefMcp` override；apps/web 路由读 `CROSSREF_MCP_COMMAND/ARGS/CWD`，不设则 fallback in-memory mock；3 个 stdio bin 子进程冒烟测全 PASS / 网络由 in-process HTTP stub 驱动）
 7. **PG WAL-G 备份** — ADR-0004 §2.6 列遗留
 
-**1.5 进度**：4 + 5 + 6 已 close；剩 1 / 2 / 3 / 7。
+**1.5 进度**：3 + 4 + 5 + 6 已 close；剩 1 / 2 / 7。
 
 ---
 

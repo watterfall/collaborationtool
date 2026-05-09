@@ -92,6 +92,14 @@ export CROSSREF_MCP_CWD=/path/to/collaborationtool   # 若 web 进程 cwd 不在
 # CROSSREF_BASE_URL  default https://api.crossref.org
 # CROSSREF_USER_AGENT default collaborationtool/0.0 (mailto:dev@…)
 # CROSSREF_TIMEOUT_MS default 8000
+
+# 观测性 / Observability（可选；ADR-0004 §2.5）
+# Sentry：错误 + 慢请求（>1s）告警；DSN 格式 https://<key>@<host>/<projectId>
+export SENTRY_DSN=https://abc123@o100.ingest.sentry.io/42
+# PostHog：行为分析；anon UUID 而非真实 user id
+export POSTHOG_API_KEY=phc_xxxxxxxxxxxxxxxxxxxxxxxx
+export POSTHOG_HOST=https://eu.posthog.com   # 可选；默认 app.posthog.com
+# 不设任意一个则该路径自动 no-op（fire-and-forget HTTP capture，无 SDK 依赖）
 ```
 
 **生产警告**：
