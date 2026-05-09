@@ -1,0 +1,36 @@
+id: "@official/citation-agent"
+version: "0.1.0"
+type: agent
+title:
+  zh: "引用核查 agent"
+  en: "Citation agent"
+description:
+  zh: "核查并补全研究论文段落里的学术引用：DOI 拼写、CSL-JSON 元数据、跨数据源核对。propose-mode（ADR-0002 role 4）输出，从不直接 commit。"
+  en: "Verify and complete academic citations in research-paper passages: DOI spelling, CSL-JSON metadata, cross-source reconciliation. Emits propose-mode revisions (ADR-0002 role 4); never auto-commits."
+authors:
+  - "@official"
+license: Apache-2.0
+homepage: https://github.com/watterfall/collaborationtool
+required_capabilities:
+  - block.read
+  - block.propose
+  - citation.read
+  - citation.create
+  - citation.update
+  - citation.bind
+  - agent.invoke:citation
+runtime:
+  kernel_version: "^2.0.0"
+  target: node
+  node: ">=20"
+
+# Agent-specific
+kind: citation
+prompt_template: ./prompt.md
+tools:
+  - mcp:crossref:lookupDoi
+  - builtin:proposeRevision
+runtime_mode: propose
+quota:
+  daily_invocations: 100
+  timeout_seconds: 60

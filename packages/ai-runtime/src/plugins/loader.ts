@@ -16,9 +16,15 @@
 
 import { readFile, stat } from 'node:fs/promises';
 import { dirname, isAbsolute, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { parseManifest, PluginManifestError } from './manifest';
-import type { LoadedPlugin } from './types';
+import type {
+  AgentManifest,
+  AgentPluginModule,
+  LoadedAgentPlugin,
+  LoadedPlugin,
+} from './types';
 
 /** Manifest filename. SKILL.md frontmatter is also a valid source after
  * Phase 2 W2-W3 migration; that path lives in skills-loader.ts. */
@@ -78,6 +84,98 @@ export async function loadPlugin(
     pluginRoot,
     warnings: options.quiet === true ? [] : parsed.warnings,
   };
+}
+
+/**
+ * Load an agent plugin: read manifest, validate `type === 'agent'`,
+ * dynamic-import the module from `pluginRoot/<entry>` (default
+ * `agent.ts` resolved through Node ESM + tsx for built-ins; `agent.js`
+ * for compiled distributions). Verify the module exports a `runAgent`
+ * function — the AgentPluginModule contract.
+ *
+ * The host then calls `module.runAgent(input)` with pre-resolved
+ * skill / MCP / LLM client. See ADR-0010 §2.7.
+ */
+export async function loadAgentPlugin(
+  pathInput: string,
+  options: LoadOptions = {},
+): Promise<LoadedAgentPlugin> {
+  const loaded = await loadPlugin(pathInput, options);
+  if (loaded.manifest.type !== 'agent') {
+    throw new PluginLoadError(
+      loaded.pluginRoot,
+      'manifest-invalid',
+      `loadAgentPlugin: manifest.type is '${loaded.manifest.type}', expected 'agent'`,
+    );
+  }
+  const manifest = loaded.manifest as AgentManifest;
+
+  // Resolve module entry. Phase 2 W2 convention: plugin root contains
+  // `agent.ts` (built-in) or `agent.js` (compiled). We let Node's
+  // ESM resolver figure it out; if there's a package.json with
+  // `"main"` / `"exports"`, that takes precedence.
+  const entry = await resolveAgentEntry(loaded.pluginRoot);
+
+  let mod: unknown;
+  try {
+    mod = await import(pathToFileURL(entry).href);
+  } catch (cause) {
+    throw new PluginLoadError(
+      loaded.pluginRoot,
+      'io',
+      `failed to import agent module ${entry}: ${(cause as Error).message}`,
+    );
+  }
+
+  if (
+    mod === null ||
+    typeof mod !== 'object' ||
+    typeof (mod as Record<string, unknown>)['runAgent'] !== 'function'
+  ) {
+    throw new PluginLoadError(
+      loaded.pluginRoot,
+      'manifest-invalid',
+      `agent module ${entry} must export a runAgent(input) function (AgentPluginModule contract)`,
+    );
+  }
+
+  const module: AgentPluginModule = {
+    runAgent: (mod as { runAgent: AgentPluginModule['runAgent'] }).runAgent,
+  };
+
+  return { ...loaded, manifest, module };
+}
+
+async function resolveAgentEntry(pluginRoot: string): Promise<string> {
+  // Try package.json first (workspace-package style — matches our
+  // plugins/citation-agent layout).
+  const pkgPath = resolve(pluginRoot, 'package.json');
+  try {
+    const text = await readFile(pkgPath, 'utf8');
+    const pkg = JSON.parse(text) as { main?: string };
+    if (typeof pkg.main === 'string' && pkg.main.length > 0) {
+      return resolve(pluginRoot, pkg.main);
+    }
+  } catch {
+    // No package.json (or unreadable) — fall through to convention.
+  }
+  // Convention: <root>/agent.ts (built-in tsx) or <root>/agent.js
+  // (compiled distribution). Try .ts first since built-ins are
+  // common in workspace dev.
+  for (const candidate of ['agent.ts', 'agent.js']) {
+    const p = resolve(pluginRoot, candidate);
+    try {
+      await stat(p);
+      return p;
+    } catch {
+      /* try next */
+    }
+  }
+  throw new PluginLoadError(
+    pluginRoot,
+    'not-found',
+    `agent entry not found: tried package.json#main, agent.ts, agent.js in ${pluginRoot}`,
+  );
 }
 
 /** Resolve the input path to the manifest file. Accepts either the

@@ -78,15 +78,23 @@ export {
 // Phase 1 agents (citation / inline-editor) still wired through the
 // hardcoded paths above; W3 dogfood gate switches citation to the
 // plugin path and removes the hardcoded export.
+//
+// Phase 2 W2 (this commit): adds loadAgentPlugin + AgentPluginModule
+// contract. The first reference impl lives in plugins/citation-agent/.
+// agent-runner.ts dual-path (hardcode | plugin) lands in W3.
 export {
   loadPlugin,
+  loadAgentPlugin,
   parseManifest,
   PluginLoadError,
   PluginManifestError,
   MANIFEST_FILENAME,
   type AgentManifest,
+  type AgentPluginInput,
+  type AgentPluginModule,
   type BasePluginManifest,
   type BilingualString,
+  type LoadedAgentPlugin,
   type LoadedPlugin,
   type McpServerManifest,
   type PluginKind,

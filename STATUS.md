@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-09（claude/review-project-goals-TpFuH，**Phase 2 W1 起手 + 实施落地**：(1) 目标对齐 review，5 条差异化轴诊断，第 5 轴"开放平台"显性化；(2) Phase 2 stub 调整为 7 周，§七 技术雷达分主动 spike + 被动 watch；(3) ADR-0010 + ADR-0006 双 Proposed；(4) **W1 末实施落地**：drizzle migration 0005 + `mcp_server` 表 schema + `mcp-servers/registry.json` seed（crossref 一条）+ `packages/ai-runtime/src/plugins/` 骨架（types / manifest 解析 / loader，YAML via `yaml` npm 包）+ 33 个 plugin loader 测试 PASS + 全 workspace typecheck PASS（18 包）。user 哲学 reaffirmed 2026-05-09：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
+最后更新：2026-05-09（claude/review-project-goals-TpFuH，**Phase 2 W1+W2 实施落地**：(1) 目标对齐 review，5 条差异化轴诊断，第 5 轴"开放平台"显性化；(2) Phase 2 stub 调整为 7 周，§七 技术雷达分主动 spike + 被动 watch；(3) ADR-0010 + ADR-0006 双 Proposed；(4) **W1 末**：drizzle migration 0005 + `mcp_server` 表 + `registry.json` seed + `packages/ai-runtime/src/plugins/` 骨架（types / manifest / loader）+ `yaml` npm 包；(5) **W2 dogfood 准备**：`AgentPluginModule` 运行时契约 + `loadAgentPlugin` 动态导入 + `plugins/citation-agent/`（第一个 reference plugin：plugin.yaml + agent.ts + prompt.md）+ 等价性测试（hardcode invokeCitationAgent vs plugin path 同 promptTemplateId / 同 toolCalls / 同 revisedFragments）+ pnpm-workspace 加 `plugins/*` glob。19 包全 typecheck PASS / ai-runtime 34 测试 PASS。user 哲学 reaffirmed 2026-05-09：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
 
 ---
 

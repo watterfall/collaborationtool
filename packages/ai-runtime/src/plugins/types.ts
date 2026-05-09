@@ -6,8 +6,17 @@
 // per ADR-0010 §2.4 — that migration is Phase 2 W2-W3).
 //
 // Validation rules live in `manifest.ts`; this file only defines shapes.
+// Runtime contract for loaded agent plugin modules is at the bottom of
+// this file (separate from manifest shape so manifest can be parsed
+// without importing runtime types).
 
-import type { Capability } from '@collaborationtool/permissions';
+import type Anthropic from '@anthropic-ai/sdk';
+import type {
+  BlockId,
+  DocumentId,
+  PrincipalId,
+} from '@collaborationtool/schema';
+import type { Capability, PrincipalContext } from '@collaborationtool/permissions';
 
 /** Kinds enumerated by ADR-0010 §2.2. We deliberately do NOT add 5/6
  * for "Template" / "Export-format" — those are special cases of Skill /
@@ -142,4 +151,71 @@ export interface LoadedPlugin {
    * ADR-0002 vocab (e.g. ADR-0006's candidate `mcp.install`), unknown
    * tool form, kernelVersion mismatch with current kernel. */
   warnings: string[];
+}
+
+// ============================================================
+// Agent plugin module runtime contract (ADR-0010 §2.7 dogfood path).
+// ============================================================
+//
+// An agent plugin module exports a single `runAgent` function. The
+// loader pre-resolves all dependencies (skill metadata, MCP set, LLM
+// client, model id) and passes them through. The plugin module itself
+// is responsible only for:
+//   1. Building the system prompt (typically using `skill.bodyMarkdown`)
+//   2. Calling runAnthropicAgent / runMockAgent from ai-runtime
+//   3. Returning the AgentProposal
+//
+// What the plugin module must NOT do (kept in the host per ADR-0010
+// §2.6 sandbox + §2.7 step 4 "no internal-only API"):
+//   - capability checks (host runs `requireCapability` before invoking)
+//   - persistence (host calls `persistProposal` after invoking)
+//   - MCP set lifecycle (host owns `mcp.closeAll()` in finally)
+//   - skill loading (host calls `loadSkill` and passes the result)
+//
+// This separation is deliberately strict so a third-party plugin gets
+// the same surface as a built-in one. W3 末 dogfood gate verifies it.
+
+import type { McpServerSet } from '../mcp-client';
+import type { SkillMeta } from '../skills-loader';
+import type { AgentProposal } from '../types';
+
+export interface AgentPluginInput {
+  /** Caller identity + capability bundle. Host has already verified the
+   * capability gate (e.g. `agent.invoke:citation`). The plugin gets a
+   * read-only view; it must not re-check / mutate. */
+  principalContext: PrincipalContext;
+  documentId: DocumentId;
+  blockId: BlockId;
+  /** The user-selected passage prose. */
+  passage: string;
+  /** Free-form structured hints from the host (e.g.
+   * `flaggedDoiCandidates: string[]`, `userInstruction: string`).
+   * Plugin contract documents which keys it consumes; unknown keys
+   * are ignored, not an error (forward-compat). */
+  hints: Record<string, unknown>;
+  /** Pre-loaded skill (host called skills-loader). */
+  skill: SkillMeta;
+  /** Pre-built MCP set (host resolved manifest.allowedMcpServers ∩
+   * mcp_server.enabled). May be empty when the manifest declares no
+   * MCP dependencies. The plugin must NOT call mcp.closeAll() — host
+   * owns lifecycle. */
+  mcp: McpServerSet;
+  /** Anthropic client when ANTHROPIC_API_KEY is set; null routes to
+   * runMockAgent. Plugin chooses which runner to call based on this. */
+  anthropic: Anthropic | null;
+  /** Resolved model id (host applies env / config defaults). */
+  modelId: string;
+  /** Stable agent identity for provenance. Host supplies. */
+  agentId: PrincipalId;
+}
+
+export interface AgentPluginModule {
+  /** Single entry point. Plugin must produce a proposal or throw. */
+  runAgent(input: AgentPluginInput): Promise<AgentProposal>;
+}
+
+/** Result of loading + dynamic-importing an agent plugin. */
+export interface LoadedAgentPlugin extends LoadedPlugin {
+  manifest: AgentManifest;
+  module: AgentPluginModule;
 }

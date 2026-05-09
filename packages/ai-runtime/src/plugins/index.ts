@@ -3,12 +3,20 @@
 // Consumers (agent-runner, mcp-client, apps/web admin install route)
 // only import from here, never reach into individual modules.
 
-export { loadPlugin, MANIFEST_FILENAME, PluginLoadError } from './loader';
+export {
+  loadPlugin,
+  loadAgentPlugin,
+  MANIFEST_FILENAME,
+  PluginLoadError,
+} from './loader';
 export { parseManifest, PluginManifestError } from './manifest';
 export type {
   AgentManifest,
+  AgentPluginInput,
+  AgentPluginModule,
   BasePluginManifest,
   BilingualString,
+  LoadedAgentPlugin,
   LoadedPlugin,
   McpServerManifest,
   PluginKind,

@@ -49,6 +49,7 @@
     "render-typst:typecheck": "pnpm --filter @collaborationtool/render-typst typecheck",
     "ai-runtime:test": "pnpm --filter @collaborationtool/ai-runtime test",
     "ai-runtime:typecheck": "pnpm --filter @collaborationtool/ai-runtime typecheck",
+    "plugin-citation:typecheck": "pnpm --filter @collaborationtool/plugin-citation-agent typecheck",
     "mcp-crossref:test": "pnpm --filter @collaborationtool/mcp-server-crossref test",
     "mcp-crossref:typecheck": "pnpm --filter @collaborationtool/mcp-server-crossref typecheck",
     "e2e:test": "pnpm --filter @collaborationtool/e2e test",
