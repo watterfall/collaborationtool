@@ -13,6 +13,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { schema } from '@collaborationtool/drizzle';
 import { loadPrincipalContext, requireCapability } from '@collaborationtool/permissions';
 import {
+  mystAstToDocx,
   mystAstToHtml,
   mystAstToJats,
   mystAstToMarkdown,
@@ -28,7 +29,13 @@ import { auth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { getPrincipalIdForUser } from '@/lib/principal';
 
-type ExportFormat = 'html' | 'jats' | 'markdown' | 'typst-source' | 'pdf';
+type ExportFormat =
+  | 'html'
+  | 'jats'
+  | 'markdown'
+  | 'typst-source'
+  | 'pdf'
+  | 'docx';
 
 const ALL_FORMATS: ReadonlySet<ExportFormat> = new Set([
   'html',
@@ -36,6 +43,7 @@ const ALL_FORMATS: ReadonlySet<ExportFormat> = new Set([
   'markdown',
   'typst-source',
   'pdf',
+  'docx',
 ]);
 
 // Minimal PM doc shape — render packages accept a wider input shape but
@@ -116,8 +124,9 @@ export async function GET(
       { status: 400 },
     );
   }
-  // The render packages declare their own PmNode shape; cast here is
-  // safe because we just confirmed `type === 'doc'`.
+  // PmDocInput shape lives in @collaborationtool/schema (re-exported by
+  // both render packages). Cast is safe because we just confirmed
+  // `type === 'doc'`.
   const pmJson = decoded as PmDoc;
 
   const title = doc.title || doc.slug;
@@ -198,6 +207,21 @@ export async function GET(
           { status: 503 },
         );
       }
+    }
+    case 'docx': {
+      const ast = pmToMystAst(pmJson);
+      const bytes = await mystAstToDocx(ast, {
+        primaryLanguage: lang,
+        title,
+      });
+      return new Response(Buffer.from(bytes), {
+        status: 200,
+        headers: {
+          'content-type':
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'content-disposition': `attachment; filename="${slugify(title)}.docx"`,
+        },
+      });
     }
   }
 }

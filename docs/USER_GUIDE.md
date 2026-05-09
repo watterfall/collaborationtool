@@ -146,7 +146,7 @@ reviewer (`paper-reviewer` role) 只能 reject / modify，不能直接 accept；
 
 ## 4. 导出 / Export
 
-编辑器页底部 **导出 / Export** 抽屉支持 5 种格式：
+编辑器页底部 **导出 / Export** 抽屉支持 6 种格式：
 
 | 格式 | 实现 | 备注 |
 |---|---|---|
@@ -155,14 +155,13 @@ reviewer (`paper-reviewer` role) 只能 reject / modify，不能直接 accept；
 | Markdown | render-myst | MyST flavored；可重新导入 |
 | Typst source | render-typst | `.typ` 源；需要本地装 typst 编译 PDF |
 | PDF (Typst) | render-typst + typst CLI | **需要服务器 PATH 上有 typst (>= 0.14)**；否则 503 + hint |
-
-> Word / .docx 计划在 Phase 1.5（mystmd-to-docx 接入）。
+| Word (.docx) | render-myst → docx emitter | Phase 1.5 加入；纯 TS，无外部 CLI；图片 binary fetch 留 Phase 2 |
 
 ### 4.1 双语 specimen
 
 `/demo/specimen-bilingual.json` (PM JSON) + `.md` 源是 D15 验收用的标准
 样张（500 字中英混排，5 引用 / 1 公式 / 1 figure / 1 注释锚点 / 1
-computational-cell）。验收时所有 5 格式都应当能成功导出。
+computational-cell）。验收时 6 格式都应当能成功导出。
 
 ---
 

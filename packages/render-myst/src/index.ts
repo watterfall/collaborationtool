@@ -1,7 +1,10 @@
 export type * from './types';
 export { pmToMystAst } from './ast-from-pm';
+export type { PmDocInput, PmMark, PmNode } from './ast-from-pm';
 export { mystAstToHtml } from './html';
 export type { HtmlRenderOptions } from './html';
 export { mystAstToJats } from './jats';
 export type { JatsRenderOptions } from './jats';
 export { mystAstToMarkdown } from './markdown';
+export { mystAstToDocx } from './docx';
+export type { DocxRenderOptions } from './docx';

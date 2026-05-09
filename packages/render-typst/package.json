@@ -16,6 +16,7 @@
     "test": "node --test --import tsx tests/*.test.ts"
   },
   "dependencies": {
+    "@collaborationtool/schema": "workspace:*",
     "@collaborationtool/typography": "workspace:*"
   },
   "devDependencies": {

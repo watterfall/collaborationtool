@@ -1,4 +1,5 @@
 export { pmToTypstSource, type TypstSourceOptions } from './source-from-pm';
+export type { PmDocInput, PmMark, PmNode } from './source-from-pm';
 export {
   compileTypstToPdf,
   TypstCompileError,

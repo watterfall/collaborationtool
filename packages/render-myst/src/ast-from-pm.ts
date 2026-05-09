@@ -7,6 +7,12 @@
 //
 // This file does NOT import from @tiptap/* or the editor — its input is
 // plain JSON. That keeps the renderer headless / server-side ESM clean.
+//
+// PmNode / PmMark / PmDocInput live in @collaborationtool/schema (Phase 1.5
+// extraction per ADR-0005 §2.4) and are re-exported from this package's
+// index for ergonomic consumers.
+
+import type { PmDocInput, PmMark, PmNode } from '@collaborationtool/schema';
 
 import type {
   MystCaption,
@@ -26,28 +32,7 @@ import type {
   MystText,
 } from './types';
 
-export interface PmNode {
-  type: string;
-  attrs?: Record<string, unknown>;
-  content?: PmNode[];
-  text?: string;
-  marks?: PmMark[];
-}
-
-export interface PmMark {
-  type: string;
-  attrs?: Record<string, unknown>;
-}
-
-/**
- * Input shape for pmToMystAst — relaxes `content` to `unknown[]` so
- * callers feeding `JSON.parse(...)` results don't need to assert the
- * full PM tree. We narrow per-node internally.
- */
-export interface PmDocInput {
-  type: string;
-  content?: unknown[];
-}
+export type { PmDocInput, PmMark, PmNode };
 
 export function pmToMystAst(pmDoc: PmDocInput): MystRoot {
   if (pmDoc.type !== 'doc') {

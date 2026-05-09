@@ -24,10 +24,12 @@ D15 USER_GUIDE.md 列的 7 个 known limitation，全部归集到 Phase 1.5。**
 1. **Invitation flow** — better-auth invitation hook + email；不再 SQL 直接 grant
 2. **ORCID OAuth** — 学术身份 + 显示 ORCID iD 在作者列；为 Phase 2 reviewer agent 的"匿名/具名 reviewer"打底
 3. **Sentry + PostHog** — ADR-0004 §2.5 已规划
-4. **mystmd-to-docx** — Word 导出；ADR-0005 §3 列遗留
-5. **PmDocInput → @collaborationtool/schema 提取** — 消除两个 render 包的重复（ADR-0005 §2.4 deadline）
+4. **Word (.docx) 导出** — ✅ 已落地（自写 docx emitter + `docx` npm 包，避开 mystmd unified pipeline 依赖；图片 binary fetch 留 Phase 2）
+5. **PmDocInput → @collaborationtool/schema 提取** — ✅ 已落地（消除两个 render 包的重复；ADR-0005 §2.4 deadline 命中）
 6. **Real CrossRef stdio MCP** — 取代 in-memory mock；ADR-0004 §2.1 列遗留
 7. **PG WAL-G 备份** — ADR-0004 §2.6 列遗留
+
+**1.5 进度**：4 + 5 已 close（合并 commit）；剩 1 / 2 / 3 / 6 / 7。
 
 ---
 

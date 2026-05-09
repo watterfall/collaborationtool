@@ -8,6 +8,12 @@ const FORMATS = [
   { id: 'markdown', label: 'Markdown', mime: 'text/markdown', ext: 'md' },
   { id: 'typst-source', label: 'Typst source', mime: 'text/plain', ext: 'typ' },
   { id: 'pdf', label: 'PDF (Typst)', mime: 'application/pdf', ext: 'pdf' },
+  {
+    id: 'docx',
+    label: 'Word (.docx)',
+    mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ext: 'docx',
+  },
 ] as const;
 
 type FormatId = (typeof FORMATS)[number]['id'];
@@ -98,9 +104,9 @@ export default function ExportDrawer({
             </p>
           )}
           <p className="mt-3 text-xs text-zinc-500">
-            Phase 1 D12 — HTML / JATS / Markdown 走 @collaborationtool/render-myst；
+            HTML / JATS / Markdown / Word 走 @collaborationtool/render-myst；
             Typst source / PDF 走 @collaborationtool/render-typst。PDF 需要服务器
-            安装 typst CLI（&gt;= 0.14）。
+            安装 typst CLI（&gt;= 0.14）。Word 是 Phase 1.5 加入。
           </p>
         </div>
       )}

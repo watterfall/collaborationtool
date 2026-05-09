@@ -12,6 +12,11 @@
 // integration via Typst `bibliography()` is Phase 2 once we materialise
 // the Citation table to a `.bib` / Hayagriva file at export time.
 
+// PmNode / PmMark / PmDocInput live in @collaborationtool/schema (Phase 1.5
+// extraction per ADR-0005 §2.4) and are re-exported from this package's
+// index for ergonomic consumers.
+
+import type { PmDocInput, PmMark, PmNode } from '@collaborationtool/schema';
 import {
   applyCjkSpacing,
   fontTokensToTypst,
@@ -22,24 +27,7 @@ import {
 
 import { escapeTypstMarkup, escapeTypstString } from './escape';
 
-export interface PmNode {
-  type: string;
-  attrs?: Record<string, unknown>;
-  content?: PmNode[];
-  text?: string;
-  marks?: PmMark[];
-}
-
-export interface PmMark {
-  type: string;
-  attrs?: Record<string, unknown>;
-}
-
-/** Input shape — relaxes `content` to opaque `unknown[]`. */
-export interface PmDocInput {
-  type: string;
-  content?: unknown[];
-}
+export type { PmDocInput, PmMark, PmNode };
 
 export interface TypstSourceOptions {
   primaryLanguage: LanguageTag;

@@ -12,3 +12,4 @@ export * from './annotation';
 export * from './revision';
 export * from './contribution';
 export * from './provenance';
+export * from './pm-doc';
