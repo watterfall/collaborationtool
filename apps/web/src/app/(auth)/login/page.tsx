@@ -1,13 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { signIn } from '@/lib/auth-client';
+import OrcidSignIn from '@/components/orcid-sign-in';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get('next') ?? '/docs';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +28,8 @@ export default function LoginPage() {
       setError(result.error.message ?? 'Sign in failed');
       return;
     }
-    router.push('/docs');
+    // `next` defaults to /docs but lets the invite flow redirect back.
+    router.push(next.startsWith('/') ? next : '/docs');
     router.refresh();
   }
 
@@ -73,6 +77,7 @@ export default function LoginPage() {
           {pending ? '...' : '登录 / Sign in'}
         </button>
       </form>
+      <OrcidSignIn />
       <p className="text-sm text-zinc-600">
         还没有账户？{' '}
         <Link href="/signup" className="underline">

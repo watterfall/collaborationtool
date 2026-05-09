@@ -28,4 +28,11 @@ export const env = {
   syncTokenAudience: process.env['SYNC_TOKEN_AUDIENCE'] ?? 'sync-gateway',
   syncGatewayWsUrl:
     process.env['SYNC_GATEWAY_WS_URL'] ?? 'ws://127.0.0.1:4321/ws',
+  // Observability (Phase 1.5 #3) — all optional. Unset = no-op.
+  // Sentry DSN format: https://<key>@<host>/<projectId>
+  sentryDsn: process.env['SENTRY_DSN'] ?? null,
+  // PostHog API key starts with `phc_…`. POSTHOG_HOST defaults to
+  // app.posthog.com inside the lib.
+  posthogApiKey: process.env['POSTHOG_API_KEY'] ?? null,
+  posthogHost: process.env['POSTHOG_HOST'] ?? null,
 };

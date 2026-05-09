@@ -32,7 +32,14 @@ import {
 import { loadPrincipalContext } from '@collaborationtool/permissions';
 
 import { auth } from '@/lib/auth';
+import { crossrefMcpFromEnv } from '@/lib/crossref-mcp';
 import { getDb } from '@/lib/db';
+import {
+  anonDistinctId,
+  captureError,
+  captureEvent,
+  isSlow,
+} from '@/lib/observability';
 import { getPrincipalIdForUser } from '@/lib/principal';
 
 interface InvokeBody {
@@ -101,6 +108,23 @@ export async function POST(request: Request): Promise<NextResponse> {
   // packages/skills (when we move skills under a package).
   const skillsRoot = path.resolve(process.cwd(), '..', '..', 'skills');
 
+  const distinctId = anonDistinctId(principalId);
+  const startedAt = Date.now();
+  const observe = (status: string, extra: Record<string, unknown> = {}) => {
+    const durationMs = Date.now() - startedAt;
+    captureEvent({
+      event: `agent.invoke.${status}`,
+      distinctId,
+      properties: {
+        kind,
+        durationMs,
+        slow: isSlow(durationMs),
+        runner: anthropic ? 'anthropic' : 'mock',
+        ...extra,
+      },
+    });
+  };
+
   try {
     if (kind === 'citation') {
       const flagged = Array.isArray(body.flaggedDoiCandidates)
@@ -108,6 +132,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             (x): x is string => typeof x === 'string',
           )
         : [];
+      const crossrefMcp = crossrefMcpFromEnv();
       const result = await invokeCitationAgent(
         {
           principalContext: userCtx,
@@ -118,8 +143,9 @@ export async function POST(request: Request): Promise<NextResponse> {
           skillsRoot,
           anthropic,
         },
-        { db },
+        { db, ...(crossrefMcp ? { crossrefMcp } : {}) },
       );
+      observe('ok', { hasRevision: !!result.persisted?.revisionId });
       return NextResponse.json({
         proposal: result.proposal,
         revisionId: result.persisted?.revisionId,
@@ -131,6 +157,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const userInstruction =
       typeof body.userInstruction === 'string' ? body.userInstruction : '';
     if (!userInstruction.trim()) {
+      observe('bad-request', { reason: 'missing-userInstruction' });
       return NextResponse.json(
         { error: 'inline-editor requires a userInstruction' },
         { status: 400 },
@@ -148,6 +175,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       },
       { db },
     );
+    observe('ok', { hasRevision: !!result.persisted?.revisionId });
     return NextResponse.json({
       proposal: result.proposal,
       revisionId: result.persisted?.revisionId,
@@ -155,11 +183,20 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
   } catch (err) {
     if (err instanceof Error && /denied/.test(err.message)) {
+      observe('denied');
       return NextResponse.json(
         { error: 'capability-denied', detail: err.message },
         { status: 403 },
       );
     }
+    captureError(err, {
+      route: 'api.agent.invoke',
+      principalId: distinctId,
+      tags: { kind: String(kind), runner: anthropic ? 'anthropic' : 'mock' },
+    });
+    observe('error', {
+      errorClass: err instanceof Error ? err.name : 'Unknown',
+    });
     return NextResponse.json(
       {
         error: 'agent-failed',

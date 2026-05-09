@@ -1,0 +1,58 @@
+# Phase 1.5 #7 — WAL-G overlay (ADR-0004 §2.6).
+#
+# Use INSTEAD OF the dev docker-compose.yml's `postgres` service when
+# you want streaming WAL archive + PITR. Mount your wal-g.json (with
+# real S3 creds) at /etc/wal-g/wal-g.json on both services.
+#
+# Run:
+#   docker compose \
+#     -f infra/docker/docker-compose.yml \
+#     -f infra/docker/docker-compose.walg.yml \
+#     up -d postgres walg-backup
+#
+# The override replaces the postgres image with the WAL-G build; the
+# walg-backup sidecar runs the daily base-backup script.
+
+services:
+  postgres:
+    build:
+      context: ../walg
+      dockerfile: Dockerfile
+    image: collaborationtool-pg-walg:local
+    volumes:
+      - ./wal-g.json:/etc/wal-g/wal-g.json:ro
+
+  # Sidecar: take a base backup once a day, prune to retention.
+  walg-backup:
+    image: collaborationtool-pg-walg:local
+    container_name: collaborationtool-walg-backup
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - pg-data:/var/lib/postgresql/data:ro
+      - ./wal-g.json:/etc/wal-g/wal-g.json:ro
+      - ../scripts:/opt/scripts:ro
+    environment:
+      PGDATA: /var/lib/postgresql/data
+      WALG_CONFIG_FILE: /etc/wal-g/wal-g.json
+      RETAIN_BASE_BACKUPS: "7"
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+      - |
+        set -e
+        # Cron-equivalent: sleep until 04:00 then loop.
+        while true; do
+          now=$(date +%s)
+          target=$(date -d 'today 04:00' +%s)
+          if [ "$$now" -ge "$$target" ]; then
+            target=$(date -d 'tomorrow 04:00' +%s)
+          fi
+          sleep $$((target - now))
+          /opt/scripts/walg-backup.sh || echo "[walg-backup] failed, will retry tomorrow"
+        done
+    restart: unless-stopped
+
+volumes:
+  pg-data:

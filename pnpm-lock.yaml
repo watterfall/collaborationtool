@@ -153,6 +153,37 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  apps/prototypes/proto-d-diff-library:
+    dependencies:
+      '@sanity/diff-match-patch':
+        specifier: ^3.2.0
+        version: 3.2.0
+      prosemirror-changeset:
+        specifier: ^2.2.1
+        version: 2.4.1
+      prosemirror-model:
+        specifier: ^1.24.1
+        version: 1.25.4
+      prosemirror-schema-basic:
+        specifier: ^1.2.3
+        version: 1.2.4
+      prosemirror-state:
+        specifier: ^1.4.3
+        version: 1.4.4
+      prosemirror-transform:
+        specifier: ^1.10.2
+        version: 1.12.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.18
+      tsx:
+        specifier: ^4.19.2
+        version: 4.21.0
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   apps/snapshot-worker:
     dependencies:
       '@collaborationtool/drizzle':
@@ -299,6 +330,9 @@ importers:
       tailwindcss:
         specifier: ^4.0.0
         version: 4.2.4
+      tsx:
+        specifier: ^4.19.2
+        version: 4.21.0
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -1766,6 +1800,10 @@ packages:
     resolution: {integrity: sha512-hPt/bgL5cE+Qp+/TPHBqptcAgPzgj46mPcg/16zNUmbQk0j+mOEQV/+Lqu8QRtDV3Ek95Q6FeFITpuhl6OTsAA==}
     cpu: [x64]
     os: [win32]
+
+  '@sanity/diff-match-patch@3.2.0':
+    resolution: {integrity: sha512-4hPADs0qUThFZkBK/crnfKKHg71qkRowfktBljH2UIxGHHTxIzt8g8fBiXItyCjxkuNy+zpYOdRMifQNv8+Yww==}
+    engines: {node: '>=18.18'}
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -4243,6 +4281,8 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.60.3':
     optional: true
+
+  '@sanity/diff-match-patch@3.2.0': {}
 
   '@standard-schema/spec@1.1.0': {}
 

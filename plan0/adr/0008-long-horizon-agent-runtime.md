@@ -1,0 +1,261 @@
+# ADR-0008: Long-horizon agent runtime + reviewer/research agent shape
+
+- **Status**: Proposed
+- **Date**: 2026-05-09
+- **Phase**: 2
+- **Deciders**: tech-lead
+- **Gated on**: Phase 1.5 close-out（done）；Phase 2 W1 ADR draft + W2-W3 implementation
+
+---
+
+## 1. Context
+
+Phase 1 D13 落地了 ai-runtime 的 **single-shot** 路径：用户点 Run → POST `/api/agent/invoke` → 同步阻塞数秒 → 返 proposal。两个 agent（citation / inline-editor）都在 ~10s 内完成，HTTP 同步够用。
+
+Phase 2 三个新 agent（ADR-0002 §2.1 已登记 verb）需要 **long-horizon**——分钟到小时：
+
+- **reviewer agent**：读完整篇 → 列修订清单 + 评审意见。预算 ≥ 5 分钟（10K tokens 输入 + 多轮 tool 调用）
+- **research agent**：调多个 MCP server（CrossRef + arxiv + Zotero） → 综合 ≥ 20 篇文献 → 给出方法学建议。预算 ≥ 15 分钟
+- **future computational analysis agent**（不在本 ADR 范围）：Phase 3+
+
+HTTP 同步会被反向代理 timeout（默认 30s–60s）杀掉；用户也不愿盯着加载圈 5 分钟。**必须**异步队列。
+
+phase-2-plan-stub §3.1 三个开放问题：
+
+1. 异步任务暴露给前端怎么做？SSE / pgboss / temporal / inngest？
+2. reviewer agent 身份：匿名 "Reviewer 1" 还是具名 "Citation Reviewer v1.2"？影响 `Provenance.actorPrincipalId.displayName` 策略
+3. reviewer agent 拒一个 revision 时是否产 `annotation_thread{kind:'reviewer-note'}`？
+
+本 ADR 答以上三件事 + 失败/重试语义 + capability 边界。**不决定**：具体 agent 的 prompt（Phase 2 W2 实施时由 prompt registry 落）；reviewer agent 的"专长"分化（citation-reviewer vs methodology-reviewer，Phase 2 W3 评估）；多 agent 协作的 handoff（Phase 3 ADR）。
+
+---
+
+## 2. Decision
+
+### 2.1 Runtime：pgboss + SSE
+
+**Server-side queue**：[pg-boss](https://github.com/timgit/pg-boss)。它是 PG-backed 的 Node.js job queue（用 PG 当后端，无 Redis / 无单独服务），契合 ADR-0004 §2.1 单 host docker-compose 拓扑——不引入新进程。
+
+- 队列存在 `pgboss` schema（与现有 schema 隔离）
+- 一个新进程 `apps/agent-worker`：从 pgboss 拉 job → 调 ai-runtime → 写 PG → 标完成
+- worker 进程数水平可扩；Phase 2 默认 1 个，Phase 3 加 quota
+
+**Client-side stream**：Server-Sent Events（SSE）走 `/api/agent/job/<jobId>/stream`。每条消息是一个 progress / partial / done / error 事件；Next.js App Router `Response` body 直接是 ReadableStream。
+
+为什么不选 temporal / inngest / custom WebSocket：见 §4 Alternatives。
+
+**Job lifecycle**（PG 表 `agent_job` + pgboss）：
+
+```sql
+CREATE TABLE agent_job (
+  id text PRIMARY KEY,                      -- uuidv7
+  kind text NOT NULL,                       -- 'reviewer' | 'researcher'
+  document_id uuid NOT NULL REFERENCES document(id),
+  triggering_principal_id text NOT NULL REFERENCES principal(id),
+  agent_principal_id text NOT NULL REFERENCES principal(id),  -- the agent itself
+  status text NOT NULL DEFAULT 'queued',    -- queued|running|done|error|cancelled
+  progress_fraction numeric DEFAULT 0,      -- 0..1
+  progress_message text,                    -- last user-visible status line
+  output_revision_ids text[] DEFAULT '{}',  -- revisions produced
+  output_thread_ids text[] DEFAULT '{}',    -- reviewer-note threads
+  cost_token_input integer DEFAULT 0,
+  cost_token_output integer DEFAULT 0,
+  cost_usd_milli integer DEFAULT 0,         -- thousandths of a USD
+  started_at timestamptz,
+  finished_at timestamptz,
+  error_class text,
+  error_message text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX agent_job_doc_status ON agent_job(document_id, status);
+CREATE INDEX agent_job_triggerer ON agent_job(triggering_principal_id, created_at DESC);
+```
+
+The pgboss row holds the queue / dedupe / retry state；**`agent_job` 是用户层面的视图**，由 worker 在生命周期事件里写入。两表 1:1 通过 `id` 关联（同一 uuid）。
+
+**HTTP 接口**（capability gates 见 §2.4）：
+
+```
+POST /api/document/<docId>/agent-job
+  body: { kind: 'reviewer' | 'researcher', input: {...} }
+  → 201 { jobId, statusUrl, streamUrl }
+
+GET  /api/agent/job/<jobId>
+  → 200 { status, progress, outputs, cost }
+
+GET  /api/agent/job/<jobId>/stream
+  → text/event-stream:
+       event: progress  data: {fraction, message}
+       event: partial   data: {revisionId, thread?}
+       event: done      data: {outputRevisionIds, outputThreadIds, cost}
+       event: error     data: {errorClass, errorMessage}
+
+POST /api/agent/job/<jobId>/cancel
+  → 200 (sets status to cancelling; worker checks each tool-call boundary)
+```
+
+**SSE re-connect**：客户端断网重连时，`GET /api/agent/job/<jobId>/stream?cursor=<eventId>` 从最后看到的事件接着推。worker 把 progress 事件每条都写到 `agent_job_event` append-only 表（PG）；流端口读这个表，不再依赖 in-process pubsub。
+
+### 2.2 Reviewer agent 身份：**具名 + 版本号**
+
+Provenance.actorPrincipalId.displayName 形如 `"Citation Reviewer Agent v1.2"`，**不**是 "Reviewer 1"。
+
+理由：
+
+1. **审计**：revision 落地后，文档作者点开 Provenance trail 必须能复现"哪个 agent 在哪个 prompt template 上跑"——匿名严重削弱可追溯性
+2. **信任校准**：reviewer agent 不是匿名同行评审；它是 LLM。把它伪装成匿名人类有伦理问题
+3. **citation-reviewer ≠ methodology-reviewer**——具名让作者知道"这条意见来自哪个专长"
+4. **数据模型对齐**：ADR-0001 §2.3.7 已要求 agent 有自己的 Principal kind=`agent` + 自己的 displayName
+
+**结构**：每个 agent 一个 `principal` 行（kind=`agent`） + 一个 `agent` 行（kind=`reviewer` / `researcher`）。displayName 在 principal 行（用户看的）；agent 行里带 `version` + `runtime` + `allowedMcpServerIds`。
+
+```ts
+{
+  principal: { id: '...', kind: 'agent', displayName: 'Citation Reviewer Agent v1.2' },
+  agent: {
+    principalId: '...',
+    kind: 'reviewer',                 // ADR-0001 §2.3.7 enum 加 'researcher'
+    runtime: 'long-horizon',          // 新 enum 值；single-shot 是 Phase 1 默认
+    version: '1.2',
+    promptTemplateId: 'tmpl_...',     // 指向 prompt_template 表
+    allowedMcpServerIds: ['crossref', 'arxiv'],
+    quotaPerDay: 50,                  // 每个 user 每日触发上限
+  }
+}
+```
+
+`AgentKind` 现有 enum `'inline-editor' | 'citation' | 'custom'`；本 ADR 加 `'reviewer'` + `'researcher'`（schema migration `0006_agent_kind_extend.sql`，只动 enum）。
+
+### 2.3 Reviewer reject 走 annotation_thread{kind:'reviewer-note'}
+
+reviewer agent 跑完后输出可能含三类项：
+
+| 输出类型 | 落地位置 | reviewer 操作 |
+|---|---|---|
+| 修改建议（具体改字） | `revision` row（status=pending）+ `proposal_metadata` jsonb | 作者 accept / reject |
+| 评审意见（不具体改字，是论述） | `annotation_thread{kind:'reviewer-note'}` + N comment | 作者回复 / 标 resolved |
+| 拒掉作者已有的 revision | `revision.status='rejected'` + 同时产一条 `annotation_thread{kind:'reviewer-note'}` 解释 why | 作者读 thread，可改后再 propose |
+
+第三种是 phase-2-plan-stub §3.1 的开放问题答案：**是**，reviewer agent 拒一条 revision 必须留一条 `reviewer-note` thread；拒绝本身只动 status 不留理由是反模式。
+
+`AnnotationKind` 现有 enum 已含 `'reviewer-note'`（packages/schema/src/annotation.ts:13），无需 migration。
+
+### 2.4 Capability gates
+
+新 verbs 已经在 ADR-0002 §2.1 注册：`agent.invoke:reviewer`、`agent.invoke:researcher`。本 ADR 不加 capability 词汇，但补充语义：
+
+- 触发 reviewer/researcher job：`agent.invoke:<kind>` 必须在 caller 的 capability bag 里（per-document scope）
+- agent worker 自身：用 `agent` kind 的 principal 跑；它的 `principal_acl` 行授予 `block.read` / `block.propose` / `annotation.create`（与 inline-editor/citation agent 一致）。**不**给 `block.commit` —— reviewer agent 不直接落 revision，produces propose-only
+- cancel job：`agent.invoke:<kind>` 即可（同 verb；cancel 自己排队的 job 是默认权利）
+- quota：`agent.quotaPerDay` 在 agent 行里；service 层做 Redis（Phase 1.5 加）或 PG counter
+
+### 2.5 失败 / 重试 / 超时
+
+- pgboss 重试：默认禁用（`retryLimit: 0`）。LLM 失败大多是 prompt-deterministic（context too long / tool call malformed），重试只烧钱
+- worker 内部超时：reviewer 默认 10 分钟，researcher 默认 30 分钟（per-kind override 在 agent 行的 `executionEnv`）
+- 用户 cancel：worker 在每次 MCP tool-call 的边界检查 `agent_job.status === 'cancelling'`，是则 graceful shutdown + 标 `status='cancelled'`
+- LLM API rate-limit / 5xx：单条 tool-call 内部走 exponential backoff（最多 3 次）；外层 job 不重试
+
+### 2.6 成本上限
+
+每个 job 跑前预估：`avg_cost_per_kind * (1 + safety_factor)`。**默认禁止**单 job 成本 > $5 USD（agent 行的 `maxCostUsd` 字段）。worker 在每次 tool 调用结束累加 `cost_token_input/output/usd_milli`；超限即 graceful shutdown + 标 `error_class='cost-limit-exceeded'`。
+
+ADR-0004 §2.7 写过日预算；这里加单 job 上限是第二道防线。
+
+---
+
+## 3. Consequences
+
+### Good
+
+- **零新基础设施进程**：pgboss 复用 Postgres，单 host docker-compose（ADR-0004 §2.1）拓扑不变；6 进程拓扑加一个 `agent-worker` = 7 进程
+- **SSE 比 WebSocket 简单**：单向 server→client，无握手 / 无 ping-pong 维护；浏览器 EventSource 内建 reconnect
+- **重连不丢事件**：`agent_job_event` append-only + cursor 模型；用户关电脑再回来还能看到完整进度
+- **具名 agent 直接喂进 Provenance**：不需要"匿名包装"层；Phase 1 的 Provenance 写入路径继续工作
+- **reviewer-note thread 与现有 annotation 系统统一**：作者回复、resolve、展示都走同一套 UI（不用建第二个评审视图）
+
+### Bad / Trade-offs
+
+- **pgboss 不是分布式编排**：长时跨机器流（reviewer → researcher → cell-execute 一条龙）不在 pgboss 范围；Phase 3 多 agent handoff 时评估 temporal / 自写 saga
+- **PG-backed 队列在高并发会成瓶颈**：每次 dequeue 是 advisory lock + UPDATE；50+ 并发 reviewer 就开始竞争。Phase 2 单进程 worker 不会触发；Phase 3 多 worker 时实测临界点
+- **SSE 不能从客户端推数据**：cancel / pause 只能走单独 POST。不是缺点，是规约，但需要 UI 知道
+- **agent_job_event 表的写入放大**：reviewer 每次进度更新一行，10 分钟可能写 200+ 行/job。100 jobs/day = 20K 行/day，PG 撑得起；Phase 4 加 7 天清理 cron
+- **具名 agent 的 displayName 不能改**：换 prompt 等于换版本（principal + agent 都是新行），老 Provenance 还指向旧 displayName。这是 immutable audit 的特征不是 bug
+
+### Neutral / Need watching
+
+- **prompt registry 表**（ADR-0003 §2.5 已规划，Phase 1 D13 含字段）必须在本 ADR 实施前 ready；`prompt_template` 表 Phase 1 已建（schema.ts:454）
+- **reviewer agent 触发的 Provenance 容量**：每个 reviewer job 可能产 10–20 条 contribution（每条 revision/thread 各一条）。`provenance` 表 schema 已能容下，但 reviewer 一次跑可能让单 doc 的 provenance 行数翻倍——Phase 2 实测 query 性能
+- **SSE 与反向代理的兼容**：Caddy / Traefik 默认对 EventSource 支持良好（不缓冲）；nginx 需要 `proxy_buffering off; proxy_read_timeout 1h`。SELF_HOST.md 加注。
+
+---
+
+## 4. Alternatives considered
+
+### A: Temporal
+
+Workflow engine with retries, timeouts, signals, side-effect semantics built in。
+
+**为什么不选**：
+
+1. **运营成本太重**：单独 Postgres + 单独 server + 单独 UI；ADR-0004 §2.1 单 host docker-compose 直接破坏
+2. **学习曲线**：team 不熟，3+ 周才到能用；Phase 2 不能延这么久
+3. **过度工程**：Phase 2 的两个 agent 不需要 complex workflow（read 文章 → 想 → 输出）；durable workflow 是给"调外部 webhook → 等回调 → 第二天再跑"这种场景
+
+**什么情况会回头**：Phase 3 多 agent handoff（reviewer → research → cell-execute）+ 跨小时 / 跨机器协调；那时 Temporal 的 saga 模式才合算
+
+### B: Inngest
+
+Hosted SaaS workflow runner with TypeScript-native step functions。
+
+**为什么不选**：
+
+1. **vendor lock-in**：开放评审 / 自托管时选 SaaS 队列违反 ADR-0004 §2.1 的"6 进程全自托管"原则
+2. **数据隐私**：job payload 含 LLM prompt + 部分 paper 内容；外发到 inngest server 不通过 ADR-0001 §2.5（隐私优先）
+3. **成本**：按 step 计费，reviewer/researcher 每个 job 100+ steps，按当前价跑日预算 50 jobs/day 月费 ≥ $500
+
+### C: 自写 setInterval + PG row poll
+
+最简：worker 是 setInterval(pollJobs, 5s) 的 Node script。
+
+**为什么不选**：
+
+1. **没有 dequeue 原子性**：两个 worker 同时拉同一行 → race；要自己写 advisory lock，本质就是写半个 pgboss
+2. **没有重试 / 失败语义**：worker crash 后 job 卡在 `running`；要自己做 stale-job 探测
+3. **pgboss 已经把这些写好了，4MB 一个 dependency**
+
+### D: WebSocket 代替 SSE
+
+主页面与 agent worker 走 WebSocket；进度 / cancel 双向
+
+**为什么不选**：cancel 一年用一次，多走一个独立 POST 不亏；WebSocket 与现有 sync-gateway 又一条 WS 通道，资源管理复杂；SSE 的 EventSource API 浏览器内建重连，开发量小
+
+### E: Reviewer 匿名 "Reviewer 1"
+
+模拟人类盲审。
+
+**为什么不选**：见 §2.2 四条理由。**LLM 不是人类同行**，假装匿名有伦理 / 法律 / 信任 / 审计四类问题。如果用户希望"读评审时不知道哪条是 LLM 哪条是人"，那是另一种产品决策（Phase 3 评估），不通过身份匿名实现，而是通过显示层选择性折叠
+
+---
+
+## 5. Decision log（决策过程中的关键讨论）
+
+- **2026-05-09**: pgboss over temporal —— 关键判据是"6 进程拓扑不破坏"；temporal 进 Phase 3 评估
+- **2026-05-09**: SSE over WebSocket —— EventSource 浏览器原生 reconnect + Next.js App Router ReadableStream 直接生成；WebSocket 是 sync-gateway 已用，加第二条 WS 通道增 burdens
+- **2026-05-09**: 具名 agent over 匿名 —— 审计 + 信任 + ADR-0001 §2.3.7 一致；匿名不通过的伦理 bar
+- **2026-05-09**: reviewer reject 必须留 reviewer-note —— 匿名拒掉是反模式；reviewer-note 是 AnnotationKind 既有值，零 schema 改动
+- **2026-05-09**: 单 job $5 USD hard cap + 默认 retryLimit=0 —— LLM 失败重试通常烧钱不解决问题；prompt 改才管用
+- **2026-05-09**: agent_job_event append-only 表（不用 in-process pubsub）—— 跨 worker 重启 / 客户端重连都能拿历史
+
+---
+
+## 6. References
+
+- ADR-0001 §2.3.7（Agent / Principal kind=agent）
+- ADR-0002 §2.1（capability vocab：`agent.invoke:reviewer/researcher`）
+- ADR-0003 §2.5（prompt registry，Phase 1 D13 字段已就位）
+- ADR-0004 §2.1（6 进程拓扑），§2.7（Anthropic API 成本控制 / quota）
+- `plan0/phase-2-plan-stub.md §3.1`（开放问题，本 ADR 答）
+- `packages/ai-runtime/src/agent-runner.ts`（Phase 1 single-shot runner，Phase 2 复用为 worker 内核）
+- pg-boss: https://github.com/timgit/pg-boss
+- MDN EventSource: https://developer.mozilla.org/docs/Web/API/EventSource

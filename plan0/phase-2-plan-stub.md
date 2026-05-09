@@ -21,15 +21,15 @@
 
 D15 USER_GUIDE.md 列的 7 个 known limitation，全部归集到 Phase 1.5。**不写新 ADR**，每项一个 commit：
 
-1. **Invitation flow** — better-auth invitation hook + email；不再 SQL 直接 grant
-2. **ORCID OAuth** — 学术身份 + 显示 ORCID iD 在作者列；为 Phase 2 reviewer agent 的"匿名/具名 reviewer"打底
-3. **Sentry + PostHog** — ADR-0004 §2.5 已规划
+1. **Invitation flow** — ✅ 已落地（新表 `doc_invitation` + migration 0004；`apps/web/src/lib/invitations.ts` createInvitation/acceptInvitation/listPending/renderInvitationEmail；POST `/api/document/<docId>/invitation` + GET 列表 + POST `/api/invitation/<id>/accept`；ShareDialog 编辑器右上角；`/invite/<id>` 接受页 + `?next=` login redirect；mailer.ts webhook + console fallback；7 个单测；不再 SQL grant，USER_GUIDE §1.3 重写）
+2. **ORCID OAuth** — ✅ 已落地（better-auth `genericOAuth` plugin 注 ORCID provider，env-gated；`apps/web/src/lib/orcid.ts` 含 `mapOrcidTokenToProfile` + 占位 email 策略 `<orcid>@orcid.placeholder`；客户端 `OrcidSignIn` 按钮、登录/注册页接入；`(app)/layout.tsx` 显示用户绑定的 ORCID iD；8 个单测覆盖 mapper + provider config）
+3. **Sentry + PostHog** — ✅ 已落地（hand-rolled HTTP capture，零 SDK 依赖；`apps/web/src/lib/observability.ts` 包 `captureError`/`captureEvent`/`anonDistinctId`/`isSlow`；hook 进 `/api/agent/invoke` + `/api/export`；fire-and-forget 不阻塞响应；env 不设自动 no-op；8 个单测 PASS）
 4. **Word (.docx) 导出** — ✅ 已落地（自写 docx emitter + `docx` npm 包，避开 mystmd unified pipeline 依赖；图片 binary fetch 留 Phase 2）
 5. **PmDocInput → @collaborationtool/schema 提取** — ✅ 已落地（消除两个 render 包的重复；ADR-0005 §2.4 deadline 命中）
-6. **Real CrossRef stdio MCP** — 取代 in-memory mock；ADR-0004 §2.1 列遗留
-7. **PG WAL-G 备份** — ADR-0004 §2.6 列遗留
+6. **Real CrossRef stdio MCP** — ✅ 已落地（`mcp-servers/crossref/src/bin.ts` 通过 `StdioServerTransport` 自托管；`packages/ai-runtime` 加 `stdioServerTransport` 工厂 + `invokeCitationAgent.crossrefMcp` override；apps/web 路由读 `CROSSREF_MCP_COMMAND/ARGS/CWD`，不设则 fallback in-memory mock；3 个 stdio bin 子进程冒烟测全 PASS / 网络由 in-process HTTP stub 驱动）
+7. **PG WAL-G 备份** — ✅ 已落地（`infra/walg/Dockerfile` 给 postgres:16-bookworm 装 WAL-G v3.0.5；`postgres.archive.conf` 开 archive_mode + archive_command；`infra/scripts/walg-{backup,restore}.sh` 二脚本；`infra/docker/docker-compose.walg.yml` overlay：定制 image + walg-backup sidecar 每天 04:00 拉基线 + 7 天保留；`wal-g.json.example` 模板覆盖 R2/AWS/MinIO；SELF_HOST 加一键启用 + 季度恢复演练步骤）
 
-**1.5 进度**：4 + 5 已 close（合并 commit）；剩 1 / 2 / 3 / 6 / 7。
+**1.5 进度**：✅ **7/7 全部 close**。Phase 2 kickoff 前清单见 §六。
 
 ---
 
@@ -37,30 +37,25 @@ D15 USER_GUIDE.md 列的 7 个 known limitation，全部归集到 Phase 1.5。**
 
 ### 3.1 Reviewer Agent / Research Agent 的 capability shape
 
-- 现有 `agent.invoke:reviewer` / `agent.invoke:researcher` 词汇已登记（ADR-0002 §2.1）
-- **未答**：异步长 horizon（数分钟–数小时）任务怎么暴露给前端？SSE / pgboss / temporal？
-- **未答**：reviewer agent 是匿名（"Reviewer 1"）还是具名（"Citation Reviewer Agent v1.2"）？
-  影响 Provenance.actorPrincipalId 的 displayName 策略
-- **未答**：reviewer agent 拒一个 revision 时是否产 `annotation_thread{kind:'reviewer-note'}`？
-  现有 schema 已支持，待 UX 决定
+✅ **ADR-0008 已答**：pgboss + SSE 异步运行时（agent_job + agent_job_event 两表）；
+具名 agent（`Citation Reviewer Agent v1.2`，AgentKind enum 加 `reviewer`/`researcher`）；
+reviewer reject 强制配套 `annotation_thread{kind:'reviewer-note'}`。详见
+`plan0/adr/0008-long-horizon-agent-runtime.md`。
 
 ### 3.2 molab / Marimo iframe 的契约
 
-- ADR-0001 §2.3.5 已记录 ComputationalCell 字段（kernel / sourceCode / inputDatasetIds /
-  outputArtifactRefs / executionEnv），Phase 1 仅 schema 占位
-- **未答**：iframe ↔ 主页面的 postMessage 协议（cell 完成 → emit citation / figure 到 PM tree）
-- **未答**：cell 输出的 artifact（PNG / Plot / DataFrame）以什么形式回到 PM 树？
-  新 PM node type `computational-output` 还是 figure with `attrs.sourceCellId`？
-  **必须一个 ADR**（建议 ADR-0007）
+✅ **ADR-0007 已答**：figure with `attrs.sourceCellId`（不引入新 node type）；
+postMessage 协议 6 个 kind（cell.config / execute → ready / progress / executed / error）；
+5 分钟 JWT + 5 MB artifact 上限。详见 `plan0/adr/0007-computational-cell-embedding.md`。
 
 ### 3.3 语义级 diff 的 UI 模型
 
-- proto-c 已实证 PM step 序列化 + Yjs binary co-存
-- **未答**：两个 reviewer 各自 propose 修改，UI 怎么并列展示 diff？token-level？
-  block-level？
-- **未答**：rebase 的语义（reviewer A 的 revision 已 accept，reviewer B 的 revision
-  仍 pending —— B 的 PM step 自动 rebase 到新 base 还是要求手动 resolve？）
-- 候选库：`prosemirror-changeset`, `diff-match-patch` （Phase 2 spike 选一）
+✅ **ADR-0009 已答**：选 `prosemirror-changeset`（diff-match-patch 仅作 textContent
+fallback，不进 revision 数据流）；UI granularity 三档同源（block / token / mark-aware
+semantic hint）都派生自 `Change[]`；多 reviewer overlay 各自以 base 为根独立计算 ChangeSet
+不串行；rebase 默认 auto（`Step.map(mapping)` 全成功）/ `step.map===null` 时降级 manual
+resolve 三栏 UI。实证 `apps/prototypes/proto-d-diff-library/` + ADR-0009
++ `pnpm proto-d:demo`。
 
 ### 3.4 spatial canvas（"研究地图"）
 
@@ -97,8 +92,9 @@ D15 USER_GUIDE.md 列的 7 个 known limitation，全部归集到 Phase 1.5。**
 
 ## 六、Phase 2 kickoff 前的准备清单
 
-- [ ] Phase 1.5 7 项全部 merge
-- [ ] ADR-0007 + ADR-0008 起草（gate Phase 2 W2 实施）
-- [ ] 选定 long-horizon agent runtime（temporal / pgboss / inngest / 自写）
-- [ ] 选定 diff 库（prosemirror-changeset 评估）
+- [x] Phase 1.5 7 项全部 close（在 `claude/review-project-status-w2iNI` 分支；待 PR / merge）
+- [x] ADR-0007 起草（computational cell embedding + iframe 协议）— 2026-05-09 Proposed
+- [x] ADR-0008 起草（long-horizon agent runtime）— 2026-05-09 Proposed；选 pgboss + SSE
+- [x] 选定 long-horizon agent runtime —— **pgboss + SSE**（ADR-0008 §2.1）
+- [x] 选定 diff 库（**prosemirror-changeset**，ADR-0009 + `apps/prototypes/proto-d-diff-library/` spike）
 - [ ] molab embedding 文档读完 + 联系 Marimo 团队（如 iframe 协议有空白）

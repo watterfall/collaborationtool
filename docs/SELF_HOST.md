@@ -82,6 +82,41 @@ export YSWEET_AUTH=dev-y-sweet-auth-token-replace-in-prod
 
 # 真 Anthropic API（可选；不设走 mock runner）
 export ANTHROPIC_API_KEY=sk-ant-...
+
+# 真 CrossRef MCP（可选；不设走 in-memory mock 仅认 5 条 fixture DOI）
+# 走 stdio 子进程；Web route 在每次 invoke 时 spawn / 收回。
+export CROSSREF_MCP_COMMAND=tsx
+export CROSSREF_MCP_ARGS='["mcp-servers/crossref/src/bin.ts"]'
+export CROSSREF_MCP_CWD=/path/to/collaborationtool   # 若 web 进程 cwd 不在 repo 根
+# 透传到子进程（mcp-servers/crossref/src/bin.ts 读取）：
+# CROSSREF_BASE_URL  default https://api.crossref.org
+# CROSSREF_USER_AGENT default collaborationtool/0.0 (mailto:dev@…)
+# CROSSREF_TIMEOUT_MS default 8000
+
+# Invitation flow / 邮件（可选；Phase 1.5 #1）
+# 不设走 console-only：邀请链接 print 到 server stderr，docker logs 看
+export MAIL_WEBHOOK_URL=https://api.resend.com/emails   # 或 Postmark / 自家 relay
+export MAIL_WEBHOOK_AUTH=re_xxxxxxxxxxxxxxxxxxxxx       # 可选 Bearer
+export MAIL_FROM='Collaboration Tool <noreply@your-host.example>'
+
+# ORCID OAuth（可选；Phase 1.5 #2）
+# 在 https://orcid.org/developer-tools 注册 public API client，回调地址：
+#   https://<your-host>/api/auth/oauth2/callback/orcid
+# 测试用 sandbox.orcid.org（独立 client id 注册），ORCID_BASE_URL 改成 sandbox。
+export ORCID_CLIENT_ID=APP-XXXXXXXXXXXXXXXX
+export ORCID_CLIENT_SECRET=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+export ORCID_BASE_URL=https://orcid.org   # 可选；默认 https://orcid.org
+# 客户端 UI 显示按钮的开关（next 编译时读，不能服务器动态切）
+export NEXT_PUBLIC_ORCID_ENABLED=true
+# 不设 client id/secret 则后端不注册 provider；按钮即使勾了也走 PROVIDER_CONFIG_NOT_FOUND
+
+# 观测性 / Observability（可选；ADR-0004 §2.5）
+# Sentry：错误 + 慢请求（>1s）告警；DSN 格式 https://<key>@<host>/<projectId>
+export SENTRY_DSN=https://abc123@o100.ingest.sentry.io/42
+# PostHog：行为分析；anon UUID 而非真实 user id
+export POSTHOG_API_KEY=phc_xxxxxxxxxxxxxxxxxxxxxxxx
+export POSTHOG_HOST=https://eu.posthog.com   # 可选；默认 app.posthog.com
+# 不设任意一个则该路径自动 no-op（fire-and-forget HTTP capture，无 SDK 依赖）
 ```
 
 **生产警告**：
@@ -139,8 +174,56 @@ accept (200) → 4 格式导出 → PG provenance / contribution / approval_chai
 
 ### Postgres 备份
 
-`document.yjs_doc_binary` 字段最大可能数 MB（大文档）。生产用 `pg_dump`
-+ logical replication 备份；带宽够则保留 7 天 PITR。
+`document.yjs_doc_binary` 字段最大可能数 MB（大文档）。生产用 WAL-G 流式
+归档 + 7 天 PITR（ADR-0004 §2.6）。
+
+**Phase 1.5 #7 一键启用**（前提：S3-compat 桶 + 凭证已就绪）：
+
+```bash
+# 1. 复制 wal-g 配置模板，填真实凭证
+cp infra/walg/wal-g.json.example infra/docker/wal-g.json
+$EDITOR infra/docker/wal-g.json   # 填 WALG_S3_PREFIX / AWS_* 字段
+
+# 2. build 自定义 postgres image（含 wal-g 二进制）
+docker build -f infra/walg/Dockerfile -t collaborationtool-pg-walg:local infra/walg
+
+# 3. 用 walg overlay 起 stack（替换默认 postgres，加 walg-backup sidecar）
+docker compose \
+  -f infra/docker/docker-compose.yml \
+  -f infra/docker/docker-compose.walg.yml \
+  up -d postgres walg-backup
+
+# 4. 验证 archive_command 生效（WAL 段 push 到桶里）
+docker exec collaborationtool-pg psql -U collab -d collaborationtool \
+  -c "SELECT pg_switch_wal();"
+# 然后 mc ls 你的桶 / aws s3 ls 看到 walg 目录里有内容
+
+# 5. 立刻做一次基线备份（不等 04:00 sidecar）
+docker exec collaborationtool-walg-backup /opt/scripts/walg-backup.sh
+```
+
+**恢复演练**（quarterly 推荐）：
+
+```bash
+# 1. 起一个空 PGDATA 的临时 postgres
+docker run --rm -it \
+  -v "$(pwd)/infra/docker/wal-g.json:/etc/wal-g/wal-g.json:ro" \
+  -v collaborationtool_pg-restore:/var/lib/postgresql/data \
+  collaborationtool-pg-walg:local bash
+
+# 2. 容器里跑 restore（默认走最新 base + WAL）
+PGDATA=/var/lib/postgresql/data /opt/scripts/walg-restore.sh LATEST
+# 指定时间点：
+RECOVERY_TARGET_TIME='2026-05-09 14:00:00+00' \
+  /opt/scripts/walg-restore.sh LATEST
+
+# 3. 启 postgres，看 WAL 重放完成
+docker-entrypoint.sh postgres
+# 4. 跑 pnpm e2e:test 对它，确认数据回得来
+```
+
+> WAL-G 二进制在 image 里：`/usr/local/bin/wal-g`。配置在
+> `/etc/wal-g/wal-g.json`。绝不进 git；放 secrets manager。
 
 ### S3-compat 选择
 
@@ -184,7 +267,8 @@ docker volume ls | grep collaborationtool   # 找 volume
 |---|---|---|
 | signup 200 但 docs 列表 redirect 到 login | 中间件没拿到 cookie | 检查 BETTER_AUTH_URL 与你访问的 URL 严格一致 |
 | 编辑器加载中卡住 | `/api/sync-token` 401 | 检查 SYNC_TOKEN_SECRET 在 web 与 gateway 是否同一个 |
-| AI invoke 200 但 proposal 为空 | mock runner 命中无 fixture 的 DOI | crossref-mock 5 条 fixture 仅在 `mcp-servers/crossref-mock/src/server.ts`；改用真 ANTHROPIC_API_KEY 走 real LLM |
+| AI invoke 200 但 proposal 为空 | mock runner 命中无 fixture 的 DOI | crossref-mock 5 条 fixture 仅在 `mcp-servers/crossref-mock/src/server.ts`；改用真 ANTHROPIC_API_KEY 走 real LLM，或设 CROSSREF_MCP_COMMAND 走真 CrossRef |
+| AI invoke 500 `agent-failed` 提到 spawn ENOENT | CROSSREF_MCP_COMMAND 不在 PATH | 用绝对路径（`which tsx`），或不设 → 自动 fallback 到 in-memory mock |
 | PDF 导出 503 typst-binary-unavailable | 未装 typst CLI | 见上面 §2 装 typst |
 | `migration "0001_initial.sql" already applied` 但出错 | 之前部分 apply | `psql ... -c 'DROP TABLE IF EXISTS _drizzle_migrations CASCADE'` 然后重 migrate；准备好丢数据 |
 

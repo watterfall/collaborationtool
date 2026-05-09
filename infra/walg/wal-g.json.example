@@ -1,0 +1,20 @@
+{
+  "_comment": "Phase 1.5 #7 — Copy to /etc/wal-g/wal-g.json (or set WALG_CONFIG_FILE) and fill in real values. Never commit secrets.",
+
+  "WALG_S3_PREFIX": "s3://collaborationtool-pg-backups/walg",
+  "AWS_ENDPOINT": "https://<accountid>.r2.cloudflarestorage.com",
+  "AWS_REGION": "auto",
+  "AWS_ACCESS_KEY_ID": "REPLACE_ME",
+  "AWS_SECRET_ACCESS_KEY": "REPLACE_ME",
+  "AWS_S3_FORCE_PATH_STYLE": "true",
+
+  "WALG_COMPRESSION_METHOD": "lz4",
+  "WALG_DELTA_MAX_STEPS": "6",
+  "WALG_UPLOAD_CONCURRENCY": "4",
+  "WALG_DOWNLOAD_CONCURRENCY": "4",
+
+  "PGUSER": "collab",
+  "PGDATABASE": "collaborationtool",
+  "PGHOST": "localhost",
+  "PGPORT": "5432"
+}
