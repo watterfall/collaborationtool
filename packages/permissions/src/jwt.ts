@@ -166,3 +166,110 @@ export function syncTokenSecretFromString(value: string): Uint8Array {
   }
   return new TextEncoder().encode(value);
 }
+
+// ============================================================
+// Phase 2 W4 ADR-0007: cell-runtime token (5 min TTL, audience
+// 'cell-runtime', scope = `cell.execute:<cellId>`).
+// Reuses SYNC_TOKEN_SECRET (per ADR-0007 §2.4); audience separation
+// keeps it from being usable against sync-gateway and vice-versa.
+// ============================================================
+
+export const CELL_TOKEN_DEFAULT_TTL_SECONDS = 5 * 60;
+export const CELL_TOKEN_AUDIENCE = 'cell-runtime' as const;
+
+export interface CellTokenPayload {
+  sub: PrincipalId;
+  doc: DocumentId;
+  /** computational_cell.id this token authorises execution for. */
+  cell: string;
+  /** Capability verb scoped to the cell: `cell.execute:<cellId>`. */
+  scope: string;
+  iat: number;
+  exp: number;
+  iss: string;
+  aud: typeof CELL_TOKEN_AUDIENCE;
+}
+
+export interface SignCellTokenOptions {
+  issuer: string;
+  ttlSeconds?: number;
+  nowSeconds?: number;
+}
+
+/** Sign a cell-runtime JWT. */
+export async function signCellToken(
+  claims: { sub: PrincipalId; doc: DocumentId; cell: string },
+  secret: Uint8Array,
+  options: SignCellTokenOptions,
+): Promise<string> {
+  const ttl = options.ttlSeconds ?? CELL_TOKEN_DEFAULT_TTL_SECONDS;
+  const now = options.nowSeconds ?? Math.floor(Date.now() / 1000);
+
+  return new SignJWT({
+    doc: claims.doc,
+    cell: claims.cell,
+    scope: `cell.execute:${claims.cell}`,
+  })
+    .setProtectedHeader({ alg: SYNC_TOKEN_ALG })
+    .setSubject(claims.sub)
+    .setIssuer(options.issuer)
+    .setAudience(CELL_TOKEN_AUDIENCE)
+    .setIssuedAt(now)
+    .setExpirationTime(now + ttl)
+    .sign(secret);
+}
+
+/** Verify a cell-runtime JWT. Throws SyncTokenError on failure. */
+export async function verifyCellToken(
+  token: string,
+  secret: Uint8Array,
+  options: { issuer: string; clockToleranceSeconds?: number },
+): Promise<CellTokenPayload> {
+  try {
+    const { payload } = await jwtVerify(token, secret, {
+      algorithms: [SYNC_TOKEN_ALG],
+      issuer: options.issuer,
+      audience: CELL_TOKEN_AUDIENCE,
+      clockTolerance: options.clockToleranceSeconds ?? 5,
+    });
+    if (
+      typeof payload.sub !== 'string' ||
+      typeof payload['doc'] !== 'string' ||
+      typeof payload['cell'] !== 'string' ||
+      typeof payload['scope'] !== 'string' ||
+      typeof payload.iat !== 'number' ||
+      typeof payload.exp !== 'number' ||
+      typeof payload.iss !== 'string'
+    ) {
+      throw new SyncTokenError('malformed', 'cell token payload missing fields');
+    }
+    return {
+      sub: payload.sub as PrincipalId,
+      doc: payload['doc'] as DocumentId,
+      cell: payload['cell'] as string,
+      scope: payload['scope'] as string,
+      iat: payload.iat,
+      exp: payload.exp,
+      iss: payload.iss,
+      aud: CELL_TOKEN_AUDIENCE,
+    };
+  } catch (err) {
+    if (err instanceof SyncTokenError) throw err;
+    if (err instanceof joseErrors.JWTExpired) {
+      throw new SyncTokenError('expired', 'cell token expired');
+    }
+    if (err instanceof joseErrors.JWTClaimValidationFailed) {
+      throw new SyncTokenError(
+        err.claim === 'aud' ? 'wrong-audience' : 'malformed',
+        err.message,
+      );
+    }
+    if (err instanceof joseErrors.JWSSignatureVerificationFailed) {
+      throw new SyncTokenError('invalid-signature', 'cell token signature mismatch');
+    }
+    throw new SyncTokenError(
+      'malformed',
+      err instanceof Error ? err.message : String(err),
+    );
+  }
+}
