@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-09（claude/review-project-goals-TpFuH，**Phase 2 W1+W2+W3 实施落地 + dogfood gate PASS**：(1) 目标对齐 review，5 条差异化轴诊断，第 5 轴"开放平台"显性化；(2) Phase 2 stub 调整为 7 周；(3) ADR-0010 + ADR-0006 双 Proposed；(4) **W1 末**：drizzle migration 0005 + `mcp_server` 表 + `registry.json` seed + plugins 骨架；(5) **W2**：`AgentPluginModule` 契约 + `loadAgentPlugin` + `plugins/citation-agent/` + 等价性测试；(6) **W3 末 dogfood gate PASS**（ADR-0010 §7 review log 三项 criteria 全过）：`invokeAgentViaPlugin` host 编排 + apps/web `/api/agent/invoke` citation 切到 plugin 路径 + `agents/citation.ts` 删除（no internal-only API）+ 第三方 plugin tmpdir 加载测试 + plugin path correctness 测试 + agents-with-pg 7 个 citation case 切到 wrapper。19 包全 typecheck PASS / ai-runtime 38 测试 PASS。user 哲学 reaffirmed：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
+最后更新：2026-05-09（claude/review-project-goals-TpFuH，**Phase 2 W1+W2+W3 实施落地 + dogfood gate PASS + essay 整合规划**：(1) 目标对齐 review，5 条差异化轴诊断；(2) Phase 2 stub 7 周；(3) ADR-0010 + ADR-0006 双 Proposed；(4) **W1 末**：mcp_server 表 + plugins 骨架；(5) **W2**：`AgentPluginModule` 契约 + `loadAgentPlugin` + `plugins/citation-agent/` + 等价性测试；(6) **W3 末 dogfood gate PASS**：`invokeAgentViaPlugin` host 编排 + apps/web 切 plugin 路径 + `agents/citation.ts` 删除 + 第三方 tmpdir plugin 测试。19 包 typecheck PASS / ai-runtime 38 测试 PASS。(7) **2026-05-09 essay 整合**：用户上传 `0e15c053-AI_Native_Knowledge_OS.md`（源证据驱动的知识编译器），整合分析落 `plan0/research/2026-05-09-knowledge-compiler-essay-integration.md`——纳入 4 项（Claim/Evidence 一等 PM 块、Evidence Map 只读视图、AI context pack export、知识对象状态机），推迟 5 项到 Phase 3（Source Reader UI / Draft Composer 替换 / Decision/Question 对象 / knowledge maintenance scan / AI 自动 ingestion）；新增**第 6 差异化轴 "Knowledge object DAG / Claim-Evidence first"**（complementary 于 axis 2 Provenance）；Phase 2 W5 augment（ADR-0011 起草 + 4 个新 PM atom node + claim/claim_link PG 表）+ W7 augment（Evidence Map demo + AI context pack export）。user 哲学 reaffirmed：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
 
 ---
 
@@ -33,6 +33,7 @@
 | 0008 | Long-horizon agent runtime + reviewer/researcher agent | **Proposed** | 2026-05-09 起草；gated on Phase 2 W2-W3 实施 |
 | 0009 | Diff library + revision overlay UI + rebase semantics | **Proposed** | 2026-05-09 起草；spike `apps/prototypes/proto-d-diff-library/` 实证；gated on Phase 2 W2-W3 实施 |
 | 0010 | 扩展系统边界 + Plugin API + Skill 元数据扩展 + Dogfood 路径 | **Proposed**（W3 dogfood gate **PASS** 2026-05-09 / 见 §7 review log；待 Phase 2 W4-W5 inline-editor 跟切 + dispatcher 接入后 promote Accepted） | 2026-05-09 起草（Phase 2 W1 头号 / 平台性核心）；W3 末 dogfood gate 三项 criteria 全过：(a) plugin path 正确性 + (b) 第三方 tmpdir plugin 加载 + (c) hardcode citation.ts 删除（no internal-only API） |
+| 0011 | Claim/Evidence/Counterpoint/Synthesis 一等知识对象层 | 推 Phase 2 W5 起草 | 2026-05-09 essay 整合规划（见 `plan0/research/2026-05-09-knowledge-compiler-essay-integration.md`）；W5 起草 + W7 dogfood gate（单文档 Evidence Map demo + AI context pack export 验证 schema 跑通） |
 
 ---
 
