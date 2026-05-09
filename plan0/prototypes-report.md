@@ -161,6 +161,46 @@ pnpm proto-a:e2e        # Playwright 自动起 sync-server + Vite，3/3 pass
 
 合计 12 个已知 Phase 1 工作项；和 §5.1 / §5.2 的合并不重不漏。
 
+### 5.5 Phase 1 close-out（D16 加，回填实施实绩）
+
+> Phase 1 D7–D15 实施完毕；D16 ADR promotion + 文档收尾。本子节回放
+> §5.1 / §5.2 / §5.3 的实际命中率，作为 Phase 0 → Phase 1 衔接的"答案
+> 卷"。后续 Phase 2 起手前请先看本节，再看 `phase-2-plan-stub.md`。
+
+**§5.1 立即落地 4 项**：
+
+| 项 | 状态 | Phase 1 commit |
+|---|---|---|
+| `apps/sync-gateway` 起手 + canApplyUpdate | ✅ D8（capability gate）+ D11（y-sweet 集成） | `apps/sync-gateway/src/{server,auth}.ts` + `backends/{in-memory,y-sweet}.ts` |
+| `Document.forkedFrom*` 字段 | ⚠️ 推 Phase 1.5 | 决定先把 fork/merge UI 整体留 Phase 3，schema 字段同步推到 Phase 1.5 第 1 周加 migration |
+| 36 capability 词汇 → `packages/permissions/src/capabilities.ts` | ✅ D8 | `packages/permissions/src/capabilities.ts:1-90` 全部常量 |
+| crossref-mock → 真 crossref MCP | ✅ D13 部分 | `mcp-servers/crossref/` 已实现真 server（mock 仍保留 in `mcp-servers/crossref-mock/`，CI / 离线用） |
+
+**§5.2 不能漏的细节**：
+
+| 项 | 状态 | 备注 |
+|---|---|---|
+| mystmd templates 镜像 | ⚠️ Phase 1.5 | D12 走 Typst-only PDF + 自写 MyST emitter，未引入 mystmd CLI；mystmd 接入推 Phase 1.5 ADR-0005 §3 列遗留 |
+| typography smart-quote 分语言 | ✅ D12 | `packages/typography/src/smart-quote-by-lang.ts` —— curly-zh / corner-zh / curly-en / ascii 四档 |
+| export image 装 CJK 字体 | ✅ D15 文档 | `docs/SELF_HOST.md` §1 列 `apt-get install fonts-noto-cjk` 等；docker image Phase 1.5 |
+| `prompt_template` 表 | ✅ D7 | migration `0001_initial.sql` 已含；D14 写 immutable promptHash + template id |
+| better-auth → Principal bridge | ✅ D9 | `packages/permissions/src/principal-bridge.ts` |
+
+**§5.3 推迟的事**：全部按计划推迟——Phase 2 plan stub §四 重申 Phase 2 仍不做的事。
+
+**§5.4 12 个已知 Phase 1 工作项**：从 D7 起逐项 ticket 化，Phase 1 验收时全部
+clear（详见各 ADR 的 Phase 1 implementation review log）。
+
+**Phase 1 实绩归档**：
+
+- 10 个交付物（D7–D16）全部 ship；commit 链在 `claude/analyze-project-status-jZyUu` 分支
+- 5 个 ADR 全部 Accepted（0001/0002/0003 promote + 0004/0005 新写直 Accepted）
+- 1 套 e2e 验收（`tests/e2e/specs/two-author-mvp.spec.ts`，22.8s PASS）
+- 2 篇用户文档（`docs/USER_GUIDE.md` + `docs/SELF_HOST.md`）
+- 1 篇 Phase 2 plan stub（`plan0/phase-2-plan-stub.md`）
+
+Phase 1 → Phase 2 的 7 项 deferred 工作（Phase 1.5 patch list）见 phase-2-plan-stub §二。
+
 ---
 
 ## 6. Phase 0 commits 索引

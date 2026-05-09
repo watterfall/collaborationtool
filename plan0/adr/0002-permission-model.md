@@ -1,10 +1,10 @@
 # ADR-0002: 权限模型 —— Capability + Principal + 同步网关
 
-- **Status**: Proposed
-- **Date**: 2026-05-08
+- **Status**: Accepted
+- **Date**: 2026-05-08（Proposed），2026-05-08（Accepted，Phase 1 D16 收尾时实施已落地）
 - **Phase**: 0（关键路径 D2）
 - **Deciders**: <项目所有者>
-- **Gated on**: ADR-0001（数据模型）已 Proposed；本 ADR 接受不需等原型，但实现要等 Phase 1 同步网关写出来才正式生效
+- **Gate cleared by**: Phase 1 D8（capability gateway 落地）+ D9（better-auth 桥接）+ D14（capability-gated agent invoke + revision approval）+ D15（双人 e2e 验收 PASS：reviewer 不能 accept、author 可以 accept、二者都能 propose）。详见下方 §8 Phase 1 implementation review log。
 
 ---
 
@@ -443,8 +443,63 @@ D wants to merge P' back to P:
 ## 7. References
 
 - ADR-0001（数据模型）—— Principal / Agent / Capability / Block 等定义
+- ADR-0004 §2.2（同步网关 secret 管理）
 - `plan0/paper-platform-system-prompt.md` §2, §7（协作主体多元 / 隐私）
 - `plan0/phase-0-execution-plan.md` D2 章节
 - AWS Cedar Policy Language: https://www.cedarpolicy.com/
 - better-auth organization plugin: https://better-auth.com/docs/plugins/organization
 - Linear 早期 Permission 重构（公开博客 / talks 中提到）
+
+---
+
+## 8. Phase 1 implementation review log
+
+> 加于 D16 close-out。
+
+- **D8（gateway + JWT）**：`packages/permissions` 落地完整 36 capability 词汇 +
+  5 default role bundle + `hasCapability` / `requireCapability` /
+  `canApplyUpdate` 检查器 + HS256 SyncToken sign/verify。**与 §2.4 完全一致**：
+  网关连接级鉴权（per-doc capability check at WS upgrade），节点范围留 Phase 3。
+- **D9（better-auth bridge）**：`createUserPrincipal` / `createOrgPrincipal` /
+  `revokePrincipal` 由 `principal-bridge.ts` 实现；signup 流自动产 user-principal。
+  **新发现**：drizzle 0.45 的 transaction 类型推导对泛型 helper 不友好——用
+  `DbExecutor` 联合类型（`Database | PgTransaction`）解决，记录在 `principal-bridge.ts`
+  顶部注释。
+- **D11（gateway + y-sweet）**：网关在 WS upgrade 时验 SyncToken JWT、加载
+  `loadPrincipalContext` → 校验 `document.read` + 写权限 → 通过则 attach
+  BodyBackend。6 个 close code (4400–4405) 对应 invalid-token / no-principal /
+  no-doc-access / no-write-cap / backend-error / token-expired，与 ADR-0002 §2.4.4
+  约定一致。
+- **D14（agent invoke + revision approval）**：`agent.invoke:citation` /
+  `agent.invoke:editor` 这两个 capability 实际首次被检查；reviewer (paper-reviewer)
+  尝试 accept revision 返 403（缺 `block.commit`），author (paper-author) 可以 accept。
+  approval_chain 落 PG 由 `provenance-writer.ts:acceptRevisionToContribution` /
+  `rejectRevision` / `supersedeRevisionWithModified` 三个函数维护。
+- **D15（双人 e2e 实测）**：`tests/e2e/specs/two-author-mvp.spec.ts` 完整跑通
+  reviewer 拒 → author 接 流程，22.8s 内完成；3 个 Phase 3 场景中场景 A
+  （论文有 author + reviewer，不同权限）已被 Phase 1 验证。
+
+**与 ADR-0002 决策的差异**（实施过程中的小调整）：
+
+- `agent.invoke:reviewer` / `agent.invoke:researcher` / `agent.invoke:custom`
+  词汇已登记但 Phase 1 未触发（与 §2.1 备注一致）
+- `block.lock` capability 词汇已登记但 Phase 1 未实现 UI（Phase 2 加）
+- `document.transfer-ownership` / `document.publish` 同上
+- 网关 close code 在实施时从 4400-4404 扩到 4400-4405（加 token-expired），
+  ADR §2.4.4 文本未变（编号扩展不算决策变更）
+
+**Phase 2 必须修的遗留**：
+
+- `capability.grant` 谁能 grant 什么的递归规则（Phase 1 简化为"只有 owner"）
+- JWT 嵌 capability 的 hybrid 模式（如 D14 测出 capability lookup 是热路径——
+  实际目前 < 5ms / req，没触发）
+- `paper-reviewer` 拆 "blind-reviewer"（看不到作者身份）—— Phase 2 reviewer
+  agent 落地后实测决定
+
+**Phase 2 不需要修的预判**：
+
+- 36 capability 词汇 Phase 1 没触发新增需求；Phase 2 加 reviewer agent 时新增
+  `block.review-suggestion` 之类的可能性低（已在 `block.review` 范围内）
+- 5 default role bundle 数量足够（Phase 1.5 加 invitation flow 时复用）
+- Principal `kind: 'shared-link'` 提前预留有效——Phase 1.5 加只读链接共享
+  不需 schema migration

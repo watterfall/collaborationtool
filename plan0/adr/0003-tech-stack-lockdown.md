@@ -1,10 +1,10 @@
 # ADR-0003: Phase 1 技术栈锁定
 
-- **Status**: Proposed
-- **Date**: 2026-05-08
+- **Status**: Accepted
+- **Date**: 2026-05-08（Proposed），2026-05-08（Accepted，Phase 1 D16 收尾时 11 项全部生效）
 - **Phase**: 0（关键路径 D6）
 - **Deciders**: <项目所有者>
-- **Gated on**: ADR-0001（数据模型）/ ADR-0002（权限）已 Proposed；D3 stress test 已 PASS。**任何一项 Phase 1 决策被推翻都要回头修这份 ADR**。
+- **Gate cleared by**: Phase 1 D7-D15 全部交付物均使用本 ADR 锁定的 11 项技术栈，无中途切换；D15 双人 e2e 验收 PASS。详见下方 §9 Phase 1 implementation review log。
 
 ---
 
@@ -297,6 +297,8 @@ D4 完成后本 ADR §3 转 Accepted；如果 Typst 翻车则 fallback xeCJK + m
 
 - ADR-0001 §2.3.8（Agent.runtime） / §2.3.5（ComputationalCell.kernel）
 - ADR-0002 §2.4（同步网关执行策略）
+- ADR-0004（部署拓扑 + 安全基线）
+- ADR-0005（render API 边界，§2.6 render pipeline 的实施面）
 - `plan0/phase-0-execution-plan.md` D6 章节
 - `plan0/paper-platform-system-prompt.md` §52-95（技术基线）
 - y-sweet: https://github.com/jamsocket/y-sweet
@@ -304,3 +306,48 @@ D4 完成后本 ADR §3 转 Accepted；如果 Typst 翻车则 fallback xeCJK + m
 - Drizzle ORM: https://orm.drizzle.team/
 - Vercel AI SDK: https://ai-sdk.dev
 - Marimo embedding: https://docs.marimo.io/guides/publishing/embedding/
+
+---
+
+## 9. Phase 1 implementation review log
+
+> 加于 D16 close-out。回放 11 项决策的实际落地状态。
+
+| # | 决策 | Phase 1 落地 | 备注 |
+|---|---|---|---|
+| 2.1 | TipTap v2 / ProseMirror | ✅ D10 | 9 PM extension + paperSchema()，无 schema-recovery bug |
+| 2.2 | Next.js 15 (App Router) | ✅ D9-D15 | RSC + Server Actions + middleware，路由 stable |
+| 2.3 | y-sweet 自托管 | ✅ D11 | BodyBackend 抽象（InMemory + YSweet），YSWEET_URL 切换 |
+| 2.4 | better-auth | ✅ D9 | 7 better-auth 表迁移 + Principal bridge，signup/login/session 跑通 |
+| 2.5 | Drizzle + postgres-js | ✅ D7 | 13 表 + 18 round-trip 测；drizzle 0.45 transaction 类型 quirk 已记录 |
+| 2.6 | render pipeline (MyST + Typst) | ✅ D12 | 5 格式（HTML/JATS/MD/Typst/PDF）+ ADR-0005 锁定 API |
+| 2.7 | Anthropic SDK + MCP | ✅ D13/D14 | InMemory + stdio MCP 双 transport，mock fallback |
+| 2.8 | typography pre-pass | ✅ D12 | CJK spacing + smart quote + font tokens，幂等 |
+| 2.9 | Vitest + Playwright | ✅ D7-D15 | 单元 / 集成 / e2e 三层；2-author MVP e2e 22.8s |
+| 2.10 | pnpm workspace | ✅ D7 | 11 workspace package + 3 app + 1 e2e suite |
+| 2.11 | TypeScript strict | ✅ 全程 | 无 `any` 通过；`strict: true` + `noUncheckedIndexedAccess: true` |
+
+**实施过程中触发的"轻微决策修正"**（不构成回头改 ADR）：
+
+- **drizzle-orm 版本**：从 plan §52 的 ^0.40 升到 ^0.45.2 因为 better-auth peer
+  依赖。本 ADR §2.5 文本未变。
+- **React 19 重复 types**：pnpm overrides pin `@types/react@^19.2.0` 解决 18.3 +
+  19.2 共存。本 ADR §2.2 未提 React 版本细节，无需修改。
+- **playwright 命令**：`pnpm --filter ... -- --port 3100` 的 `--` 被 pnpm 吃掉；
+  改用 `pnpm exec next dev --port 3100` + cwd。本 ADR §2.9 未约束启动脚本细节。
+
+**未触发回头 trigger 的决策**：
+
+- TipTap：D3 + D10 + D15 全程 PASS，未见 schema-recovery 不可绕过 bug
+- Next.js 15：build 成本可控（dev startup ~3s，prod build ~30s）
+- y-sweet：Phase 1 是 InMemory 默认；YSweetBackend 已实测 docker-compose 路径
+  打通；50 协作者压测留 Phase 4
+- better-auth：Phase 1 实测无重大 bug；organization plugin Phase 1.5 启用
+
+**Phase 2 起需要重新评估的决策**（写在这里作为 watch list，不立即修）：
+
+- §2.6 mystmd 官方 transformer 替换我们自写的 ast-from-pm（Phase 1.5）
+- §2.6 mystmd-to-docx 加 .docx 导出（Phase 1.5）
+- §2.7 Vercel AI SDK 采用还是延后（D14 用了 Anthropic SDK 直接，未引入 AI SDK）—
+  Phase 2 reviewer agent 落地时再决定
+- §2.3 y-sweet horizontal scale 评估（Phase 4 50+ 人开放评审场景）
