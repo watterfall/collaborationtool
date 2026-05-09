@@ -95,6 +95,13 @@ export async function persistProposal(
       yjsUpdateBinary: input.yjsUpdateBinary ?? new Uint8Array(),
       baseStateVector: input.baseStateVector ?? new Uint8Array(),
       rationale: input.rationale ?? input.proposal.proposalRationale,
+      // D14: structured proposal metadata so the approval UI can show
+      // before/after fragments + uncertainties without deserialising
+      // PM steps.
+      proposalMetadata: {
+        revisedFragments: input.proposal.revisedFragments,
+        uncertainties: input.proposal.uncertainties,
+      } as unknown as Record<string, unknown>,
       provenanceId,
     });
 
@@ -184,6 +191,266 @@ export async function acceptRevisionToContribution(
 
     return { contributionId };
   });
+}
+
+/**
+ * Reject a revision. Sets status='rejected' and appends to the
+ * provenance.approval_chain so the audit trail shows who declined the
+ * proposal.
+ */
+export interface RejectRevisionInput {
+  revisionId: RevisionId;
+  reviewerPrincipalId: PrincipalId;
+  notes?: string;
+}
+
+export interface RejectRevisionResult {
+  revisionId: RevisionId;
+}
+
+export async function rejectRevision(
+  db: DbExecutor,
+  input: RejectRevisionInput,
+): Promise<RejectRevisionResult> {
+  return await runInTransaction(db, async (tx) => {
+    const rev = await tx
+      .select()
+      .from(schema.revision)
+      .where(eq(schema.revision.id, input.revisionId))
+      .limit(1);
+    if (rev.length === 0) {
+      throw new Error(`revision not found: ${input.revisionId}`);
+    }
+    const revision = rev[0]!;
+    if (revision.status === 'accepted' || revision.status === 'rejected') {
+      throw new Error(
+        `revision ${input.revisionId} already ${revision.status}; cannot reject again`,
+      );
+    }
+
+    await tx
+      .update(schema.revision)
+      .set({
+        status: 'rejected',
+        decidedAt: new Date(),
+        decidedBy: input.reviewerPrincipalId,
+      })
+      .where(eq(schema.revision.id, input.revisionId));
+
+    if (revision.provenanceId) {
+      const provRows = await tx
+        .select({ approvalChain: schema.provenance.approvalChain })
+        .from(schema.provenance)
+        .where(eq(schema.provenance.id, revision.provenanceId))
+        .limit(1);
+      const existing =
+        (provRows[0]?.approvalChain as Array<Record<string, unknown>>) ?? [];
+      existing.push({
+        approverPrincipalId: input.reviewerPrincipalId,
+        approvedAt: new Date().toISOString(),
+        decision: 'reject',
+        ...(input.notes ? { notes: input.notes } : {}),
+      });
+      await tx
+        .update(schema.provenance)
+        .set({ approvalChain: existing })
+        .where(eq(schema.provenance.id, revision.provenanceId));
+    }
+
+    return { revisionId: input.revisionId };
+  });
+}
+
+/**
+ * Reviewer counter-proposal — supersede the original revision (status =
+ * 'superseded') and create a new revision authored by the reviewer with
+ * the modified rationale + revisedFragments. Provenance.actor for the
+ * new row is the reviewer (kind='user'), not the original agent.
+ *
+ * Phase 1 simplification: the reviewer doesn't get to edit PM steps
+ * directly — they edit the proposal_metadata.revisedFragments.
+ * D15 / Phase 2 will let them edit the PM tree.
+ */
+export interface ModifyRevisionInput {
+  originalRevisionId: RevisionId;
+  reviewerPrincipalId: PrincipalId;
+  /** New rationale text. */
+  rationale: string;
+  /** New fragments — `revisedFragments[]`. */
+  revisedFragments: Array<{
+    originalText: string;
+    replacementText: string;
+  }>;
+  notes?: string;
+}
+
+export interface ModifyRevisionResult {
+  originalRevisionId: RevisionId;
+  newRevisionId: RevisionId;
+  newProvenanceId: ProvenanceId;
+}
+
+export async function supersedeRevisionWithModified(
+  db: DbExecutor,
+  input: ModifyRevisionInput,
+): Promise<ModifyRevisionResult> {
+  return await runInTransaction(db, async (tx) => {
+    const rev = await tx
+      .select()
+      .from(schema.revision)
+      .where(eq(schema.revision.id, input.originalRevisionId))
+      .limit(1);
+    if (rev.length === 0) {
+      throw new Error(`revision not found: ${input.originalRevisionId}`);
+    }
+    const original = rev[0]!;
+    if (original.status !== 'proposed' && original.status !== 'draft') {
+      throw new Error(
+        `revision ${input.originalRevisionId} status=${original.status} — cannot supersede`,
+      );
+    }
+
+    // ----- mark original superseded -----
+    await tx
+      .update(schema.revision)
+      .set({
+        status: 'superseded',
+        decidedAt: new Date(),
+        decidedBy: input.reviewerPrincipalId,
+      })
+      .where(eq(schema.revision.id, input.originalRevisionId));
+
+    // ----- new provenance row (reviewer is the actor) -----
+    const newProvenanceId = uuidv7() as ProvenanceId;
+    await tx.insert(schema.provenance).values({
+      id: newProvenanceId,
+      actorPrincipalId: input.reviewerPrincipalId,
+      actorKind: 'user',
+      agentContext: null,
+      inputBlockIds: null,
+      inputDocumentIds: [original.documentId],
+      triggeredAt: new Date(),
+      toolCalls: null,
+      approvalChain: [
+        {
+          approverPrincipalId: input.reviewerPrincipalId,
+          approvedAt: new Date().toISOString(),
+          decision: 'modify',
+          ...(input.notes ? { notes: input.notes } : {}),
+          supersedesRevisionId: input.originalRevisionId,
+        },
+      ] as unknown as Record<string, unknown>[],
+    });
+
+    // ----- new revision row -----
+    const newRevisionId = uuidv7() as RevisionId;
+    await tx.insert(schema.revision).values({
+      id: newRevisionId,
+      documentId: original.documentId,
+      proposedBy: input.reviewerPrincipalId,
+      status: 'proposed',
+      // Phase 1: re-use the original PM step bytes — D15 lets the reviewer
+      // edit them. The metadata on this row is the modified intent.
+      pmStepsBinary: original.pmStepsBinary,
+      yjsUpdateBinary: original.yjsUpdateBinary,
+      baseStateVector: original.baseStateVector,
+      rationale: input.rationale,
+      proposalMetadata: {
+        revisedFragments: input.revisedFragments,
+        uncertainties: [],
+      } as unknown as Record<string, unknown>,
+      provenanceId: newProvenanceId,
+    });
+
+    // Also append the modify decision to the ORIGINAL provenance's chain
+    // so audit shows the supersede pointer.
+    if (original.provenanceId) {
+      const originalProv = await tx
+        .select({ approvalChain: schema.provenance.approvalChain })
+        .from(schema.provenance)
+        .where(eq(schema.provenance.id, original.provenanceId))
+        .limit(1);
+      const originalChain =
+        (originalProv[0]?.approvalChain as Array<Record<string, unknown>>) ?? [];
+      originalChain.push({
+        approverPrincipalId: input.reviewerPrincipalId,
+        approvedAt: new Date().toISOString(),
+        decision: 'modify',
+        supersededByRevisionId: newRevisionId,
+        ...(input.notes ? { notes: input.notes } : {}),
+      });
+      await tx
+        .update(schema.provenance)
+        .set({ approvalChain: originalChain })
+        .where(eq(schema.provenance.id, original.provenanceId));
+    }
+
+    return {
+      originalRevisionId: input.originalRevisionId,
+      newRevisionId,
+      newProvenanceId,
+    };
+  });
+}
+
+/**
+ * List the pending (proposed/draft) revisions for a document, newest
+ * first. Used by the approval-flow inbox UI.
+ */
+export interface ListPendingRevisionsInput {
+  documentId: string;
+  limit?: number;
+}
+
+export interface PendingRevisionRow {
+  id: string;
+  documentId: string;
+  proposedBy: string;
+  status: 'draft' | 'proposed';
+  rationale: string | null;
+  proposalMetadata: {
+    revisedFragments?: Array<{
+      originalText: string;
+      replacementText: string;
+      citationId?: string;
+      citationCslJson?: Record<string, unknown>;
+    }>;
+    uncertainties?: string[];
+  } | null;
+  createdAt: Date;
+}
+
+export async function listPendingRevisions(
+  db: DbExecutor,
+  input: ListPendingRevisionsInput,
+): Promise<PendingRevisionRow[]> {
+  const rows = await db
+    .select({
+      id: schema.revision.id,
+      documentId: schema.revision.documentId,
+      proposedBy: schema.revision.proposedBy,
+      status: schema.revision.status,
+      rationale: schema.revision.rationale,
+      proposalMetadata: schema.revision.proposalMetadata,
+      createdAt: schema.revision.createdAt,
+    })
+    .from(schema.revision)
+    .where(eq(schema.revision.documentId, input.documentId))
+    .orderBy(schema.revision.createdAt)
+    .limit(input.limit ?? 50);
+
+  return rows
+    .filter((r) => r.status === 'proposed' || r.status === 'draft')
+    .reverse() // newest first
+    .map((r) => ({
+      id: r.id,
+      documentId: r.documentId,
+      proposedBy: r.proposedBy,
+      status: r.status as 'draft' | 'proposed',
+      rationale: r.rationale,
+      proposalMetadata: r.proposalMetadata as PendingRevisionRow['proposalMetadata'],
+      createdAt: r.createdAt,
+    }));
 }
 
 // ---------- helpers ----------

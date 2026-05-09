@@ -13,6 +13,7 @@ import { getPrincipalIdForUser } from '@/lib/principal';
 import EditorClient from './editor-client';
 import ExportDrawer from './components/ExportDrawer';
 import AgentPanel from './components/AgentPanel';
+import RevisionInbox from './components/RevisionInbox';
 
 export default async function EditorPage({
   params,
@@ -75,6 +76,11 @@ export default async function EditorPage({
       <EditorClient documentId={doc.id} />
 
       <AgentPanel documentId={doc.id} blockId="blk-cursor" />
+
+      {(ctx.documentCapabilities.has('block.review') ||
+        ctx.documentCapabilities.has('block.commit')) && (
+        <RevisionInbox documentId={doc.id} />
+      )}
 
       <ExportDrawer documentId={doc.id} />
 

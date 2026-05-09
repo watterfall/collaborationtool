@@ -289,6 +289,10 @@ export const revision = pgTable(
     yjsUpdateBinary: bytea('yjs_update_binary').notNull(),
     baseStateVector: bytea('base_state_vector').notNull(),
     rationale: text('rationale'),
+    // Phase 1 D14: structured proposal metadata (revisedFragments[],
+    // uncertainties[]). Nullable so user-typed (non-agent) revisions
+    // don't have to populate it.
+    proposalMetadata: jsonb('proposal_metadata'),
     // provenanceId is optional in TS schema (`Revision.provenanceId?`),
     // but Phase 1 makes it NOT NULL when proposedBy is an agent. Enforced
     // by CHECK constraint in 0001_initial.sql.
@@ -305,6 +309,10 @@ export const revision = pgTable(
   (t) => ({
     documentIdx: index('revision_document_idx').on(t.documentId),
     statusIdx: index('revision_status_idx').on(t.status),
+    statusDocumentIdx: index('revision_status_document_idx').on(
+      t.documentId,
+      t.status,
+    ),
     proposedByIdx: index('revision_proposed_by_idx').on(t.proposedBy),
   }),
 );

@@ -33,10 +33,19 @@ export {
 export {
   persistProposal,
   acceptRevisionToContribution,
+  rejectRevision,
+  supersedeRevisionWithModified,
+  listPendingRevisions,
   type PersistProposalInput,
   type PersistProposalResult,
   type AcceptRevisionInput,
   type AcceptRevisionResult,
+  type RejectRevisionInput,
+  type RejectRevisionResult,
+  type ModifyRevisionInput,
+  type ModifyRevisionResult,
+  type ListPendingRevisionsInput,
+  type PendingRevisionRow,
 } from './provenance-writer';
 
 export type {

@@ -25,6 +25,9 @@ import {
   acceptRevisionToContribution,
   invokeCitationAgent,
   invokeInlineEditorAgent,
+  listPendingRevisions,
+  rejectRevision,
+  supersedeRevisionWithModified,
 } from '../src/index';
 
 const DATABASE_URL = process.env['DATABASE_URL'];
@@ -263,6 +266,187 @@ if (SHOULD_SKIP) {
       assert.equal(chain.length, 1);
       assert.equal(chain[0]!['decision'], 'accept');
       assert.equal(chain[0]!['notes'], 'looks good');
+    });
+
+    // ---------- D14: reject ----------
+
+    it('rejectRevision: status → rejected + approval_chain appended', async () => {
+      const invoke = await invokeCitationAgent(
+        {
+          principalContext: userCtx,
+          documentId,
+          blockId: 'blk-3',
+          passage: 'plain',
+          flaggedDoiCandidates: ['10.9999/unknown.2024'],
+          skillsRoot: SKILLS_ROOT,
+        },
+        { db: handle.db },
+      );
+      const result = await rejectRevision(handle.db, {
+        revisionId: invoke.persisted!.revisionId,
+        reviewerPrincipalId: userPrincipalId,
+        notes: 'wrong reference',
+      });
+      assert.equal(result.revisionId, invoke.persisted!.revisionId);
+
+      const rev = await handle.db
+        .select()
+        .from(schema.revision)
+        .where(eq(schema.revision.id, invoke.persisted!.revisionId));
+      assert.equal(rev[0]!.status, 'rejected');
+      assert.ok(rev[0]!.decidedAt);
+      assert.equal(rev[0]!.decidedBy, userPrincipalId);
+
+      const prov = await handle.db
+        .select({ approvalChain: schema.provenance.approvalChain })
+        .from(schema.provenance)
+        .where(eq(schema.provenance.id, invoke.persisted!.provenanceId));
+      const chain =
+        (prov[0]!.approvalChain as Array<Record<string, unknown>>) ?? [];
+      assert.equal(chain.length, 1);
+      assert.equal(chain[0]!['decision'], 'reject');
+      assert.equal(chain[0]!['notes'], 'wrong reference');
+    });
+
+    it('rejectRevision: refuses already-decided revisions', async () => {
+      const invoke = await invokeCitationAgent(
+        {
+          principalContext: userCtx,
+          documentId,
+          blockId: 'blk-4',
+          passage: 'plain',
+          flaggedDoiCandidates: [],
+          skillsRoot: SKILLS_ROOT,
+        },
+        { db: handle.db },
+      );
+      await acceptRevisionToContribution(handle.db, {
+        revisionId: invoke.persisted!.revisionId,
+        reviewerPrincipalId: userPrincipalId,
+      });
+      await assert.rejects(
+        () =>
+          rejectRevision(handle.db, {
+            revisionId: invoke.persisted!.revisionId,
+            reviewerPrincipalId: userPrincipalId,
+          }),
+        /already accepted/,
+      );
+    });
+
+    // ---------- D14: modify (supersede) ----------
+
+    it('supersedeRevisionWithModified: original → superseded + new revision proposed', async () => {
+      const invoke = await invokeCitationAgent(
+        {
+          principalContext: userCtx,
+          documentId,
+          blockId: 'blk-5',
+          passage: 'plain',
+          flaggedDoiCandidates: ['10.1145/3531146.3533104'],
+          skillsRoot: SKILLS_ROOT,
+        },
+        { db: handle.db },
+      );
+
+      const result = await supersedeRevisionWithModified(handle.db, {
+        originalRevisionId: invoke.persisted!.revisionId,
+        reviewerPrincipalId: userPrincipalId,
+        rationale: 'I will tighten the wording',
+        revisedFragments: [
+          { originalText: 'See DOI', replacementText: 'cf. DOI' },
+        ],
+        notes: 'tightened',
+      });
+
+      // Original is superseded.
+      const orig = await handle.db
+        .select()
+        .from(schema.revision)
+        .where(eq(schema.revision.id, invoke.persisted!.revisionId));
+      assert.equal(orig[0]!.status, 'superseded');
+      assert.equal(orig[0]!.decidedBy, userPrincipalId);
+
+      // New revision is proposed by the reviewer (kind='user'),
+      // distinct from the original agent.
+      const fresh = await handle.db
+        .select()
+        .from(schema.revision)
+        .where(eq(schema.revision.id, result.newRevisionId));
+      assert.equal(fresh[0]!.status, 'proposed');
+      assert.equal(fresh[0]!.proposedBy, userPrincipalId);
+      assert.equal(fresh[0]!.documentId, documentId);
+      const meta = fresh[0]!.proposalMetadata as {
+        revisedFragments: Array<{ originalText: string; replacementText: string }>;
+      };
+      assert.equal(meta.revisedFragments[0]!.originalText, 'See DOI');
+      assert.equal(meta.revisedFragments[0]!.replacementText, 'cf. DOI');
+
+      // Original provenance.approval_chain has a 'modify' entry
+      // pointing at the new revision.
+      const origProv = await handle.db
+        .select({ approvalChain: schema.provenance.approvalChain })
+        .from(schema.provenance)
+        .where(eq(schema.provenance.id, invoke.persisted!.provenanceId));
+      const origChain =
+        (origProv[0]!.approvalChain as Array<Record<string, unknown>>) ?? [];
+      assert.equal(origChain.length, 1);
+      assert.equal(origChain[0]!['decision'], 'modify');
+      assert.equal(
+        origChain[0]!['supersededByRevisionId'],
+        result.newRevisionId,
+      );
+
+      // New provenance is owned by the reviewer (actor_kind='user').
+      const newProv = await handle.db
+        .select()
+        .from(schema.provenance)
+        .where(eq(schema.provenance.id, result.newProvenanceId));
+      assert.equal(newProv[0]!.actorKind, 'user');
+      assert.equal(newProv[0]!.actorPrincipalId, userPrincipalId);
+    });
+
+    // ---------- D14: list pending ----------
+
+    it('listPendingRevisions: returns proposed/draft, newest first, ignores accepted/rejected/superseded', async () => {
+      // Create one proposed via citation invoke; accept it; create another
+      // proposed; ensure list returns only the second.
+      const a = await invokeCitationAgent(
+        {
+          principalContext: userCtx,
+          documentId,
+          blockId: 'blk-6',
+          passage: 'plain',
+          flaggedDoiCandidates: [],
+          skillsRoot: SKILLS_ROOT,
+        },
+        { db: handle.db },
+      );
+      await acceptRevisionToContribution(handle.db, {
+        revisionId: a.persisted!.revisionId,
+        reviewerPrincipalId: userPrincipalId,
+      });
+
+      const b = await invokeCitationAgent(
+        {
+          principalContext: userCtx,
+          documentId,
+          blockId: 'blk-7',
+          passage: 'plain',
+          flaggedDoiCandidates: ['10.1145/3531146.3533104'],
+          skillsRoot: SKILLS_ROOT,
+        },
+        { db: handle.db },
+      );
+
+      const list = await listPendingRevisions(handle.db, { documentId });
+      const ids = list.map((r) => r.id);
+      assert.ok(ids.includes(b.persisted!.revisionId));
+      assert.ok(!ids.includes(a.persisted!.revisionId));
+      // Each row exposes proposalMetadata.
+      const row = list.find((r) => r.id === b.persisted!.revisionId)!;
+      assert.ok(row.proposalMetadata);
+      assert.ok(Array.isArray(row.proposalMetadata!.revisedFragments));
     });
   });
 }

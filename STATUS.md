@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-08（claude/analyze-project-status-jZyUu，D13 完成）
+最后更新：2026-05-08（claude/analyze-project-status-jZyUu，D14 完成）
 
 ---
 
@@ -11,9 +11,9 @@
 
 **Phase 0：✅ 完成**（6/6 交付物，3 个原型实证，4 个 ADR 落地）
 
-**Phase 1：⏳ 进行中**（D7 ✅ + D8 ✅ + D9 ✅ + D10 ✅ + D11 ✅ + D12 ✅ + D13 ✅）
+**Phase 1：⏳ 进行中**（D7 ✅ + D8 ✅ + D9 ✅ + D10 ✅ + D11 ✅ + D12 ✅ + D13 ✅ + D14 ✅）
 
-下一动作：D14（Approval flow UI + commit boundary Provenance 联通）。
+下一动作：D15（两人协作 E2E + 双语 demo + 投稿格式导出）。
 
 ---
 
@@ -57,7 +57,8 @@
 | D11 | y-sweet 自托管 + S3-compat 持久化 | ✅ | W2-W3 | D8 / D10 |
 | D12 | `packages/render-{myst, typst, typography}` + templates/myst | ✅ | W3-W4 | D10 |
 | D13 | `mcp-servers/crossref` + `packages/ai-runtime` + 2 个 agent | ✅ | W3-W4 | D8 / D10 |
-| D14 | Approval flow UI + commit boundary Provenance 联通 | 🔜 next | W4-W5 | D10 / D13 |
+| D14 | Approval flow UI + commit boundary Provenance 联通 | ✅ | W4-W5 | D10 / D13 |
+| D15 | 两人协作 E2E + 双语 demo + 投稿格式导出 | 🔜 next | W5 | D9-D14 |
 | D10 | `packages/editor-core`（从 proto-a 提炼）+ snapshot worker | ⏸ | W3 | proto-a / D7 |
 (状态例：⏸ pending / 🔜 next / ✅ done / 🚧 wip)
 | D12 | `packages/render-{myst, typst, typography}` + templates 镜像 | ⏸ | W3-W4 | D10（与 D13 并行） |
@@ -169,10 +170,15 @@ pnpm render-typst:test      # 17 个 source generation + escape 测试
 # PDF 需要服务器装 typst CLI；其他格式纯 TS
 
 # Phase 1 / D13：AI runtime + agents
-pnpm ai-runtime:test        # 13 个测试（含 PG 集成 + agent runner mock + acceptRevision）
+pnpm ai-runtime:test        # 17 个测试（D14 加 4: reject/modify/list + 已有 accept）
 pnpm mcp-crossref:test      # 7 个测试（real CrossRef MCP wrapper, mocked fetch）
 # 端到端 invoke：POST /api/agent/invoke kind=citation|inline-editor
 # 无 ANTHROPIC_API_KEY 时自动走 mock runner（CI / 离线均可跑）
+
+# Phase 1 / D14：approval flow
+# revision.proposal_metadata jsonb 存 fragments + uncertainties
+# GET /api/revision?docId=... + POST /api/revision/<id>/{accept,reject,modify}
+# UI: RevisionInbox + RevisionDiff（按 capability 显示）
 
 # 全 workspace typecheck
 pnpm typecheck              # 14 packages 全 PASS
@@ -235,7 +241,7 @@ pnpm typecheck              # 14 packages 全 PASS
 | `main` | ✅ 主线（Phase 0 已 merge） | — |
 | `claude/review-project-plans-oRIn8` | merged via PR #1 | Phase 0 D1–D6 + 综合报告 |
 | `claude/d3-websocket-strictmode-UfP6w` | merged via PR #2/#3 | proto-a D3 follow-ups + Playwright 自动化 |
-| `claude/analyze-project-status-jZyUu` | 当前 | Phase 1 plan + STATUS + D7 + D8 + D9 + D10 + D11 + D12 + D13 |
+| `claude/analyze-project-status-jZyUu` | 当前 | Phase 1 plan + STATUS + D7 + D8 + D9 + D10 + D11 + D12 + D13 + D14 |
 
 ---
 
