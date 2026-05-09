@@ -73,3 +73,24 @@ export {
   type InvokeInlineEditorAgentOptions,
   type InvokeInlineEditorAgentResult,
 } from './agents/inline-editor';
+
+// Phase 2 W1 ADR-0010: plugin loader skeleton.
+// Phase 1 agents (citation / inline-editor) still wired through the
+// hardcoded paths above; W3 dogfood gate switches citation to the
+// plugin path and removes the hardcoded export.
+export {
+  loadPlugin,
+  parseManifest,
+  PluginLoadError,
+  PluginManifestError,
+  MANIFEST_FILENAME,
+  type AgentManifest,
+  type BasePluginManifest,
+  type BilingualString,
+  type LoadedPlugin,
+  type McpServerManifest,
+  type PluginKind,
+  type PluginManifest,
+  type SkillManifest,
+  type UiPanelManifest,
+} from './plugins';

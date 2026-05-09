@@ -172,7 +172,9 @@ MCP server 作为 plugin 4 类之一（ADR-0010 §2.2），**两套机制对齐*
 Phase 1.5 的 `CROSSREF_MCP_COMMAND/ARGS/CWD` 环境变量路径在 Phase 2 W2 砍：
 
 1. W1：建 `mcp_server` 表 migration + seed `mcp-servers/registry.json`
-   （crossref + crossref-mock 两条记录）
+   （crossref 一条记录；crossref-mock 是 in-memory 测试 fixture，**不进
+   registry**——保留在 `packages/ai-runtime/src/transports.ts` 作为离线/
+   CI fallback）
 2. W2：apps/web `/api/agent/invoke` 改读注册表，env-var 路径仅在 dev mode
    保留作为 override（标 deprecated，Phase 3 删）
 3. W3：dogfood gate 一并验证 MCP plugin 加载与 hardcode env-var 路径行为

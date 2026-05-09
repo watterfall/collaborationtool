@@ -94,3 +94,20 @@ export const capabilityResourceTypeEnum = pgEnum('capability_resource_type', [
   'thread',
   'global',
 ]);
+
+// ---------- MCP server registry (Phase 2 W1 ADR-0006) ----------
+
+export const mcpTransportEnum = pgEnum('mcp_transport', [
+  'stdio',
+  'http',
+  'http-sse',
+]);
+
+export const mcpOriginEnum = pgEnum('mcp_origin', ['built-in', 'user', 'team']);
+
+export const mcpHealthStatusEnum = pgEnum('mcp_health_status', [
+  'unknown',
+  'healthy',
+  'degraded',
+  'failed',
+]);

@@ -15,6 +15,7 @@
 
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   index,
   integer,
   jsonb,
@@ -34,6 +35,9 @@ import {
   bilingualModeEnum,
   capabilityResourceTypeEnum,
   citationKindEnum,
+  mcpHealthStatusEnum,
+  mcpOriginEnum,
+  mcpTransportEnum,
   principalKindEnum,
   revisionStatusEnum,
 } from './enums';
@@ -509,6 +513,61 @@ export const docInvitation = pgTable(
 );
 
 // ============================================================
+// 15. mcp_server — Phase 2 W1 ADR-0006 MCP server registry.
+//     Source of truth for installed MCP servers (built-in seed +
+//     user/team installs). ai-runtime resolves a skill's
+//     allowed_mcp_servers ∩ enabled rows = allow set;越权调 MCP
+//     抛 McpAccessDenied + 写 provenance.
+//     Phase 2 transport='stdio' default; HTTP / http-sse 推 Phase 3.
+// ============================================================
+
+export const mcpServer = pgTable(
+  'mcp_server',
+  {
+    id: text('id').primaryKey(),
+    version: text('version').notNull(),
+    transport: mcpTransportEnum('transport').notNull(),
+    command: text('command').array().notNull().default(sql`'{}'::text[]`),
+    args: text('args').array().notNull().default(sql`'{}'::text[]`),
+    cwd: text('cwd'),
+    url: text('url'),
+    envVarsRequired: text('env_vars_required')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    declaresTools: text('declares_tools')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    requiredCapabilities: text('required_capabilities')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    origin: mcpOriginEnum('origin').notNull(),
+    installedBy: text('installed_by').references(() => principal.id, {
+      onDelete: 'set null',
+    }),
+    installedAt: timestamp('installed_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    enabled: boolean('enabled').notNull().default(true),
+    healthStatus: mcpHealthStatusEnum('health_status')
+      .notNull()
+      .default('unknown'),
+    lastHealthCheckAt: timestamp('last_health_check_at', {
+      withTimezone: true,
+    }),
+    consecutiveFailures: integer('consecutive_failures').notNull().default(0),
+  },
+  (t) => ({
+    originIdx: index('mcp_server_origin_idx').on(t.origin),
+    // Partial indexes (enabled-only / health-attention) live in
+    // 0005_mcp_server.sql since Drizzle doesn't yet expose the
+    // `WHERE` clause via the index builder.
+  }),
+);
+
+// ============================================================
 // Type exports — used by application code for fully-typed queries.
 // `db.select().from(document)` returns inferred row types.
 // ============================================================
@@ -527,3 +586,4 @@ export type DbCapabilityGrant = typeof capabilityGrant.$inferSelect;
 export type DbDocumentAcl = typeof documentAcl.$inferSelect;
 export type DbPromptTemplate = typeof promptTemplate.$inferSelect;
 export type DbDocInvitation = typeof docInvitation.$inferSelect;
+export type DbMcpServer = typeof mcpServer.$inferSelect;
