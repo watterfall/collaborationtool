@@ -31,3 +31,18 @@ export function newRevisionId(): string {
 export function newProvenanceId(): string {
   return uuidv7();
 }
+
+// ADR-0011 (Phase 2 W5): claim/evidence/claim_link 全局唯一 ID。
+// claim 跨文档复用 ⇒ ID 在编辑器侧分配（同 citation 模式）；W7 dogfood
+// gate 实测后调整。
+export function newClaimId(): string {
+  return uuidv7();
+}
+
+export function newEvidenceId(): string {
+  return uuidv7();
+}
+
+export function newClaimLinkId(): string {
+  return uuidv7();
+}

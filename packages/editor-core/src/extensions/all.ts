@@ -16,9 +16,11 @@ import Text from '@tiptap/extension-text';
 
 import { AnnotationAnchor } from './annotation-anchor';
 import { CitationRef } from './citation-ref';
+import { Claim } from './claim';
 import { ComputationalCell } from './computational-cell';
 import { DatasetRef } from './dataset-ref';
 import { Equation } from './equation';
+import { Evidence } from './evidence';
 import { Figure, FigureCaption } from './figure';
 import { FootnoteRef } from './footnote-ref';
 import { InlineEquation } from './inline-equation';
@@ -27,6 +29,8 @@ import { InlineEquation } from './inline-equation';
  * The Phase 1 paper schema as TipTap extensions. apps/web's editor and
  * the Phase D15 E2E tests both consume this; proto-a keeps a copy
  * because it's a frozen prototype.
+ *
+ * Phase 2 W5 additions (ADR-0011): Claim + Evidence block containers.
  */
 export const PAPER_SCHEMA_EXTENSIONS = [
   // Core PM nodes
@@ -39,6 +43,10 @@ export const PAPER_SCHEMA_EXTENSIONS = [
 
   // Marks
   AnnotationAnchor,
+
+  // Block containers (have paragraph+ children)
+  Claim,
+  Evidence,
 
   // Block atoms
   Equation,
@@ -57,9 +65,11 @@ export const PAPER_SCHEMA_EXTENSIONS = [
 export {
   AnnotationAnchor,
   CitationRef,
+  Claim,
   ComputationalCell,
   DatasetRef,
   Equation,
+  Evidence,
   Figure,
   FigureCaption,
   FootnoteRef,
