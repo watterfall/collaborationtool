@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-09（claude/review-project-goals-TpFuH，**目标对齐 review** vs `paper-platform-{system-prompt,landscape}.md`：5 条差异化轴诊断 → 第 5 轴"开放平台"明显落后 → Phase 2 stub 调整 +1 周（7 周）：W1 加 ADR-0006/0010 起草、W3 末 dogfood gate（citation agent 切 plugin API）、W6 加 Typst-first 项目导入 + LaTeX 迁移导入 + Auto-Fix Retry Loop、W7 验收 e2e。§3.4 spatial canvas 已答 Phase 3 起步，§3.5/3.6 新增，§七 技术雷达新增（含 user 点名 refactoringhq/tolaria）。)
+最后更新：2026-05-09（claude/review-project-goals-TpFuH，**目标对齐 review + Phase 2 W1 起手**：5 条差异化轴诊断 → 第 5 轴"开放平台"显性化；Phase 2 stub 调整为 7 周（W1 ADR-0006/0010、W2 Typst.ts WASM spike、W3 Loro spike + dogfood 硬 gate、W6 Typst-first 项目导入 + LaTeX 严格范围迁移 + Auto-Fix、W7 验收 e2e + 至少 1 个外部 plugin）；§七 技术雷达分主动 spike + 被动 watch；**ADR-0010（扩展系统边界 + Plugin API + Skill 元数据扩展 + Dogfood 路径）已 Proposed**——平台性头号决策落档；user 哲学 reaffirmed 2026-05-09：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
 
 ---
 
@@ -32,6 +32,7 @@
 | 0007 | Computational cell embedding + iframe 协议 | **Proposed** | 2026-05-09 起草；gated on Phase 2 W4 实施 |
 | 0008 | Long-horizon agent runtime + reviewer/researcher agent | **Proposed** | 2026-05-09 起草；gated on Phase 2 W2-W3 实施 |
 | 0009 | Diff library + revision overlay UI + rebase semantics | **Proposed** | 2026-05-09 起草；spike `apps/prototypes/proto-d-diff-library/` 实证；gated on Phase 2 W2-W3 实施 |
+| 0010 | 扩展系统边界 + Plugin API + Skill 元数据扩展 + Dogfood 路径 | **Proposed** | 2026-05-09 起草（Phase 2 W1 头号 / 平台性核心）；gated on Phase 2 W3 末 dogfood 硬 gate（citation agent 切 plugin API） |
 
 ---
 
