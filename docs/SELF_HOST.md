@@ -157,8 +157,56 @@ accept (200) → 4 格式导出 → PG provenance / contribution / approval_chai
 
 ### Postgres 备份
 
-`document.yjs_doc_binary` 字段最大可能数 MB（大文档）。生产用 `pg_dump`
-+ logical replication 备份；带宽够则保留 7 天 PITR。
+`document.yjs_doc_binary` 字段最大可能数 MB（大文档）。生产用 WAL-G 流式
+归档 + 7 天 PITR（ADR-0004 §2.6）。
+
+**Phase 1.5 #7 一键启用**（前提：S3-compat 桶 + 凭证已就绪）：
+
+```bash
+# 1. 复制 wal-g 配置模板，填真实凭证
+cp infra/walg/wal-g.json.example infra/docker/wal-g.json
+$EDITOR infra/docker/wal-g.json   # 填 WALG_S3_PREFIX / AWS_* 字段
+
+# 2. build 自定义 postgres image（含 wal-g 二进制）
+docker build -f infra/walg/Dockerfile -t collaborationtool-pg-walg:local infra/walg
+
+# 3. 用 walg overlay 起 stack（替换默认 postgres，加 walg-backup sidecar）
+docker compose \
+  -f infra/docker/docker-compose.yml \
+  -f infra/docker/docker-compose.walg.yml \
+  up -d postgres walg-backup
+
+# 4. 验证 archive_command 生效（WAL 段 push 到桶里）
+docker exec collaborationtool-pg psql -U collab -d collaborationtool \
+  -c "SELECT pg_switch_wal();"
+# 然后 mc ls 你的桶 / aws s3 ls 看到 walg 目录里有内容
+
+# 5. 立刻做一次基线备份（不等 04:00 sidecar）
+docker exec collaborationtool-walg-backup /opt/scripts/walg-backup.sh
+```
+
+**恢复演练**（quarterly 推荐）：
+
+```bash
+# 1. 起一个空 PGDATA 的临时 postgres
+docker run --rm -it \
+  -v "$(pwd)/infra/docker/wal-g.json:/etc/wal-g/wal-g.json:ro" \
+  -v collaborationtool_pg-restore:/var/lib/postgresql/data \
+  collaborationtool-pg-walg:local bash
+
+# 2. 容器里跑 restore（默认走最新 base + WAL）
+PGDATA=/var/lib/postgresql/data /opt/scripts/walg-restore.sh LATEST
+# 指定时间点：
+RECOVERY_TARGET_TIME='2026-05-09 14:00:00+00' \
+  /opt/scripts/walg-restore.sh LATEST
+
+# 3. 启 postgres，看 WAL 重放完成
+docker-entrypoint.sh postgres
+# 4. 跑 pnpm e2e:test 对它，确认数据回得来
+```
+
+> WAL-G 二进制在 image 里：`/usr/local/bin/wal-g`。配置在
+> `/etc/wal-g/wal-g.json`。绝不进 git；放 secrets manager。
 
 ### S3-compat 选择
 
