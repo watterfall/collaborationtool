@@ -26,6 +26,12 @@ export default async function AppLayout({ children }: PropsWithChildren) {
             <Link href="/docs" className="text-zinc-700 hover:text-zinc-900">
               文档 · Docs
             </Link>
+            <Link
+              href="/maintenance"
+              className="text-zinc-700 hover:text-zinc-900"
+            >
+              维护 · Maintenance
+            </Link>
             <Link href="/orgs/new" className="text-zinc-700 hover:text-zinc-900">
               新组织 · New org
             </Link>

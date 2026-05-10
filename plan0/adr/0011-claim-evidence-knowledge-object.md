@@ -373,6 +373,32 @@ only，无 resolver 时 throw 防止 silent skip）。
 测试：agent-worker 12 → 26 PASS（+7 finding generator + 7 doi-resolver
 HTTP / timeout / userAgent / baseUrl 5 维覆盖）；全 workspace typecheck PASS。
 
-**残 closeout**：dashboard UI（每条 finding 接受 / 忽略 / 已修复 + severity
-排序 + 跨 claim 跳转）推 Phase 4 末 dogfood；vault scope 跨文档 cross-doc
-reuse view 推 Phase 4 W7 fork-merge UI 同时落。
+**残 closeout**：vault scope 跨文档 cross-doc reuse view 推 Phase 4 W7
+fork-merge UI 同时落。
+
+### Dashboard UI（同会话紧接 W4 backend 落）
+
+`/(app)/maintenance` Next.js 15 Server Component + 2 个 API endpoint
++ 共享 transition matrix lib：
+
+- `GET /api/maintenance/findings` —— 按 caller 的 `principal_id` 筛
+  `vault_principal_id`；支持 status / severity / kind / documentId 多
+  维筛 + 100 上限 + severity 排序（high → info）+ counts aggregate
+- `POST /api/maintenance/findings/<id>/transition` —— 单端点处理 3
+  状态转移；vault 所有权校验 + 状态机校验（open → 3 / acknowledged →
+  2 / 终态锁定）+ dismissed 强制非空 reason
+- `apps/web/src/lib/maintenance.ts:validateTransition()` —— 纯校验
+  函数；API route 与 Server Action 同源，避免 matrix drift
+- 仪表盘页：severity 颜色徽章（high red / medium amber / low zinc /
+  info blue）+ 6 finding kind 中文标签 + `details` jsonb 折叠预览 +
+  filter chip 4 状态计数 + 3 类 Server Action（知悉 / 已修复 / 忽略）
+  + revalidatePath 后立刻刷新
+- apps/web layout 加导航 `维护 · Maintenance` 入口
+
+测试：apps/web 23 → 35 PASS（+12 transition matrix：4 状态 × allowed +
+6 拒绝路径 + 终态锁 + 未知 status forward-compat）。
+
+**授权模型决策**：findings 是 per-principal 聚合状态，与 document ACL
+正交；本期采用 vault 所有权（`vault_principal_id` = caller principal_id）
+作授权预设，不引新 capability。Cross-org / 团队共享 vault dashboard
+推 dogfood-trigger（Phase 4 末 + ADR-0002 review log）。
