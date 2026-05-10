@@ -9,7 +9,11 @@
 // substitute a thin space (U+2009) at output time via `set text` if the
 // journal house style demands it.
 
-import { isAsciiLetterOrDigit, isHanCharacter } from './language';
+import {
+  isAsciiLetterOrDigit,
+  isCjkPunctuation,
+  isHanCharacter,
+} from './language';
 
 export interface CjkSpacingOptions {
   /** Glyph used between CJK and Latin runs. Default: ' ' (U+0020). */
@@ -40,9 +44,17 @@ export function applyCjkSpacing(
     const curHan = isHanCharacter(curCp);
     const prevLatin = isAsciiLetterOrDigit(prevCp);
     const curLatin = isAsciiLetterOrDigit(curCp);
+    // CJK 全宽标点（如 。、，：；！？）紧贴 Latin 时也要插空格，
+    // 否则 ".brainstorm/role-design.md §3" 实测的 "。Phase" 视觉黏连。
+    // 标点本身已带视觉间距，但 pangu 风格仍要求显式分隔以稳定排版。
+    const prevCjkPunct = isCjkPunctuation(prevCp);
+    const curCjkPunct = isCjkPunctuation(curCp);
 
     const boundary =
-      (prevHan && curLatin) || (prevLatin && curHan);
+      (prevHan && curLatin) ||
+      (prevLatin && curHan) ||
+      (prevCjkPunct && curLatin) ||
+      (prevLatin && curCjkPunct);
     if (boundary) out += sep;
     out += cur;
   }

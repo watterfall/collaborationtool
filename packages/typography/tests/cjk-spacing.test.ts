@@ -47,4 +47,17 @@ describe('applyCjkSpacing', () => {
     assert.equal(applyCjkSpacing(''), '');
     assert.equal(applyCjkSpacing('a'), 'a');
   });
+
+  it('inserts a space between CJK punctuation and Latin run', () => {
+    // specimen-bilingual.md line 31 实测："。Phase 1 D15 验收要求双语样张..."
+    // 全宽句号 U+3002 后紧跟 Latin "Phase" 视觉黏连 — boundary 必须识别。
+    assert.equal(applyCjkSpacing('测试。Phase 1'), '测试。 Phase 1');
+    // 反向：Latin 紧接全宽逗号同理。
+    assert.equal(applyCjkSpacing('Phase，结束'), 'Phase ，结束');
+  });
+
+  it('is idempotent on CJK-punctuation / Latin boundaries', () => {
+    assert.equal(applyCjkSpacing('测试。 Phase 1'), '测试。 Phase 1');
+    assert.equal(applyCjkSpacing('Phase ，结束'), 'Phase ，结束');
+  });
 });
