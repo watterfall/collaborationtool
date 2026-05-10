@@ -222,7 +222,8 @@ Third-party clone of the citation-lookup skill (test-only fixture).
             buildTransport: crossrefMockTransport().buildTransport,
           },
         ],
-        anthropic: null,
+        // Phase 4 W7.2: omitting `provider` triggers host fallback to
+        // createMockModelProvider keyed by manifest.kind.
       },
       { persistToDb: false },
     );

@@ -4,26 +4,28 @@
 //   1. capability check (`agent.invoke:citation`)
 //   2. loadSkill('citation-lookup') from skills root
 //   3. buildMcpServerSet from manifest.allowedMcpServers ∩ mcp_server table
-//   4. resolve Anthropic client + model from env
+//   4. resolve a ModelProvider via ADR-0013 §2.4 lookup precedence
+//      (document override > user pref > manifest hint > env default)
 //   5. call this module's runAgent(input)
 //   6. persistProposal(...) on the returned AgentProposal
 //   7. mcp.closeAll()
 //
-// This module does ONLY the prompt + runner dispatch. ADR-0010 §2.7
-// step 4 ("no internal-only API") means whatever this plugin imports
-// from @collaborationtool/ai-runtime is what 3rd-party plugins also
-// import — there is no separate "trusted" surface.
+// Phase 4 W7.2 (ADR-0013 §2.5 真兑现): plugin no longer branches on
+// `input.anthropic`. Whatever wire format the user picked, the resolved
+// `input.provider.runAgent(...)` produces an AgentProposal. CI / air-
+// gapped dev gets a deterministic mock provider injected by the host.
+//
+// ADR-0010 §2.7 step 4 ("no internal-only API") still holds: whatever
+// this plugin imports from @collaborationtool/ai-runtime is what 3rd-
+// party plugins also import — there is no separate "trusted" surface.
 
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  runAnthropicAgent,
-  runMockAgent,
   type AgentPluginInput,
   type AgentPluginModule,
-  type AnthropicRunnerInput,
   type AgentProposal,
 } from '@collaborationtool/ai-runtime';
 
@@ -48,28 +50,15 @@ export async function runAgent(
 
   // Hint protocol: citation skill consumes `flaggedDoiCandidates: string[]`.
   // Other keys silently ignored (forward-compat per AgentPluginInput).
-  const hints: { flaggedDoiCandidates?: string[] } = {};
+  const hints: Record<string, unknown> = {};
   const raw = input.hints['flaggedDoiCandidates'];
   if (Array.isArray(raw) && raw.every((x) => typeof x === 'string')) {
-    hints.flaggedDoiCandidates = raw as string[];
+    hints['flaggedDoiCandidates'] = raw as string[];
   }
 
-  if (input.anthropic) {
-    return runAnthropicAgent({
-      client: input.anthropic,
-      modelId: input.modelId,
-      systemPrompt,
-      skill: input.skill,
-      mcp: input.mcp,
-      passage: input.passage,
-      hints,
-      agentId: input.agentId,
-      actorPrincipalId: input.principalContext.principalId,
-    } satisfies AnthropicRunnerInput);
-  }
-
-  return runMockAgent({
-    shape: 'citation',
+  return input.provider.runAgent({
+    modelId: input.modelId,
+    systemPrompt,
     skill: input.skill,
     mcp: input.mcp,
     passage: input.passage,

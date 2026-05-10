@@ -21,15 +21,16 @@
 
 import path from 'node:path';
 
-import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 
 import {
+  createAnthropicProvider,
   crossrefMockTransport,
   findAgentByKind,
   invokeAgentViaPlugin,
   resolvePluginAbsolutePath,
+  type ModelProvider,
 } from '@collaborationtool/ai-runtime';
 import { loadPrincipalContext } from '@collaborationtool/permissions';
 
@@ -102,9 +103,16 @@ export async function POST(request: Request): Promise<NextResponse> {
   // its capability check, we MUST pass the user's PrincipalContext.
   const userCtx = { ...ctx, principalId };
 
-  // Anthropic key is server-only env var; absence triggers mock runner.
+  // Anthropic key is server-only env var; absence triggers mock provider
+  // (the host's plugin-host fallback constructs createMockModelProvider
+  // when `provider` is undefined). Phase 4 W7.2 ADR-0013 §2.5: this
+  // route still uses the env-default tier directly. Full ADR-0013 §2.4
+  // resolver wiring (document override > user pref > manifest hint >
+  // env default) lands in W7.3 follow-up.
   const anthropicKey = process.env['ANTHROPIC_API_KEY'];
-  const anthropic = anthropicKey ? new Anthropic({ apiKey: anthropicKey }) : null;
+  const provider: ModelProvider | undefined = anthropicKey
+    ? createAnthropicProvider({ id: 'anthropic-env-default', apiKey: anthropicKey })
+    : undefined;
 
   // skills root: monorepo root. Phase 1.5 will read from
   // packages/skills (when we move skills under a package).
@@ -142,7 +150,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         kind,
         durationMs,
         slow: isSlow(durationMs),
-        runner: anthropic ? 'anthropic' : 'mock',
+        runner: provider ? 'anthropic' : 'mock',
         ...extra,
       },
     });
@@ -173,7 +181,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           skillId: 'citation-lookup',
           skillsRoot,
           mcpSpecs: [crossrefSpec],
-          anthropic,
+          ...(provider ? { provider } : {}),
         },
         { db, persistToDb: true },
       );
@@ -213,7 +221,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         skillId: 'inline-editor',
         skillsRoot,
         mcpSpecs: [], // inline-editor uses no MCP tools
-        anthropic,
+        ...(provider ? { provider } : {}),
       },
       { db, persistToDb: true },
     );
@@ -239,7 +247,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     captureError(err, {
       route: 'api.agent.invoke',
       principalId: distinctId,
-      tags: { kind: String(kind), runner: anthropic ? 'anthropic' : 'mock' },
+      tags: { kind: String(kind), runner: provider ? 'anthropic' : 'mock' },
     });
     observe('error', {
       errorClass: err instanceof Error ? err.name : 'Unknown',

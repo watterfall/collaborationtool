@@ -138,6 +138,9 @@ export {
   createOpenAICompatProvider,
   createOllamaProvider,
   createCustomHttpProvider,
+  // Phase 4 W7.2 ADR-0013 §2.5: mock provider for plugin contract.
+  createMockModelProvider,
+  shapeForAgentKind,
   ProviderError,
   isUserConfigured,
   resolveProvider,
@@ -149,6 +152,8 @@ export {
   type EnvDefault,
   type EnvResolver,
   type ManifestPrefersProvider,
+  type MockProviderOptions,
+  type MockShape,
   type ModelProvider,
   type OllamaProviderOptions,
   type OpenAICompatProviderOptions,

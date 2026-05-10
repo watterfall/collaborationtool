@@ -3,6 +3,10 @@
 // from /api/agent/invoke (use POST /api/document/<id>/agent-job
 // instead — that route lands in Phase 2.5 commit 6).
 //
+// Phase 4 W7.2 (ADR-0013 §2.5 真兑现): plugin uses input.provider
+// uniformly. The host owns provider selection (resolveProvider 4-tier
+// precedence); reviewer just dispatches to it.
+//
 // Hint protocol: this plugin consumes
 //   - hints.focusBlockIds?: string[] — when set, restrict review to
 //                                       these block ids only
@@ -13,11 +17,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  runAnthropicAgent,
-  runMockAgent,
   type AgentPluginInput,
   type AgentPluginModule,
-  type AnthropicRunnerInput,
   type AgentProposal,
 } from '@collaborationtool/ai-runtime';
 
@@ -39,27 +40,16 @@ export async function runAgent(
 ): Promise<AgentProposal> {
   const systemPrompt = await loadPrompt();
 
-  if (input.anthropic) {
-    return runAnthropicAgent({
-      client: input.anthropic,
-      modelId: input.modelId,
-      systemPrompt,
-      skill: input.skill,
-      mcp: input.mcp,
-      passage: input.passage,
-      // Long-horizon: allow more tool-call iterations.
-      maxIterations: 16,
-      maxTokens: 8192,
-      agentId: input.agentId,
-      actorPrincipalId: input.principalContext.principalId,
-    } satisfies AnthropicRunnerInput);
-  }
-
-  return runMockAgent({
-    shape: 'reviewer',
+  return input.provider.runAgent({
+    modelId: input.modelId,
+    systemPrompt,
     skill: input.skill,
     mcp: input.mcp,
     passage: input.passage,
+    hints: input.hints,
+    // Long-horizon: allow more tool-call iterations.
+    maxIterations: 16,
+    maxTokens: 8192,
     agentId: input.agentId,
     actorPrincipalId: input.principalContext.principalId,
   });

@@ -16,8 +16,6 @@
 
 import path from 'node:path';
 
-import type Anthropic from '@anthropic-ai/sdk';
-
 import type { DbExecutor } from '@collaborationtool/drizzle';
 import {
   requireCapability,
@@ -32,6 +30,8 @@ import type {
 
 import { buildMcpServerSet, type McpServerSpec } from './mcp-client';
 import { loadAgentPlugin } from './plugins';
+import { createMockModelProvider, shapeForAgentKind } from './providers/mock';
+import type { ModelProvider } from './providers/types';
 import { loadSkill } from './skills-loader';
 import {
   persistProposal,
@@ -77,8 +77,16 @@ export interface InvokeAgentViaPluginInput {
    * route through them. Empty array is valid (some agents need none). */
   mcpSpecs?: McpServerSpec[];
 
-  /** When set, ai-runtime uses Anthropic; when null, mock runner. */
-  anthropic?: Anthropic | null;
+  /** ModelProvider for this invocation. When omitted, the host builds
+   * a deterministic `createMockModelProvider` keyed by `manifest.kind`
+   * (mirrors the old `anthropic: null` behaviour for CI / air-gapped
+   * dev). Phase 4 W7.2 (ADR-0013 §2.5 真兑现) — replaces the prior
+   * `anthropic: Anthropic | null` field on this input.
+   *
+   * The host (apps/web /api/agent/invoke + apps/agent-worker) is the
+   * only place that calls `resolveProvider(...)` to pick a tier; this
+   * field is the resolved adapter the host wants the plugin to use. */
+  provider?: ModelProvider;
   /** Model id (Phase 1 default `claude-sonnet-4-6`). */
   modelId?: string;
   /** Stable agent identity for provenance. Defaults from manifest.kind
@@ -136,6 +144,19 @@ export async function invokeAgentViaPlugin(
 
   const mcp = await buildMcpServerSet(input.mcpSpecs ?? []);
 
+  // Phase 4 W7.2 ADR-0013 §2.5: provider defaulting.
+  // When the caller (route / worker / test) does not supply a
+  // ModelProvider, fall back to a mock provider keyed by manifest.kind.
+  // This preserves the CI / air-gapped dev path that the old
+  // `anthropic: null` branch took, without leaking Anthropic SDK shape
+  // into the plugin contract.
+  const provider: ModelProvider =
+    input.provider ??
+    createMockModelProvider(
+      { id: `mock:${kind}` },
+      { shape: shapeForAgentKind(kind) },
+    );
+
   try {
     const proposal = await loaded.module.runAgent({
       principalContext: input.principalContext,
@@ -145,7 +166,7 @@ export async function invokeAgentViaPlugin(
       hints: input.hints,
       skill,
       mcp,
-      anthropic: input.anthropic ?? null,
+      provider,
       modelId: input.modelId ?? DEFAULT_MODEL,
       agentId: input.agentId ?? DEFAULT_AGENT_ID,
     });

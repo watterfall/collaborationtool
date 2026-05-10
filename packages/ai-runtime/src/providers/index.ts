@@ -19,6 +19,15 @@ export {
 } from './types';
 
 export { createAnthropicProvider } from './anthropic';
+// Phase 4 W7.2 ADR-0013 §2.5: mock provider for the plugin contract
+// migration. Replaces the historical `anthropic: null` mock-runner
+// branch in plugin agents with a uniform ModelProvider.
+export {
+  createMockModelProvider,
+  shapeForAgentKind,
+  type MockProviderOptions,
+  type MockShape,
+} from './mock';
 export {
   createOpenAICompatProvider,
   type OpenAICompatProviderOptions,

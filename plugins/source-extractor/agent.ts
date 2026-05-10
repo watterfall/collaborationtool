@@ -3,6 +3,11 @@
 // evidence / question records into source_extraction (staging table)
 // for user review in the Source Reader UI.
 //
+// Phase 4 W7.2 (ADR-0013 §2.5 真兑现): plugin uses input.provider
+// uniformly. The host injects either a real provider (resolved per
+// ADR-0013 §2.4 lookup precedence) or a mock provider keyed by
+// manifest.kind='custom' → shape='source-extractor'.
+//
 // Hint protocol:
 //   - hints.sourceId: string (required) — the source to extract from
 //   - hints.maxExtractions?: number (default 30)
@@ -14,11 +19,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  runAnthropicAgent,
-  runMockAgent,
   type AgentPluginInput,
   type AgentPluginModule,
-  type AnthropicRunnerInput,
   type AgentProposal,
 } from '@collaborationtool/ai-runtime';
 
@@ -48,26 +50,15 @@ export async function runAgent(
     );
   }
 
-  if (input.anthropic) {
-    return runAnthropicAgent({
-      client: input.anthropic,
-      modelId: input.modelId,
-      systemPrompt,
-      skill: input.skill,
-      mcp: input.mcp,
-      passage: input.passage,   // host passes source.raw_text here
-      maxIterations: 4,         // single-shot extraction; tool loop limited
-      maxTokens: 8192,
-      agentId: input.agentId,
-      actorPrincipalId: input.principalContext.principalId,
-    } satisfies AnthropicRunnerInput);
-  }
-
-  return runMockAgent({
-    shape: 'source-extractor',
+  return input.provider.runAgent({
+    modelId: input.modelId,
+    systemPrompt,
     skill: input.skill,
     mcp: input.mcp,
-    passage: input.passage,
+    passage: input.passage, // host passes source.raw_text here
+    hints: input.hints,
+    maxIterations: 4, // single-shot extraction; tool loop limited
+    maxTokens: 8192,
     agentId: input.agentId,
     actorPrincipalId: input.principalContext.principalId,
   });

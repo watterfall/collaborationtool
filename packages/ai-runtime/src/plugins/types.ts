@@ -10,7 +10,6 @@
 // this file (separate from manifest shape so manifest can be parsed
 // without importing runtime types).
 
-import type Anthropic from '@anthropic-ai/sdk';
 import type {
   BlockId,
   DocumentId,
@@ -189,6 +188,7 @@ export interface LoadedPlugin {
 // the same surface as a built-in one. W3 末 dogfood gate verifies it.
 
 import type { McpServerSet } from '../mcp-client';
+import type { ModelProvider } from '../providers/types';
 import type { SkillMeta } from '../skills-loader';
 import type { AgentProposal } from '../types';
 
@@ -213,9 +213,16 @@ export interface AgentPluginInput {
    * MCP dependencies. The plugin must NOT call mcp.closeAll() — host
    * owns lifecycle. */
   mcp: McpServerSet;
-  /** Anthropic client when ANTHROPIC_API_KEY is set; null routes to
-   * runMockAgent. Plugin chooses which runner to call based on this. */
-  anthropic: Anthropic | null;
+  /** ModelProvider resolved by the host (per ADR-0013 §2.4 lookup
+   * precedence: document override > user pref > manifest hint > env
+   * default). Phase 4 W7.2 (ADR-0013 §2.5 真兑现) — replaces the
+   * historical `anthropic: Anthropic | null` field. Plugins call
+   * `input.provider.runAgent(...)` and stay wire-format agnostic;
+   * the provider's adapter handles Anthropic vs OpenAI-compat vs
+   * Ollama vs custom-http internally. CI / air-gapped dev gets a
+   * `createMockModelProvider({ shape })` injected by the host's
+   * default fallback (see plugin-host.ts). */
+  provider: ModelProvider;
   /** Resolved model id (host applies env / config defaults). */
   modelId: string;
   /** Stable agent identity for provenance. Host supplies. */

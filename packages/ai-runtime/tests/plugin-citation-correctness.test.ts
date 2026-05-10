@@ -86,7 +86,9 @@ describe('citation plugin (W3 dogfood) — correctness', () => {
             buildTransport: crossrefMockTransport().buildTransport,
           },
         ],
-        anthropic: null, // mock runner
+        // Phase 4 W7.2: omitting `provider` makes plugin-host fall back
+        // to createMockModelProvider({ shape: 'citation' }) keyed by
+        // manifest.kind (mirrors the old `anthropic: null` behaviour).
       },
       { persistToDb: false },
     );
@@ -140,7 +142,6 @@ describe('citation plugin (W3 dogfood) — correctness', () => {
             hints: { flaggedDoiCandidates: FLAGGED },
             skillId: 'citation-lookup',
             skillsRoot: SKILLS_ROOT,
-            anthropic: null,
           },
           { persistToDb: false },
         ),

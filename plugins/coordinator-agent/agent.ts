@@ -8,22 +8,24 @@
 //     queue; record parent_job_id linkage
 //   - compose CoordinatorFinalReport when isFinal=true
 //
-// Phase 3 W6 commit (this file): the agent runs the standard
-// runAnthropicAgent / runMockAgent path with a STUB system prompt.
-// The output won't actually dispatch; it'll just emit a JSON shape
-// that the host can parse to construct CoordinatorDecision rows.
-// W6 末 swaps this for a real multi-step dispatcher.
+// Phase 3 W6 commit (this file): the agent runs the resolved provider's
+// `runAgent` with a STUB system prompt. The output won't actually
+// dispatch; it'll just emit a JSON shape that the host can parse to
+// construct CoordinatorDecision rows. W6 末 swaps this for a real
+// multi-step dispatcher.
+//
+// Phase 4 W7.2 (ADR-0013 §2.5 真兑现): coordinator uses input.provider
+// uniformly. ModelProvider receives the same ProviderRunInput regardless
+// of wire format; mock provider injects a deterministic shape='reviewer'
+// proposal for tests.
 
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  runAnthropicAgent,
-  runMockAgent,
   type AgentPluginInput,
   type AgentPluginModule,
-  type AnthropicRunnerInput,
   type AgentProposal,
 } from '@collaborationtool/ai-runtime';
 
@@ -55,30 +57,16 @@ export async function runAgent(
     throw new Error('coordinator-agent: hints.goal is required');
   }
 
-  if (input.anthropic) {
-    return runAnthropicAgent({
-      client: input.anthropic,
-      modelId: input.modelId,
-      systemPrompt,
-      skill: input.skill,
-      mcp: input.mcp,
-      passage: input.passage,
-      userInstruction: goal,
-      maxIterations: 6,         // 1 iteration ≈ 1 coordinator step
-      maxTokens: 8192,
-      agentId: input.agentId,
-      actorPrincipalId: input.principalContext.principalId,
-    } satisfies AnthropicRunnerInput);
-  }
-
-  // mock: emit a deterministic single-step coordinator decision so
-  // tests can exercise the dispatch loop scaffolding.
-  return runMockAgent({
-    shape: 'reviewer',  // Closest mock shape; coordinator mock is W6 末
+  return input.provider.runAgent({
+    modelId: input.modelId,
+    systemPrompt,
     skill: input.skill,
     mcp: input.mcp,
     passage: input.passage,
+    hints: input.hints,
     userInstruction: goal,
+    maxIterations: 6, // 1 iteration ≈ 1 coordinator step
+    maxTokens: 8192,
     agentId: input.agentId,
     actorPrincipalId: input.principalContext.principalId,
   });
