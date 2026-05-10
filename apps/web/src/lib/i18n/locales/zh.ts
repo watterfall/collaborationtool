@@ -101,6 +101,40 @@ export const zh = {
       built: '由研究者写给研究者。',
     },
   },
+  auth: {
+    login: {
+      eyebrow: '登录 · sign in',
+      title: '继续编辑',
+      titleEn: '· keep writing',
+      orcidPrimary: '用 ORCID 登录 · Continue with ORCID',
+      orcidDisabledHint:
+        '管理员未配置 ORCID 凭据 · ORCID credentials not configured',
+      emailToggle: '邮箱密码 · Email & password',
+      emailLabel: '邮箱 · Email',
+      passwordLabel: '密码 · Password',
+      submit: '登录 · Sign in',
+      switchPrompt: '没有账号？',
+      switchLink: '注册 · Sign up',
+      orDivider: '或 · or',
+    },
+    signup: {
+      eyebrow: '注册 · sign up',
+      title: '开始一篇论文',
+      titleEn: '· start a paper',
+      lede: '推荐用 ORCID · ORCID recommended for researchers',
+      orcidPrimary: '用 ORCID 登录 · Continue with ORCID',
+      orcidDisabledHint:
+        '管理员未配置 ORCID 凭据 · ORCID credentials not configured',
+      emailToggle: '邮箱密码 · Email & password',
+      nameLabel: '姓名 · Name',
+      emailLabel: '邮箱 · Email',
+      passwordLabel: '密码 · Password (≥ 8)',
+      submit: '注册 · Sign up',
+      switchPrompt: '已有账号？',
+      switchLink: '登录 · Sign in',
+      orDivider: '或 · or',
+    },
+  },
   app: {
     docs: {
       title: '文档',
@@ -123,6 +157,67 @@ export const zh = {
       title: '设置',
       models: '模型',
       plugins: '插件',
+      pluginsPage: {
+        // header / sub
+        title: '插件 · Plugins',
+        sub: '已装第三方 plugin · capability prompt 流程（详见 ADR-0010 / ADR-0012）',
+        // platform notice (W8.1) — non-Linux UI gate
+        notice: {
+          label: 'PLUGIN INSTALL · 平台限制',
+          zh: 'plugin install 当前仅 Linux 主机支持',
+          en: 'plugin install is Linux-host only',
+          zhBody:
+            'macOS / Windows 沙箱在 Phase 5 路线图。当前你能：(1) 浏览已安装 plugin 查看现状；(2) 切换到 Linux 主机或 Docker 容器试用；(3) 暂时不通过 UI 装。',
+          enBody:
+            'macOS / Windows sandbox descriptors land in the Phase 5 roadmap. For now you can: (1) browse installed plugins to inspect state, (2) switch to a Linux host or container, or (3) hold off on UI installs.',
+        },
+        // installed list
+        installed: '已装 / Installed',
+        emptyInstalled:
+          '还没有用户安装的 plugin。内置 plugin 由 plugins/registry.json 管理（不显示在这里）。',
+        statusEnabled: '启用',
+        statusDisabled: '禁用',
+        statusUninstalled: '已卸载',
+        uninstall: '卸载',
+        // input mode tabs (W8.3)
+        tabUrl: '仓库 URL · Repository URL',
+        tabPaste: '粘贴 JSON · Paste JSON',
+        // URL form
+        urlLabel: 'GitHub 仓库 URL · GitHub repo URL',
+        urlHint:
+          '仅 https://github.com/owner/repo · 自动尝试 plugin.json / plugin.yaml',
+        urlPlaceholder: 'https://github.com/owner/plugin-repo',
+        urlSubmit: '获取并预览',
+        // paste form
+        pasteLabel: 'manifest JSON',
+        pasteHint:
+          '粘贴 plugin manifest JSON。下一步会显示该 plugin 申请的 capability，由你勾选后再 install。',
+        pasteSourceLabel:
+          '源 URL（可选；https-only；不填走 origin=local-path）',
+        pastePlaceholderSource: 'https://github.com/foo/bar-plugin',
+        pasteSubmit: '预览',
+        // provenance card
+        promptLabel: 'PLUGIN INSTALL · capability request',
+        promptIntro:
+          '下面 {n} 条 capability 是 plugin 声明需要的。默认全部勾选；取消勾选 = 拒绝；不在 manifest 里的不能加。',
+        promptSourceGit: 'git url',
+        promptSourcePaste: 'paste',
+        promptCoreTag: '核心',
+        confirmInstall: '确认安装',
+        cancel: '取消',
+        // errors
+        errorInvalidUrl: 'URL 无效',
+        errorNotHttps: '只接受 https://',
+        errorHostNotAllowed: 'host 不在白名单',
+        errorNotRepoUrl: '不是 GitHub 仓库 URL（需 /owner/repo）',
+        errorFetchFailed: '抓取失败',
+        errorHttpError: 'HTTP 错误',
+        errorTooLarge: 'manifest 超过 1 MB 上限',
+        errorTimeout: '超时（8 s）',
+        errorInvalidJson: 'manifest JSON 无效',
+        errorInvalidManifest: 'manifest 不通过校验',
+        errorReturn: '← 重新输入',
+      },
     },
   },
   a11y: {
