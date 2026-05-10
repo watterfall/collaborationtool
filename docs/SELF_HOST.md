@@ -1,8 +1,10 @@
 # 自托管指南 / Self-Host Guide
 
-> Phase 1 D15 — 一台 Linux 服务器从零跑起完整 stack 的手册。
+> Phase 4 W4 — 一台 Linux 服务器从零跑起完整 stack 的手册。
 
 预算：约 1 小时 onboarding 完成第一次 self-host 演示。
+
+> 本指南覆盖 4 个进程（web / sync-gateway / snapshot-worker / agent-worker）+ 3 个数据服务（Postgres / MinIO / y-sweet）+ 可选 typst CLI 与 Linux bwrap 沙箱（Phase 4 W1+ plugin install 用）。Phase 1 之外的环境变量在节末 `[Phase X+]` 标记。
 
 ---
 
@@ -10,11 +12,13 @@
 
 | 工具 | 版本 | 说明 |
 |---|---|---|
-| Node.js | 22+ | 运行 web / gateway / snapshot-worker / e2e |
+| Node.js | 22+ | 运行 web / gateway / snapshot-worker / agent-worker / e2e |
 | pnpm | 10+ | 包管理 + workspace |
 | Postgres | 16+ | 主数据库；若用 docker-compose 则跳过本地装 |
 | Docker + compose v2 | 任意近期版本 | 起 Postgres + MinIO + y-sweet |
 | typst | 0.14+ (可选) | 服务端 PDF 导出；缺则 PDF API 返 503 + hint |
+| bubblewrap (`bwrap`) | 0.8+ (可选) | Linux plugin sandbox（Phase 4 W1+；ADR-0012）；缺则 plugin install 仍可调试，但 `bwrap` 真启动 dogfood gate 不能跑 |
+| Ollama / vLLM / OpenAI-compat endpoint | 可选 | BYO 模型（Phase 4 W2+；ADR-0013）；任何兼容 anthropic / openai-compat / ollama / custom-http 4 wireFormat 之一的 endpoint |
 
 **字体**（生产 docker image 装；本地 dev 系统装即可）：
 
@@ -49,6 +53,9 @@ DATABASE_URL=postgres://collab:collab@localhost:5432/collaborationtool \
 # 4. seed 基础 fixtures（service principal + demo user + 2 个 platform agent）
 DATABASE_URL=postgres://collab:collab@localhost:5432/collaborationtool \
   pnpm db:seed
+# Phase 4 W4 共 10 个 migration（0001 initial → 0010 phase3 closeout）。
+# 增量包含：mcp_server / claim+evidence / agent_job / source+source_extraction /
+# maintenance_finding / plugin_install / user_model_pref / document_model_override
 
 # 5. (可选) 装 typst 到 PATH
 curl -sL https://github.com/typst/typst/releases/latest/download/typst-x86_64-unknown-linux-musl.tar.xz \
@@ -92,6 +99,36 @@ export CROSSREF_MCP_CWD=/path/to/collaborationtool   # 若 web 进程 cwd 不在
 # CROSSREF_BASE_URL  default https://api.crossref.org
 # CROSSREF_USER_AGENT default collaborationtool/0.0 (mailto:dev@…)
 # CROSSREF_TIMEOUT_MS default 8000
+
+# Async agent worker（apps/agent-worker；Phase 2.5+）
+# reviewer / researcher / maintenance-scan 走 pgboss 队列异步跑；web
+# 进程 enqueue，agent-worker 进程 subscribe + invoke。
+# pgboss 自带 schema bootstrap，第一次 start 会建 schema='pgboss' 内的表。
+export SKILLS_ROOT=./skills              # 默认 './skills'；docker image 若 cwd 不同则改成绝对路径
+# DATABASE_URL + ANTHROPIC_API_KEY 与 web 共用即可（mock fallback 同样适用）
+
+# BYO 模型 / 自带 LLM（apps/web + apps/agent-worker；Phase 4 W2+）
+# 4 wireFormat：anthropic / openai-compat / ollama / custom-http
+# 4 档优先级 resolver（document-override > user-pref > manifest-hint > env-default）
+#   document-override / user-pref：写入 PG 表 document_model_override / user_model_pref
+#     —— 通过 Settings UI（推 W2 末）或直接 INSERT；行里指定 endpoint_url + api_key_env_var
+#   manifest-hint：plugin manifest 里的 prefers_provider 字段（coordinator-agent 默认声明 anthropic 长上下文）
+#   env-default：ANTHROPIC_API_KEY 为空时 ai-runtime fallback 到 mock runner
+# 任何 wireFormat 的实际 API key 都通过 user_model_pref.api_key_env_var
+# 字段指过来（行只存 env var 名字，不存明文 key），所以你要在 web /
+# agent-worker 进程环境里把对应的环境变量也设了：
+export OPENAI_API_KEY=sk-...                            # 当某个 user_model_pref 行 api_key_env_var='OPENAI_API_KEY'
+export OPENROUTER_API_KEY=sk-or-v1-...                  # 同上；任意命名都行，与表行对齐即可
+# 本地 Ollama / vLLM 一般无 auth，留空即可（resolver 容忍 apiKey=null）
+
+# Plugin sandbox（apps/web /api/plugin/install 路由 + agent-worker 装载阶段；Phase 4 W1+）
+# Linux：bwrap 真启动；缺 bwrap 时 install 仍能落 plugin_install 行 + 校验
+#   capability superset，但 dogfood gate（真 capability deny e2e）跑不起来。
+# 当前 backend 已落 buildLinuxBwrapArgs 含：--unshare-{user,pid,ipc,uts}
+#   --die-with-parent --clearenv（参 packages/ai-runtime/src/plugins/install.ts）。
+# macOS / Windows：占位描述符就位；真启动推 Phase 5。
+# install 时 https-only git URL 校验由 buildInstallRowPayload 强制；不能装本机
+#   tarball / 任意 git url（仅 admin role 可走 origin='local-path' 后门）。
 
 # Invitation flow / 邮件（可选；Phase 1.5 #1）
 # 不设走 console-only：邀请链接 print 到 server stderr，docker logs 看
@@ -140,9 +177,18 @@ pnpm gateway:start    # WebSocket :4321
 
 # 终端 3：Snapshot worker（可选；只有 YSWEET_URL 设了才有用）
 pnpm snapshot:start   # 每 5 分钟扫描脏 docs
+
+# 终端 4：Agent worker（Phase 2.5+；reviewer / researcher / maintenance-scan）
+pnpm --filter @collaborationtool/agent-worker start
+# 跟 web 进程共享 DATABASE_URL + ANTHROPIC_API_KEY；
+# pgboss schema 第一次 start 自动 bootstrap；
+# SIGTERM 会 graceful drain 在跑的 job 再退出
 ```
 
-打开浏览器 <http://localhost:3000> → signup → 创建文档 → 编辑 → AI 调用 → 导出。
+打开浏览器 <http://localhost:3000> → signup → 创建文档 → 编辑 → AI 调用
+（同步 citation / inline-editor 走 web 进程 inline；异步 reviewer /
+researcher 通过 web `/api/document/<docId>/agent-job` enqueue → agent-worker
+跑 → SSE 回 `/api/agent/job/<jobId>/stream`） → 导出。
 
 ---
 
@@ -248,6 +294,9 @@ docker-entrypoint.sh postgres
 | 9000 | MinIO S3 |
 | 9001 | MinIO 控制台 |
 
+agent-worker 不监听端口（pgboss subscriber + 出向 LLM 请求）。snapshot-worker
+同样不监听端口（出向 PG + y-sweet HTTP）。
+
 ### 关 / 重启
 
 ```bash
@@ -271,6 +320,11 @@ docker volume ls | grep collaborationtool   # 找 volume
 | AI invoke 500 `agent-failed` 提到 spawn ENOENT | CROSSREF_MCP_COMMAND 不在 PATH | 用绝对路径（`which tsx`），或不设 → 自动 fallback 到 in-memory mock |
 | PDF 导出 503 typst-binary-unavailable | 未装 typst CLI | 见上面 §2 装 typst |
 | `migration "0001_initial.sql" already applied` 但出错 | 之前部分 apply | `psql ... -c 'DROP TABLE IF EXISTS _drizzle_migrations CASCADE'` 然后重 migrate；准备好丢数据 |
+| `POST /api/document/<id>/agent-job` 201 但 SSE 一直空 | agent-worker 进程没起 / pgboss schema 没 bootstrap | 起 `pnpm --filter @collaborationtool/agent-worker start`；首次启动会建 `pgboss.*` 表，看 stdout `[agent-worker] started` |
+| agent-worker 启动 immediate 退出 `relation "agent_job" does not exist` | migration 0007 没 apply | `pnpm db:migrate` 跑到 0010；agent_job 表在 0007；plugin_install / user_model_pref / document_model_override 在 0010 |
+| BYO 模型路由到了 wireFormat=ollama 但 connection refused | user_model_pref.endpoint_url 指错 / Ollama 没起 | curl `<endpoint>/api/tags` 验证；resolver 在 manifest-hint 命中但用户没配 endpoint 时 apiKey=null，host 会 fallback 到 mock 而不是真访问 |
+| Plugin install 500 `not-an-https-url` | git URL 用 http 或 ssh+git@ | https-only enforced；改 https URL 或 admin role 走 origin='local-path' 后门（仅 dev） |
+| maintenance scan 不出 finding | scan 未入队 / 6 finding kind 中只有 3 类 SQL-pure 已实施 | 入队：往 pgboss `maintenance-scan` 队列扔 `{ documentId, generators }` 即可；剩 3 finding kind（duplicated-claim / contradicted-conclusion / broken-citation）推 Phase 4 W4 末 |
 
 ---
 
@@ -278,8 +332,53 @@ docker volume ls | grep collaborationtool   # 找 volume
 
 - 每个 D-X commit 都可单独 cherry-pick 部署，但建议按顺序
 - migration 必须按数字顺序 apply（`pnpm db:migrate` 自动 idempotent）
-- 重大模型 / API 变更走 ADR；当前 ADR 在 `plan0/adr/0001-0003`，D16 加 0004 (deployment) + 0005 (render API)
+- 重大模型 / API 变更走 ADR；当前 15 ADR 在 `plan0/adr/0001-0015`（11 Accepted + 4 Proposed，分别等 Phase 4 W1/W2/W5-W6/W8 dogfood gate）
+- 升级 Phase 边界（如 Phase 3 → Phase 4）时优先看根目录 `STATUS.md` "最后更新" 行 + 当前 phase 的 plan stub `plan0/phase-N-plan-stub.md`
 
 ---
 
-> Phase 1 D15 实测在沙箱里 (Linux 6.18 + Postgres 16 + Node 22 + 无 docker daemon 走本地 Postgres) 跑通整套 e2e。生产部署的最后一道关是 D16 加的 ADR-0004 部署拓扑。
+## 9. 进程拓扑速览 / Process topology
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ apps/web :3000                                                       │
+│   - Next.js 15 + better-auth                                         │
+│   - /api/agent/invoke      sync agent (citation / inline-editor)     │
+│   - /api/document/<id>/agent-job  enqueue async agent (reviewer/researcher) │
+│   - /api/agent/job/<id>/{,stream}  status + SSE                      │
+│   - /api/document/<id>/evidence-map  read-only DAG view              │
+│   - /api/export/<id>/<format>  7 formats incl. ai-context-pack       │
+│   - /api/document/<id>/cell/<cell>/auth-token  molab iframe JWT      │
+│   - /api/document/<id>/invitation, /api/orgs/bridge, ORCID OAuth     │
+└──┬──────────────────────────────────────────────────────────────────┘
+   │ enqueue                          ▲ status / SSE
+   ▼                                  │
+┌──────────────────────────────────────┴──────────────────────────────┐
+│ apps/agent-worker  (no port)                                         │
+│   - pgboss subscribe: reviewer / researcher / maintenance-scan       │
+│   - invokeAgentViaPlugin → plugin_host → ai-runtime → ModelProvider  │
+│   - writes agent_job_event (SSE consumer reads via web)              │
+│   - 3 SQL-pure finding generators for maintenance-scan               │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ apps/sync-gateway :4321  (WebSocket)                                 │
+│   - JWT-gated; capability check on connect                           │
+│   - InMemory body backend (default) / YSweetBackend (YSWEET_URL)     │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ apps/snapshot-worker  (no port; only useful when YSWEET_URL set)     │
+│   - poll dirty docs every 5min → fetch Y.Doc → upsert PG bytea       │
+└─────────────────────────────────────────────────────────────────────┘
+
+数据服务：postgres :5432  /  y-sweet :8080  /  minio :9000-9001
+```
+
+---
+
+> Phase 4 W4 实测在沙箱里 (Linux 6.18 + Postgres 16 + Node 22) 跑通整套
+> e2e + agent-worker + maintenance scan。生产部署 reference 是 ADR-0004
+> 部署拓扑 + 上面 §9 进程图。Phase 4 dogfood gate（plugin sandbox bwrap
+> 真启动 / 4 endpoint 真 round-trip / coordinator 真 multi-agent dispatch）
+> 跑通后会再补一节 §10 production checklist。
