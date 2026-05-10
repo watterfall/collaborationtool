@@ -110,3 +110,16 @@ export {
   type InvokeAgentViaPluginOptions,
   type InvokeAgentViaPluginResult,
 } from './plugin-host';
+
+// Phase 3 W7 ADR-0013: ModelProvider abstraction (BYO model).
+// Anthropic adapter ships in this commit; openai-compat / ollama /
+// custom-http land later in W7.
+export {
+  createAnthropicProvider,
+  ProviderError,
+  type ModelProvider,
+  type ProviderConfig,
+  type ProviderFeatures,
+  type ProviderRunInput,
+  type WireFormat,
+} from './providers';
