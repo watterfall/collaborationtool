@@ -14,6 +14,20 @@
       "phase": 1,
       "status": "active",
       "agentKinds": ["editor"]
+    },
+    {
+      "id": "reviewer-style",
+      "path": "reviewer-style/SKILL.md",
+      "phase": "2.5",
+      "status": "active",
+      "agentKinds": ["reviewer"]
+    },
+    {
+      "id": "literature-review",
+      "path": "literature-review/SKILL.md",
+      "phase": "2.5",
+      "status": "active",
+      "agentKinds": ["researcher"]
     }
   ]
 }

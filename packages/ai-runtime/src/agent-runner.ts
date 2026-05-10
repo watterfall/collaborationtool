@@ -46,8 +46,10 @@ export interface AnthropicRunnerInput extends RunnerCommonInput {
 }
 
 export interface MockRunnerInput extends RunnerCommonInput {
-  /** Deterministic logic per agent kind. */
-  shape: 'citation' | 'inline-editor';
+  /** Deterministic logic per agent kind. Phase 2.5 adds reviewer +
+   * researcher shapes for the long-horizon agents (real prompt design
+   * lands when a real Anthropic key exercises runAnthropicAgent). */
+  shape: 'citation' | 'inline-editor' | 'reviewer' | 'researcher';
 }
 
 // ---------- Mock runner ----------
@@ -113,12 +115,38 @@ export async function runMockAgent(
         );
       }
     }
-  } else {
+  } else if (input.shape === 'inline-editor') {
     // inline-editor mock: rewrap passage as a single proposed replacement
     revisedFragments.push({
       originalText: input.passage,
       replacementText: `[FORMAL] ${input.passage}`,
     });
+  } else if (input.shape === 'reviewer') {
+    // reviewer mock: emit one suggested revision + one uncertainty per
+    // 200-char window; simulates a long-horizon scan without LLM.
+    const windowSize = 200;
+    for (let i = 0; i < input.passage.length; i += windowSize) {
+      const slice = input.passage.slice(i, i + windowSize);
+      if (slice.trim().length === 0) continue;
+      revisedFragments.push({
+        originalText: slice,
+        replacementText: `[REVIEWED] ${slice}`,
+      });
+    }
+    if (revisedFragments.length === 0) {
+      uncertainties.push('Mock reviewer: passage too short to generate windows');
+    }
+  } else if (input.shape === 'researcher') {
+    // researcher mock: parse `userInstruction` as the research query and
+    // suggest 1-2 placeholder citations for the user to verify.
+    const query = input.userInstruction ?? '(no query supplied)';
+    revisedFragments.push({
+      originalText: input.passage,
+      replacementText: `${input.passage} [research:${query}]`,
+    });
+    uncertainties.push(
+      `Mock researcher: real source-search requires Anthropic + MCP servers (crossref/arxiv/etc).`,
+    );
   }
 
   const finishedAt = new Date().toISOString();
