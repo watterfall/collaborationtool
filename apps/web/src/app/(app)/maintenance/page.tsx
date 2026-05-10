@@ -35,10 +35,11 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 const SEVERITY_BADGE: Record<string, string> = {
-  high: 'bg-red-100 text-red-900 ring-red-200',
-  medium: 'bg-amber-100 text-amber-900 ring-amber-200',
-  low: 'bg-zinc-100 text-zinc-700 ring-zinc-200',
-  info: 'bg-blue-100 text-blue-900 ring-blue-200',
+  high: 'bg-red-100 text-red-900 ring-red-200 dark:bg-red-900/30 dark:text-red-200 dark:ring-red-900/40',
+  medium:
+    'bg-amber-100 text-amber-900 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:ring-amber-900/40',
+  low: 'bg-zinc-100 text-zinc-700 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700',
+  info: 'bg-blue-100 text-blue-900 ring-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:ring-blue-900/40',
 };
 
 const SEVERITY_LABEL: Record<string, string> = {
@@ -110,8 +111,10 @@ export default async function MaintenancePage({
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
       <header className="mb-6">
-        <h1 className="text-3xl font-medium">维护 · Maintenance</h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <h1 className="text-3xl font-medium text-zinc-900 dark:text-zinc-100">
+          维护 · Maintenance
+        </h1>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
           知识库巡检发现 · 接受 / 已修复 / 误报后归档（详见 ADR-0011 §7.4）
         </p>
       </header>
@@ -127,15 +130,17 @@ export default async function MaintenancePage({
               className={
                 'rounded-md px-3 py-1.5 ' +
                 (active
-                  ? 'bg-zinc-900 text-white'
-                  : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200')
+                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                  : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700')
               }
             >
               {STATUS_LABEL[s]}
               <span
                 className={
                   'ml-1.5 text-xs ' +
-                  (active ? 'text-zinc-300' : 'text-zinc-500')
+                  (active
+                    ? 'text-zinc-300 dark:text-zinc-700'
+                    : 'text-zinc-500 dark:text-zinc-400')
                 }
               >
                 {n}
@@ -146,12 +151,12 @@ export default async function MaintenancePage({
       </nav>
 
       {rows.length === 0 ? (
-        <p className="rounded-md border border-dashed border-zinc-300 p-10 text-center text-sm text-zinc-500">
+        <p className="rounded-md border border-dashed border-zinc-300 p-10 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
           暂无 {STATUS_LABEL[activeStatus]} 状态的发现。
           {activeStatus === 'open' && '若刚跑完 maintenance scan job 再刷新本页。'}
         </p>
       ) : (
-        <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 bg-white">
+        <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-950">
           {rows.map((f) => (
             <li key={f.id} className="px-4 py-3">
               <div className="flex items-start justify-between gap-3">
@@ -165,34 +170,36 @@ export default async function MaintenancePage({
                     >
                       {SEVERITY_LABEL[f.severity] ?? f.severity}
                     </span>
-                    <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-zinc-700">
+                    <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                       {KIND_LABEL[f.kind] ?? f.kind}
                     </span>
-                    <span className="text-zinc-500">
+                    <span className="text-zinc-500 dark:text-zinc-400">
                       {f.foundAt.toISOString().slice(0, 16).replace('T', ' ')}
                     </span>
                     {f.documentId && (
                       <Link
                         href={`/editor/${f.documentId}`}
-                        className="text-zinc-600 underline-offset-2 hover:underline"
+                        className="text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-300"
                       >
                         打开文档
                       </Link>
                     )}
                   </div>
-                  <p className="text-sm text-zinc-900">{f.summary}</p>
+                  <p className="text-sm text-zinc-900 dark:text-zinc-100">
+                    {f.summary}
+                  </p>
                   {f.details != null ? (
-                    <details className="mt-1 text-xs text-zinc-500">
+                    <details className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                       <summary className="cursor-pointer select-none">
                         细节
                       </summary>
-                      <pre className="mt-1 overflow-x-auto rounded bg-zinc-50 p-2 text-[11px]">
+                      <pre className="mt-1 overflow-x-auto rounded bg-zinc-50 p-2 text-[11px] dark:bg-zinc-900 dark:text-zinc-300">
                         {JSON.stringify(f.details, null, 2)}
                       </pre>
                     </details>
                   ) : null}
                   {f.dismissReason && (
-                    <p className="mt-1 text-xs italic text-zinc-500">
+                    <p className="mt-1 text-xs italic text-zinc-500 dark:text-zinc-400">
                       已忽略：{f.dismissReason}
                     </p>
                   )}
@@ -230,7 +237,7 @@ function FindingActions({
           <input type="hidden" name="to" value="acknowledged" />
           <button
             type="submit"
-            className="rounded border border-zinc-300 bg-white px-2 py-1 text-zinc-700 hover:bg-zinc-50"
+            className="rounded border border-zinc-300 bg-white px-2 py-1 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
           >
             知悉
           </button>
@@ -241,7 +248,7 @@ function FindingActions({
         <input type="hidden" name="to" value="resolved" />
         <button
           type="submit"
-          className="rounded border border-zinc-300 bg-white px-2 py-1 text-zinc-700 hover:bg-emerald-50"
+          className="rounded border border-zinc-300 bg-white px-2 py-1 text-zinc-700 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-emerald-950"
         >
           已修复
         </button>
@@ -254,11 +261,11 @@ function FindingActions({
           name="reason"
           required
           placeholder="忽略原因…"
-          className="w-28 rounded border border-zinc-300 px-1.5 py-0.5 text-[11px]"
+          className="w-28 rounded border border-zinc-300 px-1.5 py-0.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
         />
         <button
           type="submit"
-          className="ml-1 rounded border border-zinc-300 bg-white px-2 py-1 text-zinc-700 hover:bg-amber-50"
+          className="ml-1 rounded border border-zinc-300 bg-white px-2 py-1 text-zinc-700 hover:bg-amber-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-amber-950"
         >
           忽略
         </button>

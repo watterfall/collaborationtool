@@ -1,31 +1,99 @@
 @import 'tailwindcss';
 
-/* Editorial typography baseline. shadcn/ui will land in Phase 2 polish; */
-/* Phase 1 keeps this minimal so the auth flow + docs list don't look */
-/* broken but we also don't pre-bake a design system we'll throw away. */
+/* ---------------------------------------------------------------------------
+ * Editorial design tokens — see plan0/Design.md for rationale.
+ *
+ * Single source of truth: do NOT hardcode colors / fonts / sizes in components.
+ * Use the token names below via Tailwind v4 arbitrary values
+ * (`bg-[--color-paper]`, `text-[--color-ink]`) or `var(...)`.
+ * ------------------------------------------------------------------------ */
 
-:root {
-  --color-bg: #fafaf7;
-  --color-fg: #18181b;
-  --color-fg-muted: #71717a;
-  --color-accent: #1c1917;
-  --color-border: #e4e4e7;
+@theme inline {
+  /* paper / ink */
+  --color-paper: #fbfaf7;
+  --color-paper-2: #f2eee4;
+  --color-paper-3: #e9e3d4;
+  --color-ink: #1a1714;
+  --color-ink-2: #4a443c;
+  --color-ink-3: #8a8276;
+  --color-pencil: #2b2823;
+  --color-hairline: rgba(26, 23, 20, 0.1);
 
-  --font-serif: ui-serif, 'Source Han Serif', 'Songti SC', 'Noto Serif CJK SC',
-    Georgia, serif;
-  --font-sans: ui-sans-serif, 'Source Han Sans', 'PingFang SC',
-    'Noto Sans CJK SC', system-ui, sans-serif;
-  --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  /* accent triad — semantic, never decorative */
+  --color-accent-ink: #1f3a5f;     /* AI / agent */
+  --color-accent-ox: #7b2d26;      /* human / author */
+  --color-accent-moss: #3f5b3a;    /* community / applied / fork */
+
+  /* legacy aliases — kept so any unmigrated component still resolves to
+     editorial palette instead of the previous zinc tokens. Remove once
+     audit confirms zero references. */
+  --color-bg: var(--color-paper);
+  --color-fg: var(--color-ink);
+  --color-fg-muted: var(--color-ink-3);
+  --color-accent: var(--color-ink);
+  --color-border: var(--color-hairline);
+
+  /* type stacks — Latin transitional + CJK source-han pair, OFL-safe
+     fallbacks for self-hosting (see Design.md §3.1, §12.2). */
+  --font-serif:
+    'Source Serif 4', 'Newsreader', 'Source Han Serif SC', 'Source Han Serif',
+    'Noto Serif SC', 'Songti SC', Georgia, ui-serif, serif;
+  --font-sans:
+    'Söhne', 'GT America', 'Source Han Sans SC', 'Source Han Sans',
+    'Noto Sans SC', 'PingFang SC', system-ui, ui-sans-serif, sans-serif;
+  --font-mono:
+    'JetBrains Mono', 'IBM Plex Mono', 'SF Mono', ui-monospace, Menlo,
+    monospace;
+
+  /* radii — global cap is 4px; pills/discs use 999px */
+  --radius-1: 2px;
+  --radius-2: 4px;
+  --radius-pill: 999px;
+
+  /* spacing rhythm — 22/32 step anchored to 17px serif × 1.78 leading */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 22px;
+  --space-6: 32px;
+  --space-8: 56px;
+  --space-12: 80px;
 }
+
+/* Dark variant — see Design.md §12.4. v1 is light-only; tokens stay on
+   editorial palette so existing `dark:` utilities don't flash zinc. v2
+   will replace these with warm-deep values, NOT slate. */
+@variant dark (&:where(.dark, .dark *));
+
+:root.dark,
+.dark {
+  --color-paper: #fbfaf7;
+  --color-paper-2: #f2eee4;
+  --color-paper-3: #e9e3d4;
+  --color-ink: #1a1714;
+  --color-ink-2: #4a443c;
+  --color-ink-3: #8a8276;
+  color-scheme: light;
+}
+
+/* ---------------------------------------------------------------------------
+ * Base — body / heading defaults that match the type ramp without forcing
+ * a specific component class. Letter-spacing / font-feature-settings stay
+ * on the element so prose-bilingual blocks inherit them.
+ * ------------------------------------------------------------------------ */
 
 html,
 body {
-  background: var(--color-bg);
-  color: var(--color-fg);
+  background: var(--color-paper);
+  color: var(--color-ink);
   font-family: var(--font-sans);
   font-feature-settings:
-    'cv01' on,
-    'cv11' on;
+    'kern' on,
+    'palt' on,
+    'pkna' on;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -33,11 +101,217 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Headings get serif by default — academic / editorial feel. */
+/* Headings serif by default; size lives at the use-site so the same h2
+   can be 30px in editor and 20px in margin without overrides. */
 h1,
 h2,
 h3,
 h4 {
   font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
+h1 {
   letter-spacing: -0.01em;
+}
+
+/* Mixed-script body — palt/pkna already on at body, here we add kerning
+   and oldstyle figures so 1954 / 70 read editorial, not chatbot. */
+.prose-bilingual,
+[data-prose='bilingual'] {
+  font-family: var(--font-serif);
+  line-height: 1.78;
+  font-feature-settings:
+    'onum' 1,
+    'kern' 1,
+    'palt' 1,
+    'pkna' 1;
+}
+
+/* Selection in warm ink-blue, not the default browser cyan. */
+::selection {
+  background: rgba(31, 58, 95, 0.18);
+  color: var(--color-ink);
+}
+
+/* Focus ring: 2px outline, never blurred box-shadow. Reject criteria #12. */
+:where(a, button, [role='button'], input, textarea, select):focus-visible {
+  outline: 2px solid var(--color-accent-ink);
+  outline-offset: 2px;
+  border-radius: var(--radius-2);
+}
+
+/* ---------------------------------------------------------------------------
+ * Editorial primitives — used directly via class names so we don't need
+ * a separate component file for one-line atoms. Components beyond these
+ * live in src/components/design/.
+ * ------------------------------------------------------------------------ */
+
+/* Hairline rule — the default divider. Replaces filled cards. */
+.rule {
+  border: 0;
+  border-top: 1px solid var(--color-hairline);
+  height: 0;
+  margin: 0;
+}
+.rule-thick {
+  border: 0;
+  border-top: 1.5px solid var(--color-pencil);
+  height: 0;
+  margin: 0;
+}
+
+/* Label-cap — the small uppercase tag ("§ 2 · formalism"). */
+.label-cap {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+/* Editorial buttons — primary (ink fill) + ghost (pencil border).
+   No transitions on background blurs; transitions on color/border only. */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.2;
+  border: 0;
+  border-radius: var(--radius-1);
+  cursor: pointer;
+  transition: background 120ms ease-out;
+}
+.btn-primary:hover {
+  background: var(--color-ink-2);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  background: transparent;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.2;
+  border: 1.25px solid var(--color-pencil);
+  border-radius: var(--radius-1);
+  cursor: pointer;
+  transition: background 120ms ease-out;
+}
+.btn-ghost:hover {
+  background: var(--color-paper-2);
+}
+
+/* Mono-disc — identity chip. Place initial child as text. */
+.mono-disc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  border: 1.25px solid var(--color-pencil);
+  background: var(--color-paper-2);
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--color-ink);
+}
+.mono-disc[data-kind='agent'] {
+  border-color: var(--color-accent-ink);
+  color: var(--color-accent-ink);
+}
+.mono-disc[data-kind='human'] {
+  border-color: var(--color-accent-ox);
+  color: var(--color-accent-ox);
+}
+.mono-disc[data-kind='community'] {
+  border-color: var(--color-accent-moss);
+  color: var(--color-accent-moss);
+}
+
+/* Status pill — outlined, never filled. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.4;
+  border: 1px solid var(--color-pencil);
+  border-radius: var(--radius-pill);
+  color: var(--color-ink);
+  background: transparent;
+}
+.pill[data-state='proposed'] {
+  border-color: var(--color-accent-ink);
+  color: var(--color-accent-ink);
+}
+.pill[data-state='applied'] {
+  border-color: var(--color-accent-moss);
+  color: var(--color-accent-moss);
+}
+.pill[data-state='blocked'] {
+  border-color: var(--color-accent-ox);
+  color: var(--color-accent-ox);
+}
+
+/* Margin annotation entry — used in editor margin rail and provenance. */
+.margin-entry {
+  border-left: 2px solid var(--color-accent-ink);
+  padding-left: 12px;
+  margin-bottom: var(--space-5);
+}
+.margin-entry[data-kind='agent'] {
+  border-left-color: var(--color-accent-ink);
+}
+.margin-entry[data-kind='human'] {
+  border-left-color: var(--color-accent-ox);
+}
+.margin-entry[data-kind='community'] {
+  border-left-color: var(--color-accent-moss);
+}
+
+/* Proposed-edit underline + struck text. Phase 2 W6 hooks these into
+   editor-core's commit serializer; here we just provide the styles. */
+.proposed {
+  text-decoration: underline dashed;
+  text-decoration-color: var(--color-accent-ink);
+  text-underline-offset: 3px;
+  opacity: 0.85;
+}
+.struck {
+  text-decoration: line-through;
+  text-decoration-color: var(--color-ink-3);
+  color: var(--color-ink-3);
+}
+
+/* Reduced motion — respect OS preference. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,43 +1,79 @@
-import Link from 'next/link';
+// Public landing page (Server Component).
+//   • Anonymous visitors → marketing landing in their resolved locale.
+//   • Authenticated users → server-side redirect to /docs.
+//
+// Page-level metadata overrides the bilingual root metadata with
+// the joined CN/EN strings so SEO previews look right regardless of
+// which language a crawler picks up.
+
+import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { auth } from '@/lib/auth';
+import { getDict } from '@/lib/i18n/get-locale';
+import { en } from '@/lib/i18n/locales/en';
+import { zh } from '@/lib/i18n/locales/zh';
+import { Landing } from '@/components/landing/Landing';
+import { HeaderControls } from '@/components/chrome/HeaderControls';
+
+export async function generateMetadata(): Promise<Metadata> {
+  // Bilingual title + description so a crawler that hits the page
+  // before the cookie is set still gets meaningful copy in both
+  // scripts. Order: zh first (default locale), en after.
+  const title = `${zh.landing.meta.title} · ${en.landing.meta.title}`;
+  const description = `${zh.landing.meta.description} · ${en.landing.meta.description}`;
+  return { title, description };
+}
 
 export default async function LandingPage() {
-  // Logged in → straight to docs.
+  // Logged-in → straight to docs. Same behavior as the previous
+  // landing, kept identical so middleware + UX stay consistent.
   const session = await auth.api.getSession({
     headers: await headers(),
   });
   if (session) redirect('/docs');
 
+  const { t } = await getDict();
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-start justify-center gap-6 px-6 py-16">
-      <h1 className="text-4xl font-medium tracking-tight">
-        协作论文平台
-      </h1>
-      <p className="max-w-prose text-lg text-zinc-600">
-        AI-native research paper platform · 思考-写作-验证-发表 一体化工作台。
-        从 Phase 1 起进入两人协作 MVP。
-      </p>
-      <div className="flex gap-3">
-        <Link
-          href="/signup"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm text-white hover:bg-zinc-800"
-        >
-          注册 / Sign up
-        </Link>
-        <Link
-          href="/login"
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm hover:bg-zinc-100"
-        >
-          登录 / Sign in
-        </Link>
-      </div>
-      <p className="text-xs text-zinc-500">
-        Phase 1 D9 — better-auth + Principal bridge live; editor wires in
-        D10/D11/D14.
-      </p>
-    </main>
+    <div
+      style={{
+        background: 'var(--color-paper)',
+        color: 'var(--color-ink)',
+      }}
+    >
+      {/* Compact public chrome — no auth-gated nav, just sign-in plus
+          locale + theme toggles. Hairline-divided, no shadow / blur,
+          per Design.md §11 (reject criteria). */}
+      <header
+        style={{
+          borderBottom: '1px solid var(--color-hairline)',
+          background: 'var(--color-paper)',
+        }}
+      >
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-3">
+          <span
+            className="font-serif text-base font-medium"
+            style={{ color: 'var(--color-ink)' }}
+          >
+            {t.common.nav.brand}
+          </span>
+          <div
+            className="flex items-center gap-4 font-sans text-sm"
+            style={{ color: 'var(--color-ink-2)' }}
+          >
+            <a
+              href="/login"
+              className="underline-offset-4 hover:underline"
+              style={{ color: 'var(--color-ink-2)' }}
+            >
+              {t.common.actions.signIn}
+            </a>
+            <HeaderControls pathname="/" />
+          </div>
+        </div>
+      </header>
+      <Landing t={t} />
+    </div>
   );
 }

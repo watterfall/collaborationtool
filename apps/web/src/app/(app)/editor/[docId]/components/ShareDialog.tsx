@@ -171,7 +171,7 @@ export default function ShareDialog({ documentId }: { documentId: string }) {
           </select>
         </label>
         {error && (
-          <p className="text-red-700" role="alert">
+          <p className="text-red-700 dark:text-red-300" role="alert">
             {error}
           </p>
         )}
@@ -182,15 +182,15 @@ export default function ShareDialog({ documentId }: { documentId: string }) {
             data-fallback={fallback ? 'true' : 'false'}
             className={
               status.tone === 'amber'
-                ? 'flex flex-col gap-2 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900'
-                : 'flex flex-col gap-2 rounded border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900'
+                ? 'flex flex-col gap-2 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200'
+                : 'flex flex-col gap-2 rounded border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200'
             }
           >
             <p className="font-medium">{status.headline}</p>
             <p className="leading-relaxed">{status.body}</p>
             <code
               data-testid="share-dialog-accept-url"
-              className="break-all rounded border border-zinc-200 bg-white px-2 py-1 font-mono text-[11px] text-zinc-800"
+              className="break-all rounded border border-zinc-200 bg-white px-2 py-1 font-mono text-[11px] text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
             >
               {lastResult.acceptUrl}
             </code>
@@ -202,8 +202,8 @@ export default function ShareDialog({ documentId }: { documentId: string }) {
               disabled={copyState === 'copying'}
               className={
                 status.tone === 'amber'
-                  ? 'self-start rounded-md bg-amber-700 px-3 py-1 text-[11px] font-medium text-white hover:bg-amber-800 disabled:opacity-50'
-                  : 'self-start rounded-md bg-emerald-700 px-3 py-1 text-[11px] font-medium text-white hover:bg-emerald-800 disabled:opacity-50'
+                  ? 'self-start rounded-md bg-amber-700 px-3 py-1 text-[11px] font-medium text-white hover:bg-amber-800 disabled:opacity-50 dark:bg-amber-800 dark:hover:bg-amber-700'
+                  : 'self-start rounded-md bg-emerald-700 px-3 py-1 text-[11px] font-medium text-white hover:bg-emerald-800 disabled:opacity-50 dark:bg-emerald-800 dark:hover:bg-emerald-700'
               }
             >
               {copyButtonLabel}

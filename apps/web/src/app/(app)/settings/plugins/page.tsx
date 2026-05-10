@@ -64,8 +64,10 @@ export default async function PluginsSettingsPage({
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
       <header className="mb-6">
-        <h1 className="text-3xl font-medium">插件 · Plugins</h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <h1 className="text-3xl font-medium text-zinc-900 dark:text-zinc-100">
+          插件 · Plugins
+        </h1>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
           已装第三方 plugin + capability prompt 流程（详见 ADR-0010 / ADR-0012）。
           Phase 4 W1：本页只接受粘贴 manifest JSON 安装；git clone + bwrap
           真启动是 W1 dogfood gate（require Linux host）。
@@ -73,22 +75,22 @@ export default async function PluginsSettingsPage({
       </header>
 
       {sp.error && (
-        <div className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+        <div className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
           {sp.error}
         </div>
       )}
 
       <section className="mb-6">
-        <h2 className="mb-2 text-sm font-medium text-zinc-900">
+        <h2 className="mb-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">
           已装 / Installed
         </h2>
         {rows.length === 0 ? (
-          <p className="rounded-md border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500">
+          <p className="rounded-md border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
             还没有用户安装的 plugin。内置 plugin 由 plugins/registry.json
             管理（不显示在这里）。
           </p>
         ) : (
-          <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 bg-white">
+          <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-950">
             {rows.map((p) => (
               <li
                 key={p.id}
@@ -96,33 +98,39 @@ export default async function PluginsSettingsPage({
               >
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-zinc-700">
+                    <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                       {p.pluginKind}
                     </span>
-                    <span className="text-sm font-medium text-zinc-900">
+                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                       {p.pluginManifestId}
                     </span>
-                    <span className="text-zinc-500">v{p.version}</span>
+                    <span className="text-zinc-500 dark:text-zinc-400">
+                      v{p.version}
+                    </span>
                     <StatusBadge status={p.status} />
-                    <span className="text-zinc-500">
+                    <span className="text-zinc-500 dark:text-zinc-400">
                       {p.installedAt
                         .toISOString()
                         .slice(0, 16)
                         .replace('T', ' ')}
                     </span>
                   </div>
-                  <div className="mt-1 text-xs text-zinc-600">
-                    <span className="text-zinc-500">origin:</span>{' '}
+                  <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
+                    <span className="text-zinc-500 dark:text-zinc-400">
+                      origin:
+                    </span>{' '}
                     <span className="font-mono">{p.origin}</span>
                     {p.sourceUrl && (
                       <>
                         {' · '}
-                        <span className="text-zinc-500">source:</span>{' '}
+                        <span className="text-zinc-500 dark:text-zinc-400">
+                          source:
+                        </span>{' '}
                         <span className="font-mono">{p.sourceUrl}</span>
                       </>
                     )}
                   </div>
-                  <details className="mt-1 text-xs text-zinc-500">
+                  <details className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                     <summary className="cursor-pointer select-none">
                       已接受的 capability ·{' '}
                       {Array.isArray(p.acceptedCapabilities)
@@ -143,7 +151,7 @@ export default async function PluginsSettingsPage({
                     <input type="hidden" name="id" value={p.id} />
                     <button
                       type="submit"
-                      className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-700 hover:bg-red-50 hover:text-red-700"
+                      className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-700 hover:bg-red-50 hover:text-red-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-red-950 dark:hover:text-red-200"
                     >
                       卸载
                     </button>
@@ -170,10 +178,10 @@ export default async function PluginsSettingsPage({
 function StatusBadge({ status }: { status: string }) {
   const cls =
     status === 'enabled'
-      ? 'bg-emerald-100 text-emerald-900'
+      ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200'
       : status === 'disabled'
-        ? 'bg-amber-100 text-amber-900'
-        : 'bg-zinc-100 text-zinc-500';
+        ? 'bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200'
+        : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400';
   const label =
     status === 'enabled' ? '启用' : status === 'disabled' ? '禁用' : '已卸载';
   return <span className={'rounded px-1.5 py-0.5 ' + cls}>{label}</span>;
@@ -181,11 +189,11 @@ function StatusBadge({ status }: { status: string }) {
 
 function PasteForm() {
   return (
-    <section className="rounded-md border border-zinc-200 bg-white p-4">
-      <h2 className="mb-2 text-sm font-medium text-zinc-900">
+    <section className="rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+      <h2 className="mb-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">
         粘贴安装 / Paste manifest
       </h2>
-      <p className="mb-3 text-xs text-zinc-500">
+      <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
         粘贴 plugin manifest JSON。下一步会显示该 plugin 申请的
         capability，由你勾选后再 install。
       </p>
@@ -197,31 +205,31 @@ function PasteForm() {
         className="grid grid-cols-1 gap-3 text-sm"
       >
         <div>
-          <label className="mb-1 block text-xs text-zinc-600">
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-300">
             manifest JSON
           </label>
           <textarea
             name="manifest"
             required
             rows={10}
-            className="w-full rounded border border-zinc-300 px-2 py-1.5 font-mono text-xs"
+            className="w-full rounded border border-zinc-300 px-2 py-1.5 font-mono text-xs dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             placeholder='{"$schema":"...","type":"agent","id":"...","version":"0.1.0","name":{"zh":"…","en":"…"},"requiredCapabilities":["block.read"],"agentKind":"custom","entryPoint":"./agent.ts"}'
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-zinc-600">
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-300">
             源 URL（可选；https-only git URL；不填走 origin=local-path）
           </label>
           <input
             name="sourceUrl"
             type="text"
-            className="w-full rounded border border-zinc-300 px-2 py-1.5 font-mono text-xs"
+            className="w-full rounded border border-zinc-300 px-2 py-1.5 font-mono text-xs dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             placeholder="https://github.com/foo/bar-plugin"
           />
         </div>
         <button
           type="submit"
-          className="self-start rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-800"
+          className="self-start rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
           预览
         </button>
@@ -240,17 +248,19 @@ function PreviewBlock({
   const verdict = previewManifest(manifestJson);
   if (!verdict.ok) {
     return (
-      <section className="rounded-md border border-red-300 bg-red-50 p-4">
-        <h2 className="mb-2 text-sm font-medium text-red-900">
+      <section className="rounded-md border border-red-300 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/40">
+        <h2 className="mb-2 text-sm font-medium text-red-900 dark:text-red-200">
           manifest 无效 · Invalid manifest
         </h2>
-        <p className="text-sm text-red-800">
+        <p className="text-sm text-red-800 dark:text-red-200">
           原因：<span className="font-mono">{verdict.reason}</span>
         </p>
-        <p className="mt-1 break-all text-xs text-red-700">{verdict.detail}</p>
+        <p className="mt-1 break-all text-xs text-red-700 dark:text-red-300">
+          {verdict.detail}
+        </p>
         <Link
           href="/settings/plugins"
-          className="mt-3 inline-block text-xs text-red-900 underline"
+          className="mt-3 inline-block text-xs text-red-900 underline dark:text-red-200"
         >
           ← 重新粘贴
         </Link>
@@ -262,25 +272,25 @@ function PreviewBlock({
   const title = m.title.zh || m.title.en || m.id;
 
   return (
-    <section className="rounded-md border border-zinc-200 bg-white p-4">
-      <h2 className="mb-3 text-sm font-medium text-zinc-900">
+    <section className="rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+      <h2 className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
         Capability 申请 · Capability prompt
       </h2>
-      <dl className="mb-3 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs">
-        <dt className="text-zinc-500">id</dt>
+      <dl className="mb-3 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs dark:text-zinc-200">
+        <dt className="text-zinc-500 dark:text-zinc-400">id</dt>
         <dd className="font-mono">{m.id}</dd>
-        <dt className="text-zinc-500">type</dt>
+        <dt className="text-zinc-500 dark:text-zinc-400">type</dt>
         <dd className="font-mono">{m.type}</dd>
-        <dt className="text-zinc-500">version</dt>
+        <dt className="text-zinc-500 dark:text-zinc-400">version</dt>
         <dd className="font-mono">{m.version}</dd>
-        <dt className="text-zinc-500">title</dt>
+        <dt className="text-zinc-500 dark:text-zinc-400">title</dt>
         <dd>{title}</dd>
-        <dt className="text-zinc-500">host platform</dt>
+        <dt className="text-zinc-500 dark:text-zinc-400">host platform</dt>
         <dd className="font-mono">{hostPlatform}</dd>
       </dl>
 
       {warnings.length > 0 && (
-        <div className="mb-3 rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
+        <div className="mb-3 rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
           <div className="font-medium">解析警告 · Parser warnings</div>
           <ul className="mt-1 list-disc pl-4">
             {warnings.map((w, i) => (
@@ -294,11 +304,11 @@ function PreviewBlock({
         <input type="hidden" name="manifestJson" value={manifestJson} />
         <input type="hidden" name="sourceUrl" value={sourceUrl} />
 
-        <p className="text-xs text-zinc-600">
+        <p className="text-xs text-zinc-600 dark:text-zinc-300">
           下面 {capabilityPrompt.length} 个 capability 是 plugin 声明需要的。
           默认全部勾选；取消勾选 = 拒绝；不在 manifest 里的不能加。
         </p>
-        <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200">
+        <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
           {capabilityPrompt.map((row) => (
             <li
               key={row.capability}
@@ -316,15 +326,15 @@ function PreviewBlock({
                 htmlFor={`cap-${row.capability}`}
                 className="flex-1 text-sm"
               >
-                <span className="font-mono text-xs text-zinc-700">
+                <span className="font-mono text-xs text-zinc-700 dark:text-zinc-300">
                   {row.capability}
                 </span>
                 {row.requiredForCore && (
-                  <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-900">
+                  <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
                     核心
                   </span>
                 )}
-                <p className="mt-0.5 text-xs text-zinc-600">
+                <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
                   {row.explanation.zh} · {row.explanation.en}
                 </p>
               </label>
@@ -335,13 +345,13 @@ function PreviewBlock({
         <div className="flex gap-2">
           <button
             type="submit"
-            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-800"
+            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
           >
             确认安装
           </button>
           <Link
             href="/settings/plugins"
-            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
           >
             取消
           </Link>
