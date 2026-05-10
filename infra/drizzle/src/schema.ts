@@ -50,6 +50,9 @@ import {
   mcpHealthStatusEnum,
   mcpOriginEnum,
   mcpTransportEnum,
+  modelProviderWireFormatEnum,
+  pluginInstallOriginEnum,
+  pluginInstallStatusEnum,
   principalKindEnum,
   revisionStatusEnum,
   sourceKindEnum,
@@ -725,6 +728,11 @@ export const agentJob = pgTable(
     errorClass: text('error_class'),
     errorMessage: text('error_message'),
     inputPayload: jsonb('input_payload'),
+    // Phase 3 W6 closeout: coordinator handoff parent linkage.
+    // null for top-level jobs; set when a coordinator dispatches an
+    // async handoff sub-job. ON DELETE SET NULL (parent gone, child
+    // becomes orphan but keeps its history).
+    parentJobId: text('parent_job_id'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .default(sql`now()`),
@@ -735,6 +743,7 @@ export const agentJob = pgTable(
       t.triggeringPrincipalId,
       t.createdAt,
     ),
+    parentIdx: index('agent_job_parent_idx').on(t.parentJobId),
   }),
 );
 
@@ -921,6 +930,118 @@ export const maintenanceFinding = pgTable(
 );
 
 // ============================================================
+// 24. user_model_pref — Phase 3 W7 ADR-0013 BYO model.
+//     Per-principal default ModelProvider + modelId. The host reads
+//     this when invokeAgentViaPlugin is called and the calling agent
+//     has no document-level override.
+//
+//     Secrets policy: api_key_env_var stores the env-var NAME (e.g.
+//     'ANTHROPIC_API_KEY'); the secret value lives in the host process
+//     environment and is never persisted to PG. ADR-0013 §2.6.
+// ============================================================
+
+export const userModelPref = pgTable(
+  'user_model_pref',
+  {
+    id: text('id').primaryKey(),
+    principalId: text('principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'cascade' }),
+    prefKind: text('pref_kind').notNull().default('default'),
+    providerId: text('provider_id').notNull(),
+    wireFormat: modelProviderWireFormatEnum('wire_format').notNull(),
+    modelId: text('model_id').notNull(),
+    endpointUrl: text('endpoint_url'),
+    apiKeyEnvVar: text('api_key_env_var'),
+    extraHeaders: jsonb('extra_headers'),
+    label: text('label'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => ({
+    principalIdx: index('user_model_pref_principal_idx').on(t.principalId),
+    uniqDefault: uniqueIndex('user_model_pref_unique_default').on(
+      t.principalId,
+      t.prefKind,
+    ),
+  }),
+);
+
+// ============================================================
+// 25. document_model_override — Phase 3 W7 ADR-0013.
+//     Document owner pins a specific provider/model for all agent
+//     invocations on that document (e.g. sensitive doc forced to
+//     on-prem Ollama). Lookup precedence: document_model_override →
+//     user_model_pref → ENV default.
+// ============================================================
+
+export const documentModelOverride = pgTable('document_model_override', {
+  id: text('id').primaryKey(),
+  documentId: text('document_id')
+    .notNull()
+    .unique()
+    .references(() => document.id, { onDelete: 'cascade' }),
+  providerId: text('provider_id').notNull(),
+  wireFormat: modelProviderWireFormatEnum('wire_format').notNull(),
+  modelId: text('model_id').notNull(),
+  endpointUrl: text('endpoint_url'),
+  apiKeyEnvVar: text('api_key_env_var'),
+  extraHeaders: jsonb('extra_headers'),
+  setByPrincipalId: text('set_by_principal_id')
+    .notNull()
+    .references(() => principal.id, { onDelete: 'restrict' }),
+  setAt: timestamp('set_at', { withTimezone: true })
+    .notNull()
+    .default(sql`now()`),
+  reason: text('reason'),
+});
+
+// ============================================================
+// 26. plugin_install — Phase 3 W5 ADR-0012 user-installed plugins.
+//     Built-in plugins continue to live in plugins/registry.json
+//     (no DB row). User-installed plugins have a row here, plus a
+//     sandbox descriptor + accepted-capabilities snapshot at install.
+//
+//     accepted_capabilities is the manifest required_capabilities[]
+//     subset the user explicitly approved in the capability prompt UI.
+// ============================================================
+
+export const pluginInstall = pgTable(
+  'plugin_install',
+  {
+    id: text('id').primaryKey(),
+    pluginManifestId: text('plugin_manifest_id').notNull(),
+    pluginKind: text('plugin_kind').notNull(),
+    version: text('version').notNull(),
+    origin: pluginInstallOriginEnum('origin').notNull(),
+    sourceUrl: text('source_url'),
+    installedBy: text('installed_by')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    installedAt: timestamp('installed_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    status: pluginInstallStatusEnum('status').notNull().default('enabled'),
+    acceptedCapabilities: jsonb('accepted_capabilities').notNull(),
+    installPath: text('install_path').notNull(),
+    sandboxDescriptor: jsonb('sandbox_descriptor'),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    bundleHashSha256: text('bundle_hash_sha256'),
+  },
+  (t) => ({
+    principalIdx: index('plugin_install_principal_idx').on(
+      t.installedBy,
+      t.status,
+    ),
+    kindIdx: index('plugin_install_kind_idx').on(t.pluginKind),
+  }),
+);
+
+// ============================================================
 // Type exports — used by application code for fully-typed queries.
 // `db.select().from(document)` returns inferred row types.
 // ============================================================
@@ -948,3 +1069,6 @@ export type DbAgentJobEvent = typeof agentJobEvent.$inferSelect;
 export type DbSource = typeof source.$inferSelect;
 export type DbSourceExtraction = typeof sourceExtraction.$inferSelect;
 export type DbMaintenanceFinding = typeof maintenanceFinding.$inferSelect;
+export type DbUserModelPref = typeof userModelPref.$inferSelect;
+export type DbDocumentModelOverride = typeof documentModelOverride.$inferSelect;
+export type DbPluginInstall = typeof pluginInstall.$inferSelect;
