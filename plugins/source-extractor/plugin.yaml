@@ -1,0 +1,31 @@
+id: "@official/source-extractor"
+version: "0.1.0"
+type: agent
+title:
+  zh: "源材料抽取 agent"
+  en: "Source extractor"
+description:
+  zh: "从导入的 source（PDF / 网页 / Markdown）中提取候选 claim / evidence / question，写入 source_extraction 暂存表（status='ai-suggested'），等用户在 Source Reader UI 接受/修改/拒绝（Phase 3 W1+W2，per essay §6.2）。从不直接写 main claim/evidence 表。"
+  en: "Extract candidate claim/evidence/question records from an imported source (PDF / web / markdown). Writes to the source_extraction staging table (status='ai-suggested') awaiting user accept/modify/reject in the Source Reader UI (Phase 3 W1+W2). Never writes main claim/evidence tables directly."
+authors:
+  - "@official"
+license: Apache-2.0
+homepage: https://github.com/watterfall/collaborationtool
+required_capabilities:
+  - block.read
+  - citation.read
+  - agent.invoke:custom
+runtime:
+  kernel_version: "^2.0.0"
+  target: node
+  node: ">=20"
+
+# Agent-specific
+kind: custom
+prompt_template: ./prompt.md
+tools:
+  - builtin:writeSourceExtraction
+runtime_mode: propose
+quota:
+  daily_invocations: 100
+  timeout_seconds: 300   # PDF 全文提取可能慢

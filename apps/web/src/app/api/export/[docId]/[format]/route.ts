@@ -8,7 +8,7 @@
 
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import { schema } from '@collaborationtool/drizzle';
 import { loadPrincipalContext, requireCapability } from '@collaborationtool/permissions';
@@ -41,7 +41,8 @@ type ExportFormat =
   | 'markdown'
   | 'typst-source'
   | 'pdf'
-  | 'docx';
+  | 'docx'
+  | 'ai-context-pack';
 
 const ALL_FORMATS: ReadonlySet<ExportFormat> = new Set([
   'html',
@@ -50,6 +51,7 @@ const ALL_FORMATS: ReadonlySet<ExportFormat> = new Set([
   'typst-source',
   'pdf',
   'docx',
+  'ai-context-pack',
 ]);
 
 // Minimal PM doc shape — render packages accept a wider input shape but
@@ -254,6 +256,64 @@ export async function GET(
           'content-type':
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           'content-disposition': `attachment; filename="${slugify(title)}.docx"`,
+        },
+      });
+    }
+    case 'ai-context-pack': {
+      // Phase 2 W7 ADR-0011 §2.7: machine-facing knowledge pack.
+      // Bundles claims + evidences + claim_links + sources + provenance
+      // metadata as a single JSON document. Downstream agents (third-
+      // party plugins, external researchers) import this directly into
+      // their context window.
+      const claims = await db
+        .select()
+        .from(schema.claim)
+        .where(eq(schema.claim.documentOriginId, doc.id));
+      const claimIds = claims.map((c) => c.id);
+      const evidences = claimIds.length
+        ? await db
+            .select()
+            .from(schema.evidence)
+            .where(inArray(schema.evidence.supportsClaimId, claimIds))
+        : [];
+      const claimLinks = claimIds.length
+        ? await db
+            .select()
+            .from(schema.claimLink)
+            .where(inArray(schema.claimLink.fromClaimId, claimIds))
+        : [];
+      const citationIds = [
+        ...new Set(
+          evidences
+            .map((e) => e.citationId)
+            .filter((id): id is string => id !== null),
+        ),
+      ];
+      const sources = citationIds.length
+        ? await db
+            .select()
+            .from(schema.citation)
+            .where(inArray(schema.citation.id, citationIds))
+        : [];
+      const pack = {
+        $schema: 'https://collaborationtool.example.com/schema/ai-context-pack/v1',
+        doc: { id: doc.id, title, slug: doc.slug, primaryLanguage: lang },
+        claims,
+        evidences,
+        claimLinks,
+        sources,
+        generatedAt: new Date().toISOString(),
+      };
+      observeOk({
+        claimCount: claims.length,
+        evidenceCount: evidences.length,
+        sourceCount: sources.length,
+      });
+      return new Response(JSON.stringify(pack, null, 2), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json; charset=utf-8',
+          'content-disposition': `attachment; filename="${slugify(title)}.ai-context-pack.json"`,
         },
       });
     }

@@ -3,9 +3,12 @@ packages:
   - 'apps/*'
   - 'apps/prototypes/*'
   - 'mcp-servers/*'
+  - 'plugins/*'
   - 'infra/drizzle'
   - 'tests/e2e'
 
 # `apps/sync-gateway` matches `apps/*` and is therefore included
 # automatically; `apps/prototypes/*` is the nested glob for Phase 0
-# prototypes that share the workspace.
+# prototypes that share the workspace; `plugins/*` is the Phase 2 W2
+# glob for built-in plugins (ADR-0010) — first inhabitant is the
+# citation-agent dogfood, more land at W3 末.

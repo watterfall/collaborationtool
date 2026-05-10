@@ -15,6 +15,8 @@
 
 import { sql } from 'drizzle-orm';
 import {
+  bigserial,
+  boolean,
   index,
   integer,
   jsonb,
@@ -27,6 +29,7 @@ import {
 
 import {
   actorKindEnum,
+  agentJobStatusEnum,
   agentKindEnum,
   agentRuntimeEnum,
   annotationKindEnum,
@@ -34,8 +37,23 @@ import {
   bilingualModeEnum,
   capabilityResourceTypeEnum,
   citationKindEnum,
+  claimConfidenceEnum,
+  claimLinkTypeEnum,
+  claimStatusEnum,
+  claimTypeEnum,
+  evidenceRelationEnum,
+  extractionKindEnum,
+  extractionStatusEnum,
+  findingKindEnum,
+  findingSeverityEnum,
+  findingStatusEnum,
+  mcpHealthStatusEnum,
+  mcpOriginEnum,
+  mcpTransportEnum,
   principalKindEnum,
   revisionStatusEnum,
+  sourceKindEnum,
+  sourceTrustLevelEnum,
 } from './enums';
 import { bytea } from './types';
 
@@ -509,6 +527,400 @@ export const docInvitation = pgTable(
 );
 
 // ============================================================
+// 15. mcp_server — Phase 2 W1 ADR-0006 MCP server registry.
+//     Source of truth for installed MCP servers (built-in seed +
+//     user/team installs). ai-runtime resolves a skill's
+//     allowed_mcp_servers ∩ enabled rows = allow set;越权调 MCP
+//     抛 McpAccessDenied + 写 provenance.
+//     Phase 2 transport='stdio' default; HTTP / http-sse 推 Phase 3.
+// ============================================================
+
+export const mcpServer = pgTable(
+  'mcp_server',
+  {
+    id: text('id').primaryKey(),
+    version: text('version').notNull(),
+    transport: mcpTransportEnum('transport').notNull(),
+    command: text('command').array().notNull().default(sql`'{}'::text[]`),
+    args: text('args').array().notNull().default(sql`'{}'::text[]`),
+    cwd: text('cwd'),
+    url: text('url'),
+    envVarsRequired: text('env_vars_required')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    declaresTools: text('declares_tools')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    requiredCapabilities: text('required_capabilities')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    origin: mcpOriginEnum('origin').notNull(),
+    installedBy: text('installed_by').references(() => principal.id, {
+      onDelete: 'set null',
+    }),
+    installedAt: timestamp('installed_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    enabled: boolean('enabled').notNull().default(true),
+    healthStatus: mcpHealthStatusEnum('health_status')
+      .notNull()
+      .default('unknown'),
+    lastHealthCheckAt: timestamp('last_health_check_at', {
+      withTimezone: true,
+    }),
+    consecutiveFailures: integer('consecutive_failures').notNull().default(0),
+  },
+  (t) => ({
+    originIdx: index('mcp_server_origin_idx').on(t.origin),
+    // Partial indexes (enabled-only / health-attention) live in
+    // 0005_mcp_server.sql since Drizzle doesn't yet expose the
+    // `WHERE` clause via the index builder.
+  }),
+);
+
+// ============================================================
+// 16. claim — Phase 2 W5 ADR-0011 一等知识对象。
+//     全局 ID（uuidv7），跨文档可复用；text 是权威，PM body 内
+//     paragraph 子树是 denormalised cache。counterpoint / synthesis
+//     是 claim_type 子类型，不是独立表。
+// ============================================================
+
+export const claim = pgTable(
+  'claim',
+  {
+    id: text('id').primaryKey(),
+    text: text('text').notNull(),
+    claimType: claimTypeEnum('claim_type').notNull().default('main'),
+    status: claimStatusEnum('status').notNull().default('ai-suggested'),
+    confidence: claimConfidenceEnum('confidence').notNull().default('medium'),
+    documentOriginId: text('document_origin_id').references(() => document.id, {
+      onDelete: 'set null',
+    }),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    reviewedBy: text('reviewed_by').references(() => principal.id, {
+      onDelete: 'set null',
+    }),
+    deprecatedAt: timestamp('deprecated_at', { withTimezone: true }),
+    supersededByClaimId: text('superseded_by_claim_id'),
+  },
+  (t) => ({
+    statusIdx: index('claim_status_idx').on(t.status),
+    originIdx: index('claim_origin_idx').on(t.documentOriginId),
+    typeIdx: index('claim_type_idx').on(t.claimType),
+  }),
+);
+
+// ============================================================
+// 17. evidence — Phase 2 W5 ADR-0011 证据对象。
+//     每条 evidence 支持 / 反驳 / 限定一个 claim；citationId 软外键
+//     关联资料源。
+// ============================================================
+
+export const evidence = pgTable(
+  'evidence',
+  {
+    id: text('id').primaryKey(),
+    excerpt: text('excerpt').notNull(),
+    supportsClaimId: text('supports_claim_id')
+      .notNull()
+      .references(() => claim.id, { onDelete: 'cascade' }),
+    citationId: text('citation_id').references(() => citation.id, {
+      onDelete: 'set null',
+    }),
+    relation: evidenceRelationEnum('relation').notNull().default('supports'),
+    status: claimStatusEnum('status').notNull().default('ai-suggested'),
+    documentOriginId: text('document_origin_id').references(() => document.id, {
+      onDelete: 'set null',
+    }),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => ({
+    claimIdx: index('evidence_claim_idx').on(t.supportsClaimId),
+    citationIdx: index('evidence_citation_idx').on(t.citationId),
+    relationIdx: index('evidence_relation_idx').on(t.relation),
+    originIdx: index('evidence_origin_idx').on(t.documentOriginId),
+  }),
+);
+
+// ============================================================
+// 18. claim_link — Phase 2 W5 ADR-0011 claim ↔ claim 关系。
+//     synthesis / 组合论证 / 推导链用得到。
+// ============================================================
+
+export const claimLink = pgTable(
+  'claim_link',
+  {
+    id: text('id').primaryKey(),
+    fromClaimId: text('from_claim_id')
+      .notNull()
+      .references(() => claim.id, { onDelete: 'cascade' }),
+    toClaimId: text('to_claim_id')
+      .notNull()
+      .references(() => claim.id, { onDelete: 'cascade' }),
+    linkType: claimLinkTypeEnum('link_type').notNull(),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => ({
+    fromIdx: index('claim_link_from_idx').on(t.fromClaimId),
+    toIdx: index('claim_link_to_idx').on(t.toClaimId),
+    typeIdx: index('claim_link_type_idx').on(t.linkType),
+  }),
+);
+
+// ============================================================
+// 19. agent_job — Phase 2 W2 ADR-0008 long-horizon agent runtime.
+//     User-visible mirror of pgboss queue state. Worker writes
+//     status/progress here; UI reads via /api/agent/job/<id>.
+// ============================================================
+
+export const agentJob = pgTable(
+  'agent_job',
+  {
+    id: text('id').primaryKey(),
+    kind: text('kind').notNull(),
+    documentId: text('document_id')
+      .notNull()
+      .references(() => document.id, { onDelete: 'cascade' }),
+    triggeringPrincipalId: text('triggering_principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    agentPrincipalId: text('agent_principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    status: agentJobStatusEnum('status').notNull().default('queued'),
+    progressFraction: text('progress_fraction').notNull().default('0'),
+    progressMessage: text('progress_message'),
+    outputRevisionIds: text('output_revision_ids')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    outputThreadIds: text('output_thread_ids')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    costTokenInput: integer('cost_token_input').notNull().default(0),
+    costTokenOutput: integer('cost_token_output').notNull().default(0),
+    costUsdMilli: integer('cost_usd_milli').notNull().default(0),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+    errorClass: text('error_class'),
+    errorMessage: text('error_message'),
+    inputPayload: jsonb('input_payload'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => ({
+    docStatusIdx: index('agent_job_doc_status_idx').on(t.documentId, t.status),
+    triggererIdx: index('agent_job_triggerer_idx').on(
+      t.triggeringPrincipalId,
+      t.createdAt,
+    ),
+  }),
+);
+
+// ============================================================
+// 20. agent_job_event — Phase 2 W2 ADR-0008 SSE re-connect cursor.
+//     Append-only; worker emits progress/partial/done/error here for
+//     /api/agent/job/<id>/stream?cursor=<eventId> to resume.
+// ============================================================
+
+export const agentJobEvent = pgTable(
+  'agent_job_event',
+  {
+    // PG bigserial; Drizzle exposes it as a number (within JS safe int).
+    // For SSE cursor purposes the client treats it as opaque.
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    jobId: text('job_id')
+      .notNull()
+      .references(() => agentJob.id, { onDelete: 'cascade' }),
+    eventKind: text('event_kind').notNull(),
+    payload: jsonb('payload').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => ({
+    jobIdx: index('agent_job_event_job_idx').on(t.jobId, t.id),
+  }),
+);
+
+// ============================================================
+// 21. source — Phase 3 W1/W2 ingestion (PDF / web / markdown / text /
+//     docx / epub / manual). See ADR-0011 §1 (essay §6.1 7 对象之一).
+//     PDF.js + readability extract raw_text; AI抽取走 source_extraction.
+// ============================================================
+
+export const source = pgTable(
+  'source',
+  {
+    id: text('id').primaryKey(),
+    kind: sourceKindEnum('kind').notNull(),
+    title: text('title').notNull(),
+    url: text('url'),
+    bytesHashSha256: text('bytes_hash_sha256'),
+    bytesSize: integer('bytes_size'),
+    bytesStorageUrl: text('bytes_storage_url'),
+    rawText: text('raw_text'),
+    language: text('language'),
+    trustLevel: sourceTrustLevelEnum('trust_level').notNull().default('unverified'),
+    importedBy: text('imported_by')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    importedAt: timestamp('imported_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    accessedAt: timestamp('accessed_at', { withTimezone: true }),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    notesMarkdown: text('notes_markdown'),
+    citationId: text('citation_id').references(() => citation.id, {
+      onDelete: 'set null',
+    }),
+  },
+  (t) => ({
+    kindIdx: index('source_kind_idx').on(t.kind),
+    importedByIdx: index('source_imported_by_idx').on(t.importedBy, t.importedAt),
+    citationIdx: index('source_citation_idx').on(t.citationId),
+    hashIdx: index('source_hash_idx').on(t.bytesHashSha256),
+  }),
+);
+
+// ============================================================
+// 22. source_extraction — Phase 3 W2 AI 抽取 staging。
+//     status='ai-suggested' 是 AI 输出；user-accepted / user-modified
+//     时 promoted_* 链到 main 表的真对象（claim/evidence/thread）。
+//     rejected 留历史方便改 prompt 时回看。
+// ============================================================
+
+export const sourceExtraction = pgTable(
+  'source_extraction',
+  {
+    id: text('id').primaryKey(),
+    sourceId: text('source_id')
+      .notNull()
+      .references(() => source.id, { onDelete: 'cascade' }),
+    kind: extractionKindEnum('kind').notNull(),
+    text: text('text').notNull(),
+    excerpt: text('excerpt'),
+    excerptOffset: integer('excerpt_offset'),
+    excerptLength: integer('excerpt_length'),
+    status: extractionStatusEnum('status').notNull().default('ai-suggested'),
+    promotedClaimId: text('promoted_claim_id').references(() => claim.id, {
+      onDelete: 'set null',
+    }),
+    promotedEvidenceId: text('promoted_evidence_id').references(
+      () => evidence.id,
+      { onDelete: 'set null' },
+    ),
+    promotedThreadId: text('promoted_thread_id').references(
+      () => annotationThread.id,
+      { onDelete: 'set null' },
+    ),
+    agentPrincipalId: text('agent_principal_id').references(() => principal.id, {
+      onDelete: 'set null',
+    }),
+    extractedAt: timestamp('extracted_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+    decidedBy: text('decided_by').references(() => principal.id, {
+      onDelete: 'set null',
+    }),
+    decisionNote: text('decision_note'),
+    aiMetadata: jsonb('ai_metadata'),
+  },
+  (t) => ({
+    sourceIdx: index('source_extraction_source_idx').on(t.sourceId, t.kind),
+    statusIdx: index('source_extraction_status_idx').on(t.status),
+    promotedClaimIdx: index('source_extraction_promoted_claim_idx').on(
+      t.promotedClaimId,
+    ),
+    promotedEvidenceIdx: index('source_extraction_promoted_evidence_idx').on(
+      t.promotedEvidenceId,
+    ),
+  }),
+);
+
+// ============================================================
+// 23. maintenance_finding — Phase 3 W4 knowledge-maintenance scan
+//     output. Per essay §7.4: scan for unsupported-claim /
+//     outdated-source / duplicated-claim / contradicted-conclusion /
+//     unverified-ai-block / broken-citation.
+//     Job runs in apps/agent-worker via pgboss queue
+//     'maintenance-scan'; one job emits many findings.
+// ============================================================
+
+export const maintenanceFinding = pgTable(
+  'maintenance_finding',
+  {
+    id: text('id').primaryKey(),
+    kind: findingKindEnum('kind').notNull(),
+    severity: findingSeverityEnum('severity').notNull().default('medium'),
+    status: findingStatusEnum('status').notNull().default('open'),
+    jobId: text('job_id').references(() => agentJob.id, {
+      onDelete: 'set null',
+    }),
+    claimId: text('claim_id').references(() => claim.id, { onDelete: 'cascade' }),
+    evidenceId: text('evidence_id').references(() => evidence.id, {
+      onDelete: 'cascade',
+    }),
+    sourceId: text('source_id').references(() => source.id, {
+      onDelete: 'cascade',
+    }),
+    citationId: text('citation_id').references(() => citation.id, {
+      onDelete: 'cascade',
+    }),
+    documentId: text('document_id').references(() => document.id, {
+      onDelete: 'cascade',
+    }),
+    vaultPrincipalId: text('vault_principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'cascade' }),
+    summary: text('summary').notNull(),
+    details: jsonb('details'),
+    foundAt: timestamp('found_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    acknowledgedAt: timestamp('acknowledged_at', { withTimezone: true }),
+    acknowledgedBy: text('acknowledged_by').references(() => principal.id, {
+      onDelete: 'set null',
+    }),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    resolvedBy: text('resolved_by').references(() => principal.id, {
+      onDelete: 'set null',
+    }),
+    dismissedAt: timestamp('dismissed_at', { withTimezone: true }),
+    dismissedBy: text('dismissed_by').references(() => principal.id, {
+      onDelete: 'set null',
+    }),
+    dismissReason: text('dismiss_reason'),
+  },
+  (t) => ({
+    kindIdx: index('maintenance_finding_kind_idx').on(t.kind),
+    jobIdx: index('maintenance_finding_job_idx').on(t.jobId),
+  }),
+);
+
+// ============================================================
 // Type exports — used by application code for fully-typed queries.
 // `db.select().from(document)` returns inferred row types.
 // ============================================================
@@ -527,3 +939,12 @@ export type DbCapabilityGrant = typeof capabilityGrant.$inferSelect;
 export type DbDocumentAcl = typeof documentAcl.$inferSelect;
 export type DbPromptTemplate = typeof promptTemplate.$inferSelect;
 export type DbDocInvitation = typeof docInvitation.$inferSelect;
+export type DbMcpServer = typeof mcpServer.$inferSelect;
+export type DbClaim = typeof claim.$inferSelect;
+export type DbEvidence = typeof evidence.$inferSelect;
+export type DbClaimLink = typeof claimLink.$inferSelect;
+export type DbAgentJob = typeof agentJob.$inferSelect;
+export type DbAgentJobEvent = typeof agentJobEvent.$inferSelect;
+export type DbSource = typeof source.$inferSelect;
+export type DbSourceExtraction = typeof sourceExtraction.$inferSelect;
+export type DbMaintenanceFinding = typeof maintenanceFinding.$inferSelect;

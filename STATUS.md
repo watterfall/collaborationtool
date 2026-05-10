@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-09（claude/review-project-status-w2iNI，**Phase 1.5 全部 7 项 close** + **ADR-0009 起草** + **proto-d-diff-library spike 跑通**：phase-2-plan-stub §3.3 三件事全部答完，diff 库锁定 prosemirror-changeset）
+最后更新：2026-05-09（claude/review-project-goals-TpFuH，**Phase 3 启动 W1-W7 backend + 2 新 ADR**：Phase 2 W1-W7 全交付 + 6 ADR Accepted（前史）；Phase 2.5 工程对接 6/7 完成（剩 3 项依赖外部服务）。**Phase 3 启动 7 commits**：(1) ADR-0012 Plugin sandbox + capability UI（W5 enabler，commit `0ce4e51`）；(2) ADR-0013 ModelProvider abstraction（BYO 模型 W7 enabler，commit `b1c9ddc`）；(3) source + source_extraction PG schema（W1/W2 backend，commit `4269489`，第 21+22 表）；(4) plugins/source-extractor scaffold + skill（W2 AI ingestion，commit `8fcb7c7`）；(5) ModelProvider abstraction in ai-runtime + Anthropic adapter（W7 第一步，commit `e93fb78`）；(6) maintenance_finding PG 表 + scan job descriptor（W4 backend，commit `f0f5841`，第 23 表）；(7) coordinator agent handoff types + plugin scaffold（W6 backend，commit `b7c4ef6`）。**30 包全 typecheck PASS / 92+ 测试 PASS**（ai-runtime 48 + editor-core 29 + 各 import / molab / auto-fix / agent-worker 测试）。**Phase 3 推迟项**：W3 Draft Composer（dogfood-driven）+ W8 spatial canvas spike（视觉前端）+ 6 plugin 真 LLM 调试（require ANTHROPIC_API_KEY）+ Bubblewrap/HTTPS proxy 实施（require Linux 部署环境）+ user_model_pref schema（W7 末）+ 真 reviewer/researcher 跑通（同 Phase 2.5）。Phase 3 §二 6 开放问题：§2.5 + §2.6 通过 ADR-0012/0013 答完；§2.1 + §2.3 通过 source / maintenance schema 部分答；§2.2 Draft Composer 显式 dogfood-trigger；§2.4 50+ 协作者 + Yjs subdoc 推 W4 后期。user 哲学 reaffirmed：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
 
 ---
 
@@ -15,7 +15,24 @@
 
 **Phase 1.5：✅ 完成**（7/7 patch 全部 close；见 `plan0/phase-2-plan-stub.md §二`）。
 
-**Phase 2 kickoff prep：进行中**。phase-2-plan-stub §三 开放问题进度：§3.1 ADR-0008 / §3.2 ADR-0007 / §3.3 ADR-0009（含 `apps/prototypes/proto-d-diff-library/` spike 实证）；§3.4 spatial canvas 仍待用户定 Phase 2 / Phase 3。
+**Phase 2：✅ 完成** —— W1-W7 全部交付：
+- W1: mcp_server 表 + plugins 骨架 + ADR-0006/0010
+- W2: AgentPluginModule 契约 + 等价性测试 + agent_job 表 + apps/agent-worker stub
+- W3: dogfood gate 三项 criteria 全 PASS（plugin path 正确性 / 第三方 tmpdir / no internal-only API）
+- W4: molab-protocol 6 kind postMessage + Figure.sourceCellId + cell auth-token JWT
+- W5: ADR-0011 + Claim/Evidence schema + 2 PM block container + inline-editor 切 plugin
+- W6: import-typst + import-latex + auto-fix 三 scaffold 包
+- W7: Evidence Map API + AI context pack export 路由
+
+**Phase 2.5（工程对接 + 真服务实测）：6/7 工程对接已交付**（剩 3 项依赖真服务推 dogfood 环境）。spike 结论：Typst.ts WASM **推 Phase 3+ 重测**；Loro **继续 Yjs through Phase 3**（subdocument trigger 时再评估）。
+
+**Phase 3：启动**（`plan0/phase-3-plan-stub.md` W1-W8）。本会话已交付 W1-W7 backend：
+- W1+W2: source + source_extraction PG schema + source-extractor plugin（PDF.js / readability 真 ingestion 流水线 + Source Reader UI 推 dogfood）
+- W4: maintenance_finding PG 表 + scan job descriptor（real scan logic + LLM "duplicate detection" 推 W4 末实施）
+- W5: ADR-0012 plugin sandbox 设计（Bubblewrap + capability UI；实施推 dogfood + Linux 部署环境）
+- W6: coordinator agent handoff types + plugin scaffold（LLM-driven dispatch loop 推 W6 末）
+- W7: ADR-0013 ModelProvider abstraction + Anthropic adapter（OpenAI-compat / Ollama / custom-http 推 W7 末）
+- 推迟：W3 Draft Composer（dogfood-trigger）+ W8 spatial canvas spike（前端）
 
 ---
 
@@ -28,10 +45,14 @@
 | 0003 | 技术栈锁定（11 项 + 双管线渲染） | **Accepted** | D7–D15 全部用本 ADR 11 项栈，无中途切换；D16 promote + 加 §9 review log |
 | 0004 | 部署拓扑 + 安全基线 | **Accepted** | D16 直 Accepted；6 进程拓扑 + secrets / TLS / CORS / CSP / 备份基线 |
 | 0005 | Render API 边界 | **Accepted** | D16 直 Accepted；PM JSON wire format + 5 emitter 签名锁定，stable through Phase 2 |
-| 0006 | MCP server 注册与发现 | 推 Phase 2 W1 | Phase 2 kickoff 时与 ADR-0007/8 一起起草 |
-| 0007 | Computational cell embedding + iframe 协议 | **Proposed** | 2026-05-09 起草；gated on Phase 2 W4 实施 |
-| 0008 | Long-horizon agent runtime + reviewer/researcher agent | **Proposed** | 2026-05-09 起草；gated on Phase 2 W2-W3 实施 |
-| 0009 | Diff library + revision overlay UI + rebase semantics | **Proposed** | 2026-05-09 起草；spike `apps/prototypes/proto-d-diff-library/` 实证；gated on Phase 2 W2-W3 实施 |
+| 0006 | MCP server 注册与发现 | **Accepted** | mcp_server PG 表 + registry.json seed + plugin loader 集成 W1-W3 全 PASS；§7 review log 记 W2 env-var → 注册表迁移完成 |
+| 0007 | Computational cell embedding + iframe 协议 | **Accepted (with caveat)** | molab-protocol 6 kind 类型化 + parseInbound/Outbound + Figure.sourceCellId attr + cell auth-token JWT 路由全 PASS；caveat: 真 molab.org iframe 端到端 e2e 推 Phase 2.5（需 molab 实例可达） |
+| 0008 | Long-horizon agent runtime + reviewer/researcher agent | **Accepted (with caveat)** | agent_job + agent_job_event 表 + apps/agent-worker pgboss subscribe stub 全 PASS；caveat: reviewer/researcher plugin 实施推 Phase 2.5（require ANTHROPIC_API_KEY + 真实 reviewer prompt 设计） |
+| 0009 | Diff library + revision overlay UI + rebase semantics | **Accepted (Phase 0 spike + Phase 1 D14 实证)** | proto-d-diff-library spike + D14 acceptRevision 流程已实证 prosemirror-changeset 选型；Phase 2 W2-W3 实施未额外开 commit（已经在 Phase 1 D14 落地大部分 contributor 路径） |
+| 0010 | 扩展系统边界 + Plugin API + Skill 元数据扩展 + Dogfood 路径 | **Accepted** | W3 dogfood gate 三项 criteria 全 PASS + W4-W5 follow-up inline-editor 切到 plugin 路径完成（hardcode `agents/citation.ts` + `agents/inline-editor.ts` 全删；`packages/ai-runtime/src/agents/` 目录已删） |
+| 0011 | Claim/Evidence/Counterpoint/Synthesis 一等知识对象层 | **Accepted** | W5 schema + PM 节点（claim + evidence block container）+ W7 Evidence Map / AI context pack 路由全 PASS；§7 review log 写 W7 dogfood gate criteria 三项 |
+| 0012 | Plugin sandbox + 用户安装路径 + capability 提示 UI | **Proposed** | 2026-05-09 Phase 3 W5 起草；OS 沙箱选 Bubblewrap (Linux) / sandbox-exec (macOS Phase 4) / AppContainer (Windows Phase 4)；HTTPS proxy enforce manifest network domains；plugin PG 表 schema；W5 dogfood gate 三项 criteria（真第三方 plugin 装载 / OS 沙箱真隔离 / capability deny 真生效） |
+| 0013 | ModelProvider abstraction + BYO 模型 + 配置存储 | **Proposed** | 2026-05-09 Phase 3 W7 起草；4 wireFormat（anthropic / openai-compat / ollama / custom-http），配置存储双层（user_model_pref + document_model_override），API key env 变量 self-host 友好；plugin manifest 加 prefers_provider；Anthropic adapter 已实施（commit `e93fb78`），其余 3 adapter W7 后续；W7 dogfood gate 三项 criteria |
 
 ---
 

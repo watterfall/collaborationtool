@@ -1,0 +1,36 @@
+id: "@official/researcher-agent"
+version: "0.1.0"
+type: agent
+title:
+  zh: "研究员 agent"
+  en: "Researcher agent"
+description:
+  zh: "异步研究 agent：根据 query 跨 source 查找文献、绑定 evidence 到 claim（per ADR-0008 + ADR-0011）。propose-mode；新发现的 citation 写入 PG（status='ai-suggested'）等用户审阅。"
+  en: "Asynchronous research agent: searches sources for a query, binds evidence to claims (per ADR-0008 + ADR-0011). Propose-mode; newly discovered citations written to PG with status='ai-suggested' awaiting user review."
+authors:
+  - "@official"
+license: Apache-2.0
+homepage: https://github.com/watterfall/collaborationtool
+required_capabilities:
+  - block.read
+  - block.propose
+  - citation.read
+  - citation.create
+  - citation.bind
+  - agent.invoke:researcher
+runtime:
+  kernel_version: "^2.0.0"
+  target: node
+  node: ">=20"
+
+# Agent-specific
+kind: researcher
+prompt_template: ./prompt.md
+tools:
+  - mcp:crossref:lookupDoi
+  - mcp:crossref:searchByQuery
+  - builtin:proposeRevision
+runtime_mode: propose
+quota:
+  daily_invocations: 30
+  timeout_seconds: 900   # long-horizon, 15 min ceiling for cross-source search

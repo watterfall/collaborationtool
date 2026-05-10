@@ -10,15 +10,23 @@ export {
   PAPER_SCHEMA_EXTENSIONS,
   AnnotationAnchor,
   CitationRef,
+  Claim,
   ComputationalCell,
   DatasetRef,
   Equation,
+  Evidence,
   Figure,
   FigureCaption,
   FootnoteRef,
   InlineEquation,
 } from './extensions/all';
 export type { ComputationalKernel } from './extensions/computational-cell';
+export type {
+  ClaimType,
+  ClaimStatus,
+  ClaimConfidence,
+} from './extensions/claim';
+export type { EvidenceRelation } from './extensions/evidence';
 export {
   buildCommitPayload,
   deserializeSteps,
@@ -52,6 +60,9 @@ export {
   newBlockId,
   newCellId,
   newCitationId,
+  newClaimId,
+  newClaimLinkId,
+  newEvidenceId,
   newFootnoteId,
   newProvenanceId,
   newRevisionId,

@@ -1,6 +1,13 @@
 // figure: block container with image + caption.
-// Not atom — PM descends to render <img> + caption text. Phase 2 adds
-// real image upload + cross-reference handle (figure label).
+// Not atom — PM descends to render <img> + caption text.
+//
+// Phase 2 W4 (ADR-0007 §2): adds optional `sourceCellId` attr that
+// points at a `computational_cell.id` — when set, the figure's image
+// was produced by a molab cell execution (cell.executed payload). UI
+// renders a "↪ regenerate" affordance + provenance link.
+//
+// Per ADR-0007 §2 "figure with attrs.sourceCellId — no new node type"
+// (we reuse figure rather than introduce computational-output).
 
 import { Node, mergeAttributes } from '@tiptap/core';
 
@@ -10,6 +17,11 @@ declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     figure: {
       insertFigure: (src: string, captionText: string) => ReturnType;
+      insertCellOutputFigure: (
+        src: string,
+        captionText: string,
+        sourceCellId: string,
+      ) => ReturnType;
     };
   }
 }
@@ -31,6 +43,15 @@ export const Figure = Node.create({
         default: '',
         parseHTML: (el) => el.querySelector('img')?.getAttribute('src') ?? '',
         renderHTML: (attrs) => ({ 'data-src': attrs['src'] }),
+      },
+      // Phase 2 W4 ADR-0007 §2: optional source cell pointer.
+      sourceCellId: {
+        default: null,
+        parseHTML: (el) => el.getAttribute('data-source-cell-id'),
+        renderHTML: (attrs) =>
+          attrs['sourceCellId']
+            ? { 'data-source-cell-id': attrs['sourceCellId'] }
+            : {},
       },
     };
   },
@@ -58,7 +79,22 @@ export const Figure = Node.create({
         ({ commands }) => {
           return commands.insertContent({
             type: this.name,
-            attrs: { blockId: newBlockId(), src },
+            attrs: { blockId: newBlockId(), src, sourceCellId: null },
+            content: [
+              {
+                type: 'figureCaption',
+                content: [{ type: 'text', text: captionText }],
+              },
+            ],
+          });
+        },
+
+      insertCellOutputFigure:
+        (src: string, captionText: string, sourceCellId: string) =>
+        ({ commands }) => {
+          return commands.insertContent({
+            type: this.name,
+            attrs: { blockId: newBlockId(), src, sourceCellId },
             content: [
               {
                 type: 'figureCaption',

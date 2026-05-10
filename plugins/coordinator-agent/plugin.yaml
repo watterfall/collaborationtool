@@ -1,0 +1,37 @@
+id: "@official/coordinator-agent"
+version: "0.1.0"
+type: agent
+title:
+  zh: "Coordinator agent"
+  en: "Coordinator agent"
+description:
+  zh: "高阶 agent：接收用户人话 goal（如'把这一节改投 Nature 风格 + 补全引用 + 评审一遍'），决定调哪些 single-purpose agent（citation / inline-editor / reviewer / researcher / source-extractor），异步派发子 job，最后聚合结果（per Phase 3 §一 W6）。"
+  en: "High-level agent: takes a natural-language user goal and dispatches sub-tasks to single-purpose agents (citation / inline-editor / reviewer / researcher / source-extractor); async; aggregates results."
+authors:
+  - "@official"
+license: Apache-2.0
+homepage: https://github.com/watterfall/collaborationtool
+required_capabilities:
+  - block.read
+  - block.propose
+  - annotation.create
+  - agent.invoke:editor
+  - agent.invoke:citation
+  - agent.invoke:reviewer
+  - agent.invoke:researcher
+  - agent.invoke:custom
+runtime:
+  kernel_version: "^2.0.0"
+  target: node
+  node: ">=20"
+
+# Agent-specific
+kind: coordinator
+prompt_template: ./prompt.md
+tools:
+  - builtin:invokeChildAgent
+  - builtin:waitForChildJob
+runtime_mode: propose
+quota:
+  daily_invocations: 30
+  timeout_seconds: 1800   # 30 min for multi-agent dispatch

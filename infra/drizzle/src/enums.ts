@@ -22,6 +22,8 @@ export const principalKindEnum = pgEnum('principal_kind', [
   'org',
 ]);
 
+// Phase 2 W2 ADR-0008: 'reviewer' / 'researcher' added via 0007 migration
+// (ALTER TYPE ADD VALUE — already in 0001 enum literal here for new dbs).
 export const agentKindEnum = pgEnum('agent_kind', [
   'editor',
   'reviewer',
@@ -31,7 +33,21 @@ export const agentKindEnum = pgEnum('agent_kind', [
   'custom',
 ]);
 
-export const agentRuntimeEnum = pgEnum('agent_runtime', ['server', 'client']);
+// Phase 2 W2 ADR-0008: 'long-horizon' added via 0007 migration.
+export const agentRuntimeEnum = pgEnum('agent_runtime', [
+  'server',
+  'client',
+  'long-horizon',
+]);
+
+// Phase 2 W2 ADR-0008: agent_job lifecycle.
+export const agentJobStatusEnum = pgEnum('agent_job_status', [
+  'queued',
+  'running',
+  'done',
+  'error',
+  'cancelled',
+]);
 
 // ---------- Document ----------
 
@@ -93,4 +109,109 @@ export const capabilityResourceTypeEnum = pgEnum('capability_resource_type', [
   'block',
   'thread',
   'global',
+]);
+
+// ---------- MCP server registry (Phase 2 W1 ADR-0006) ----------
+
+export const mcpTransportEnum = pgEnum('mcp_transport', [
+  'stdio',
+  'http',
+  'http-sse',
+]);
+
+export const mcpOriginEnum = pgEnum('mcp_origin', ['built-in', 'user', 'team']);
+
+export const mcpHealthStatusEnum = pgEnum('mcp_health_status', [
+  'unknown',
+  'healthy',
+  'degraded',
+  'failed',
+]);
+
+// ---------- Claim / Evidence knowledge object (Phase 2 W5 ADR-0011) ----------
+
+export const claimTypeEnum = pgEnum('claim_type', ['main', 'counter', 'synthesis']);
+
+export const claimStatusEnum = pgEnum('claim_status', [
+  'ai-suggested',
+  'human-reviewed',
+  'approved',
+  'deprecated',
+  'superseded',
+]);
+
+export const claimConfidenceEnum = pgEnum('claim_confidence', [
+  'low',
+  'medium',
+  'high',
+]);
+
+export const evidenceRelationEnum = pgEnum('evidence_relation', [
+  'supports',
+  'challenges',
+  'qualifies',
+]);
+
+export const claimLinkTypeEnum = pgEnum('claim_link_type', [
+  'derives-from',
+  'synthesizes',
+  'contradicts',
+  'refines',
+]);
+
+// ---------- Source ingestion (Phase 3 W1/W2) ----------
+
+export const sourceKindEnum = pgEnum('source_kind', [
+  'pdf',
+  'web',
+  'markdown',
+  'text',
+  'docx',
+  'epub',
+  'manual',
+]);
+
+export const sourceTrustLevelEnum = pgEnum('source_trust_level', [
+  'unverified',
+  'low',
+  'medium',
+  'high',
+]);
+
+export const extractionStatusEnum = pgEnum('extraction_status', [
+  'ai-suggested',
+  'user-accepted',
+  'user-modified',
+  'rejected',
+]);
+
+export const extractionKindEnum = pgEnum('extraction_kind', [
+  'claim',
+  'evidence',
+  'question',
+]);
+
+// ---------- Knowledge maintenance scan (Phase 3 W4) ----------
+
+export const findingKindEnum = pgEnum('finding_kind', [
+  'unsupported-claim',
+  'outdated-source',
+  'duplicated-claim',
+  'contradicted-conclusion',
+  'unverified-ai-block',
+  'broken-citation',
+]);
+
+export const findingSeverityEnum = pgEnum('finding_severity', [
+  'info',
+  'low',
+  'medium',
+  'high',
+]);
+
+export const findingStatusEnum = pgEnum('finding_status', [
+  'open',
+  'acknowledged',
+  'resolved',
+  'dismissed',
 ]);

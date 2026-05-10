@@ -1,0 +1,55 @@
+{
+  "$schema": "./registry.schema.json",
+  "version": 1,
+  "comment": "Built-in plugin registry — id → path lookup for the host (apps/web /api/agent/invoke, apps/agent-worker). Phase 2 hardcoded the paths inline; this file replaces the hardcode. Phase 3 user-installed plugins extend this with origin='user' rows in a future PG `plugin` table (per ADR-0010 §2.5).",
+  "plugins": [
+    {
+      "id": "@official/citation-agent",
+      "type": "agent",
+      "kind": "citation",
+      "path": "plugins/citation-agent",
+      "skillId": "citation-lookup",
+      "origin": "built-in"
+    },
+    {
+      "id": "@official/inline-editor-agent",
+      "type": "agent",
+      "kind": "editor",
+      "path": "plugins/inline-editor-agent",
+      "skillId": "inline-editor",
+      "origin": "built-in"
+    },
+    {
+      "id": "@official/reviewer-agent",
+      "type": "agent",
+      "kind": "reviewer",
+      "path": "plugins/reviewer-agent",
+      "skillId": "reviewer-style",
+      "origin": "built-in"
+    },
+    {
+      "id": "@official/researcher-agent",
+      "type": "agent",
+      "kind": "researcher",
+      "path": "plugins/researcher-agent",
+      "skillId": "literature-review",
+      "origin": "built-in"
+    },
+    {
+      "id": "@official/source-extractor",
+      "type": "agent",
+      "kind": "custom",
+      "path": "plugins/source-extractor",
+      "skillId": "source-extraction",
+      "origin": "built-in"
+    },
+    {
+      "id": "@official/coordinator-agent",
+      "type": "agent",
+      "kind": "coordinator",
+      "path": "plugins/coordinator-agent",
+      "skillId": "coordinator",
+      "origin": "built-in"
+    }
+  ]
+}

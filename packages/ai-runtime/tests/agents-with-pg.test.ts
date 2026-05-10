@@ -1,6 +1,9 @@
-// Integration test for the public agent helpers (invokeCitationAgent /
-// invokeInlineEditorAgent). Goes through the runner → persistProposal →
-// PG path so we confirm the full Provenance + Revision row materialises.
+// Integration test for the public agent helpers. Both citation and
+// inline-editor now go through the Phase 2 W3+W5 plugin path
+// (`invokeAgentViaPlugin` + plugins/<agent>); no more hardcoded
+// agents in `packages/ai-runtime/src/agents/` (ADR-0010 §2.7 + W4-W5
+// review log follow-up). Both confirm the full runner →
+// persistProposal → PG path materialises Provenance + Revision rows.
 //
 // Skipped without DATABASE_URL.
 
@@ -11,7 +14,7 @@ import path from 'node:path';
 import { eq } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 
-import { openDatabase, schema } from '@collaborationtool/drizzle';
+import { openDatabase, schema, type DbExecutor } from '@collaborationtool/drizzle';
 import {
   CAPABILITY_SET,
   DEFAULT_ROLE_BUNDLES,
@@ -23,16 +26,96 @@ import type { PrincipalId } from '@collaborationtool/schema';
 
 import {
   acceptRevisionToContribution,
-  invokeCitationAgent,
-  invokeInlineEditorAgent,
+  crossrefMockTransport,
+  invokeAgentViaPlugin,
   listPendingRevisions,
   rejectRevision,
   supersedeRevisionWithModified,
+  type InvokeAgentViaPluginResult,
 } from '../src/index';
 
 const DATABASE_URL = process.env['DATABASE_URL'];
 const SHOULD_SKIP = !DATABASE_URL;
 const SKILLS_ROOT = path.resolve(process.cwd(), '..', '..', 'skills');
+const CITATION_PLUGIN_ROOT = path.resolve(
+  process.cwd(),
+  '..',
+  '..',
+  'plugins',
+  'citation-agent',
+);
+const INLINE_EDITOR_PLUGIN_ROOT = path.resolve(
+  process.cwd(),
+  '..',
+  '..',
+  'plugins',
+  'inline-editor-agent',
+);
+
+/** Citation-shaped wrapper around invokeAgentViaPlugin. Tests still
+ * read citation-agent semantics; the plugin loader path is exercised
+ * uniformly. */
+async function invokeCitation(
+  input: {
+    principalContext: PrincipalContext;
+    documentId: string;
+    blockId: string;
+    passage: string;
+    flaggedDoiCandidates: string[];
+    skillsRoot?: string;
+  },
+  options: { db: DbExecutor; persistToDb?: boolean },
+): Promise<InvokeAgentViaPluginResult> {
+  return invokeAgentViaPlugin(
+    {
+      pluginPath: CITATION_PLUGIN_ROOT,
+      principalContext: input.principalContext,
+      documentId: input.documentId,
+      blockId: input.blockId,
+      passage: input.passage,
+      hints: { flaggedDoiCandidates: input.flaggedDoiCandidates },
+      skillId: 'citation-lookup',
+      skillsRoot: input.skillsRoot,
+      mcpSpecs: [
+        {
+          id: 'crossref-mock',
+          buildTransport: crossrefMockTransport().buildTransport,
+        },
+      ],
+    },
+    options,
+  );
+}
+
+/** Inline-editor-shaped wrapper around invokeAgentViaPlugin (W5
+ * dogfood follow-up). Tests express intent in inline-editor terms; the
+ * plugin path is exercised uniformly. */
+async function invokeInlineEditor(
+  input: {
+    principalContext: PrincipalContext;
+    documentId: string;
+    blockId: string;
+    passage: string;
+    userInstruction: string;
+    skillsRoot?: string;
+  },
+  options: { db: DbExecutor; persistToDb?: boolean },
+): Promise<InvokeAgentViaPluginResult> {
+  return invokeAgentViaPlugin(
+    {
+      pluginPath: INLINE_EDITOR_PLUGIN_ROOT,
+      principalContext: input.principalContext,
+      documentId: input.documentId,
+      blockId: input.blockId,
+      passage: input.passage,
+      hints: { userInstruction: input.userInstruction },
+      skillId: 'inline-editor',
+      skillsRoot: input.skillsRoot,
+      mcpSpecs: [],
+    },
+    options,
+  );
+}
 
 if (SHOULD_SKIP) {
   describe('ai-runtime agents (integration)', { skip: true }, () => {
@@ -115,7 +198,7 @@ if (SHOULD_SKIP) {
     // ---------- citation agent ----------
 
     it('invokeCitationAgent: PG provenance + revision rows materialise', async () => {
-      const result = await invokeCitationAgent(
+      const result = await invokeCitation(
         {
           principalContext: userCtx,
           documentId,
@@ -177,7 +260,7 @@ if (SHOULD_SKIP) {
       };
       await assert.rejects(
         () =>
-          invokeCitationAgent(
+          invokeCitation(
             {
               principalContext: noCapCtx,
               documentId,
@@ -195,7 +278,7 @@ if (SHOULD_SKIP) {
     // ---------- inline editor agent ----------
 
     it('invokeInlineEditorAgent: PG provenance + revision rows materialise', async () => {
-      const result = await invokeInlineEditorAgent(
+      const result = await invokeInlineEditor(
         {
           principalContext: userCtx,
           documentId,
@@ -225,7 +308,7 @@ if (SHOULD_SKIP) {
     // ---------- D14 preview: acceptRevisionToContribution ----------
 
     it('acceptRevisionToContribution: promotes proposed → accepted with provenance approvalChain', async () => {
-      const invokeResult = await invokeCitationAgent(
+      const invokeResult = await invokeCitation(
         {
           principalContext: userCtx,
           documentId,
@@ -271,7 +354,7 @@ if (SHOULD_SKIP) {
     // ---------- D14: reject ----------
 
     it('rejectRevision: status → rejected + approval_chain appended', async () => {
-      const invoke = await invokeCitationAgent(
+      const invoke = await invokeCitation(
         {
           principalContext: userCtx,
           documentId,
@@ -309,7 +392,7 @@ if (SHOULD_SKIP) {
     });
 
     it('rejectRevision: refuses already-decided revisions', async () => {
-      const invoke = await invokeCitationAgent(
+      const invoke = await invokeCitation(
         {
           principalContext: userCtx,
           documentId,
@@ -337,7 +420,7 @@ if (SHOULD_SKIP) {
     // ---------- D14: modify (supersede) ----------
 
     it('supersedeRevisionWithModified: original → superseded + new revision proposed', async () => {
-      const invoke = await invokeCitationAgent(
+      const invoke = await invokeCitation(
         {
           principalContext: userCtx,
           documentId,
@@ -411,7 +494,7 @@ if (SHOULD_SKIP) {
     it('listPendingRevisions: returns proposed/draft, newest first, ignores accepted/rejected/superseded', async () => {
       // Create one proposed via citation invoke; accept it; create another
       // proposed; ensure list returns only the second.
-      const a = await invokeCitationAgent(
+      const a = await invokeCitation(
         {
           principalContext: userCtx,
           documentId,
@@ -427,7 +510,7 @@ if (SHOULD_SKIP) {
         reviewerPrincipalId: userPrincipalId,
       });
 
-      const b = await invokeCitationAgent(
+      const b = await invokeCitation(
         {
           principalContext: userCtx,
           documentId,

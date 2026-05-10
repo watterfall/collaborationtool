@@ -46,8 +46,14 @@ export interface AnthropicRunnerInput extends RunnerCommonInput {
 }
 
 export interface MockRunnerInput extends RunnerCommonInput {
-  /** Deterministic logic per agent kind. */
-  shape: 'citation' | 'inline-editor';
+  /** Deterministic logic per agent kind. Phase 2.5 added reviewer +
+   * researcher; Phase 3 W2 adds source-extractor (AI ingestion). */
+  shape:
+    | 'citation'
+    | 'inline-editor'
+    | 'reviewer'
+    | 'researcher'
+    | 'source-extractor';
 }
 
 // ---------- Mock runner ----------
@@ -113,12 +119,60 @@ export async function runMockAgent(
         );
       }
     }
-  } else {
+  } else if (input.shape === 'inline-editor') {
     // inline-editor mock: rewrap passage as a single proposed replacement
     revisedFragments.push({
       originalText: input.passage,
       replacementText: `[FORMAL] ${input.passage}`,
     });
+  } else if (input.shape === 'reviewer') {
+    // reviewer mock: emit one suggested revision + one uncertainty per
+    // 200-char window; simulates a long-horizon scan without LLM.
+    const windowSize = 200;
+    for (let i = 0; i < input.passage.length; i += windowSize) {
+      const slice = input.passage.slice(i, i + windowSize);
+      if (slice.trim().length === 0) continue;
+      revisedFragments.push({
+        originalText: slice,
+        replacementText: `[REVIEWED] ${slice}`,
+      });
+    }
+    if (revisedFragments.length === 0) {
+      uncertainties.push('Mock reviewer: passage too short to generate windows');
+    }
+  } else if (input.shape === 'researcher') {
+    // researcher mock: parse `userInstruction` as the research query and
+    // suggest 1-2 placeholder citations for the user to verify.
+    const query = input.userInstruction ?? '(no query supplied)';
+    revisedFragments.push({
+      originalText: input.passage,
+      replacementText: `${input.passage} [research:${query}]`,
+    });
+    uncertainties.push(
+      `Mock researcher: real source-search requires Anthropic + MCP servers (crossref/arxiv/etc).`,
+    );
+  } else if (input.shape === 'source-extractor') {
+    // source-extractor mock: deterministic pseudo-extraction. Splits the
+    // passage on sentence punctuation and emits one fake claim per
+    // sentence longer than 60 chars + one supporting evidence per
+    // emitted claim. Real extraction needs an LLM (Anthropic /
+    // OpenAI-compat); production swaps this branch for runAnthropicAgent
+    // automatically when input.anthropic is provided.
+    const sentences = input.passage
+      .split(/(?<=[.!?。！？])\s+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 60);
+    for (const s of sentences.slice(0, 3)) {
+      revisedFragments.push({
+        originalText: s,
+        replacementText: `[CLAIM] ${s.slice(0, 120)}`,
+      });
+    }
+    if (revisedFragments.length === 0) {
+      uncertainties.push(
+        'Mock source-extractor: passage lacks long-enough sentences for extraction',
+      );
+    }
   }
 
   const finishedAt = new Date().toISOString();

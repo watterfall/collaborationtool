@@ -26,8 +26,10 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 
 import {
-  invokeCitationAgent,
-  invokeInlineEditorAgent,
+  crossrefMockTransport,
+  findAgentByKind,
+  invokeAgentViaPlugin,
+  resolvePluginAbsolutePath,
 } from '@collaborationtool/ai-runtime';
 import { loadPrincipalContext } from '@collaborationtool/permissions';
 
@@ -108,6 +110,27 @@ export async function POST(request: Request): Promise<NextResponse> {
   // packages/skills (when we move skills under a package).
   const skillsRoot = path.resolve(process.cwd(), '..', '..', 'skills');
 
+  // Phase 2.5: plugin path resolved via registry (`plugins/registry.json`)
+  // instead of hardcoded inline. Phase 3 will fold in user-installed
+  // plugins from a PG `plugin` table.
+  const repoRoot = path.resolve(process.cwd(), '..', '..');
+  const citationPluginEntry = await findAgentByKind(repoRoot, 'citation');
+  const inlineEditorPluginEntry = await findAgentByKind(repoRoot, 'editor');
+  if (!citationPluginEntry || !inlineEditorPluginEntry) {
+    return NextResponse.json(
+      { error: 'plugin-registry-incomplete' },
+      { status: 500 },
+    );
+  }
+  const citationPluginRoot = resolvePluginAbsolutePath(
+    repoRoot,
+    citationPluginEntry,
+  );
+  const inlineEditorPluginRoot = resolvePluginAbsolutePath(
+    repoRoot,
+    inlineEditorPluginEntry,
+  );
+
   const distinctId = anonDistinctId(principalId);
   const startedAt = Date.now();
   const observe = (status: string, extra: Record<string, unknown> = {}) => {
@@ -132,20 +155,36 @@ export async function POST(request: Request): Promise<NextResponse> {
             (x): x is string => typeof x === 'string',
           )
         : [];
-      const crossrefMcp = crossrefMcpFromEnv();
-      const result = await invokeCitationAgent(
+      // Build MCP spec list. Mock fallback is created inline because
+      // Phase 1.5 #6 wired the env-var path; W3 keeps that in place
+      // until ADR-0006 mcp_server registry resolution lands W4.
+      const crossrefSpec = crossrefMcpFromEnv() ?? {
+        id: 'crossref-mock',
+        buildTransport: crossrefMockTransport().buildTransport,
+      };
+      const result = await invokeAgentViaPlugin(
         {
+          pluginPath: citationPluginRoot,
           principalContext: userCtx,
           documentId: body.documentId,
           blockId: body.blockId,
           passage: body.passage,
-          flaggedDoiCandidates: flagged,
+          hints: { flaggedDoiCandidates: flagged },
+          skillId: 'citation-lookup',
           skillsRoot,
+          mcpSpecs: [crossrefSpec],
           anthropic,
         },
-        { db, ...(crossrefMcp ? { crossrefMcp } : {}) },
+        { db, persistToDb: true },
       );
-      observe('ok', { hasRevision: !!result.persisted?.revisionId });
+      observe('ok', {
+        hasRevision: !!result.persisted?.revisionId,
+        pluginId: result.pluginManifestId,
+        pluginVersion: result.pluginManifestVersion,
+        // surfaces ADR-0002 vocab warnings + Phase 3 transport notes
+        // up the analytics pipe (PostHog properties capture).
+        pluginWarnings: result.pluginWarnings.length,
+      });
       return NextResponse.json({
         proposal: result.proposal,
         revisionId: result.persisted?.revisionId,
@@ -153,7 +192,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       });
     }
 
-    // kind === 'inline-editor'
+    // kind === 'inline-editor' (W5 dogfood: through plugin path)
     const userInstruction =
       typeof body.userInstruction === 'string' ? body.userInstruction : '';
     if (!userInstruction.trim()) {
@@ -163,19 +202,27 @@ export async function POST(request: Request): Promise<NextResponse> {
         { status: 400 },
       );
     }
-    const result = await invokeInlineEditorAgent(
+    const result = await invokeAgentViaPlugin(
       {
+        pluginPath: inlineEditorPluginRoot,
         principalContext: userCtx,
         documentId: body.documentId,
         blockId: body.blockId,
         passage: body.passage,
-        userInstruction,
+        hints: { userInstruction },
+        skillId: 'inline-editor',
         skillsRoot,
+        mcpSpecs: [], // inline-editor uses no MCP tools
         anthropic,
       },
-      { db },
+      { db, persistToDb: true },
     );
-    observe('ok', { hasRevision: !!result.persisted?.revisionId });
+    observe('ok', {
+      hasRevision: !!result.persisted?.revisionId,
+      pluginId: result.pluginManifestId,
+      pluginVersion: result.pluginManifestVersion,
+      pluginWarnings: result.pluginWarnings.length,
+    });
     return NextResponse.json({
       proposal: result.proposal,
       revisionId: result.persisted?.revisionId,

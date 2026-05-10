@@ -1,0 +1,34 @@
+id: "@official/reviewer-agent"
+version: "0.1.0"
+type: agent
+title:
+  zh: "评审员 agent"
+  en: "Reviewer agent"
+description:
+  zh: "异步长 horizon 评审：读完整篇文档，输出修订清单 + 评审意见（per ADR-0008）。propose-mode（ADR-0002 role 4）；reviewer reject 配套 annotation_thread{kind:'reviewer-note'}。"
+  en: "Asynchronous long-horizon review: reads the full document, emits a list of proposed revisions + review notes (per ADR-0008). Propose-mode only; rejected revisions write annotation_thread{kind:'reviewer-note'}."
+authors:
+  - "@official"
+license: Apache-2.0
+homepage: https://github.com/watterfall/collaborationtool
+required_capabilities:
+  - block.read
+  - block.propose
+  - annotation.create
+  - annotation.reply
+  - agent.invoke:reviewer
+runtime:
+  kernel_version: "^2.0.0"
+  target: node
+  node: ">=20"
+
+# Agent-specific
+kind: reviewer
+prompt_template: ./prompt.md
+tools:
+  - builtin:proposeRevision
+  - builtin:createReviewerNote
+runtime_mode: propose
+quota:
+  daily_invocations: 50
+  timeout_seconds: 600   # long-horizon, 10 min ceiling

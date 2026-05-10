@@ -22,6 +22,9 @@ describe('paperSchema', () => {
       'figure',
       'figureCaption',
       'footnoteRef',
+      // Phase 2 W5 ADR-0011 additions
+      'claim',
+      'evidence',
     ];
     for (const name of expectedNodes) {
       assert.ok(schema.nodes[name], `schema missing node ${name}`);

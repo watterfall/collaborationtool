@@ -1,0 +1,20 @@
+{
+  "$schema": "./registry.schema.json",
+  "version": 1,
+  "comment": "Built-in seed for the mcp_server PG table (per ADR-0006 §2.1). Loaded once by `pnpm mcp:seed` and idempotent on re-run (id is the upsert key). User/team installs go through POST /api/mcp-server/install (Phase 2 §2.5; admin-only) and INSERT directly with origin='user' or 'team'. The crossref-mock package is intentionally NOT here — it's an in-memory test fixture used inside ai-runtime when no real server is reachable, not an installable MCP server (see ai-runtime/transports.ts crossrefMockTransport).",
+  "servers": [
+    {
+      "id": "crossref",
+      "version": "0.1.0",
+      "transport": "stdio",
+      "command": ["tsx", "mcp-servers/crossref/src/bin.ts"],
+      "args": [],
+      "cwd": null,
+      "url": null,
+      "envVarsRequired": [],
+      "declaresTools": ["lookupDoi"],
+      "requiredCapabilities": ["network.fetch:domains:api.crossref.org"],
+      "origin": "built-in"
+    }
+  ]
+}
