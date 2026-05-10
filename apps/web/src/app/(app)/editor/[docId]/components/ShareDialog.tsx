@@ -3,8 +3,21 @@
 // Phase 1.5 #1 — Share dialog. Owner enters email + role, server
 // creates the invitation and emails the link (or logs it). Replaces
 // the SQL-grant workaround.
+//
+// Phase 4 W6.5 — when MAIL_WEBHOOK_URL is not configured the server
+// only logs the acceptUrl to stderr (mailer backend = 'console'). For
+// self-host deployments that flow leaves普通 user 够不着邀请链接 —
+// `.brainstorm/role-user.md §2` 列为 onboarding 阻塞点。本组件在
+// fallback 分支必须显式渲染 acceptUrl + 一键复制 + 中英双语提示。
 
 import { useEffect, useState } from 'react';
+
+import {
+  COPY_BUTTON_LABEL,
+  copyTextToClipboard,
+  isFallbackBackend,
+  shareDialogStatusCopy,
+} from '@/lib/share-dialog-fallback';
 
 interface PendingRow {
   id: string;
@@ -20,6 +33,8 @@ const ROLE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'commenter', label: 'commenter（仅评论）' },
 ];
 
+type CopyState = 'idle' | 'copying' | 'copied' | 'failed';
+
 export default function ShareDialog({ documentId }: { documentId: string }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
@@ -30,6 +45,7 @@ export default function ShareDialog({ documentId }: { documentId: string }) {
   const [lastResult, setLastResult] = useState<
     { acceptUrl: string; backend: string } | null
   >(null);
+  const [copyState, setCopyState] = useState<CopyState>('idle');
 
   useEffect(() => {
     if (!open) return;
@@ -50,6 +66,7 @@ export default function ShareDialog({ documentId }: { documentId: string }) {
     setPending(true);
     setError(null);
     setLastResult(null);
+    setCopyState('idle');
     try {
       const res = await fetch(`/api/document/${documentId}/invitation`, {
         method: 'POST',
@@ -80,6 +97,19 @@ export default function ShareDialog({ documentId }: { documentId: string }) {
     }
   }
 
+  async function onCopyLink() {
+    if (!lastResult) return;
+    setCopyState('copying');
+    const ok = await copyTextToClipboard(lastResult.acceptUrl);
+    setCopyState(ok ? 'copied' : 'failed');
+    if (ok) {
+      // Reset back to idle after a beat so the affordance stays usable.
+      setTimeout(() => {
+        setCopyState((s) => (s === 'copied' ? 'idle' : s));
+      }, 2000);
+    }
+  }
+
   if (!open) {
     return (
       <button
@@ -91,6 +121,17 @@ export default function ShareDialog({ documentId }: { documentId: string }) {
       </button>
     );
   }
+
+  const status = lastResult ? shareDialogStatusCopy(lastResult.backend) : null;
+  const fallback = lastResult ? isFallbackBackend(lastResult.backend) : false;
+  const copyButtonLabel =
+    copyState === 'copying'
+      ? COPY_BUTTON_LABEL.copying
+      : copyState === 'copied'
+        ? COPY_BUTTON_LABEL.copied
+        : copyState === 'failed'
+          ? COPY_BUTTON_LABEL.failed
+          : COPY_BUTTON_LABEL.idle;
 
   return (
     <div className="my-4 rounded-md border border-zinc-200 bg-white p-4 text-sm">
@@ -134,12 +175,40 @@ export default function ShareDialog({ documentId }: { documentId: string }) {
             {error}
           </p>
         )}
-        {lastResult && (
-          <p className="rounded bg-emerald-50 p-2 text-xs text-emerald-800">
-            邀请已创建（{lastResult.backend === 'webhook' ? '邮件已发出' : 'console-only：复制下方链接给被邀者'}）：
-            <br />
-            <code className="break-all text-[11px]">{lastResult.acceptUrl}</code>
-          </p>
+        {lastResult && status && (
+          <div
+            data-testid="share-dialog-result"
+            data-backend={lastResult.backend}
+            data-fallback={fallback ? 'true' : 'false'}
+            className={
+              status.tone === 'amber'
+                ? 'flex flex-col gap-2 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900'
+                : 'flex flex-col gap-2 rounded border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900'
+            }
+          >
+            <p className="font-medium">{status.headline}</p>
+            <p className="leading-relaxed">{status.body}</p>
+            <code
+              data-testid="share-dialog-accept-url"
+              className="break-all rounded border border-zinc-200 bg-white px-2 py-1 font-mono text-[11px] text-zinc-800"
+            >
+              {lastResult.acceptUrl}
+            </code>
+            <button
+              type="button"
+              onClick={onCopyLink}
+              data-testid="share-dialog-copy-button"
+              data-copy-state={copyState}
+              disabled={copyState === 'copying'}
+              className={
+                status.tone === 'amber'
+                  ? 'self-start rounded-md bg-amber-700 px-3 py-1 text-[11px] font-medium text-white hover:bg-amber-800 disabled:opacity-50'
+                  : 'self-start rounded-md bg-emerald-700 px-3 py-1 text-[11px] font-medium text-white hover:bg-emerald-800 disabled:opacity-50'
+              }
+            >
+              {copyButtonLabel}
+            </button>
+          </div>
         )}
         <button
           type="submit"
