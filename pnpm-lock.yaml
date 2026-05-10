@@ -339,6 +339,9 @@ importers:
       next:
         specifier: ^15.1.6
         version: 15.5.18(@playwright/test@1.56.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      pg-boss:
+        specifier: ^10.1.5
+        version: 10.4.2
       postgres:
         specifier: ^3.4.5
         version: 3.4.9
