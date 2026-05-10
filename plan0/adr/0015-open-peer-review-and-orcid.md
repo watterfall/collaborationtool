@@ -220,6 +220,28 @@ suggestion + human 出 signed review。is_ai_review 列让两者各自有 UI 显
 
 ## 7. Review log
 
-（Phase 4 W8 dogfood gate 后填；预期内容：(a) gate 三项 pass/fail；(b)
-ORCID JWKS 实测开销 + cache 策略验证；(c) §5 5 个 open questions 答
-案；(d) AI vs human review UX 反馈）
+### 7.1 Phase 4 W8.2 — ORCID OAuth 真集成（pre-dogfood）
+
+- **2026-05-11**: ORCID provider config + sign-in surface 落地。
+- 路径决策：复用既有 `account.accountId WHERE provider_id='orcid'`
+  作为 ORCID iri 的 source-of-truth，**不新增 `user.orcid_iri` 列**，
+  也不做 0012 migration。理由：(a) better-auth genericOAuth 已自动写
+  account 表；(b) `apps/web/src/lib/orcid-lookup.ts` 早就读这一列；
+  (c) §2.1 提到 `principal.orcid_id` 留待 W8 真上 review.sign 时再决
+  定（届时可能直接挂 `principal` 或经 review row 引用 account）。
+- 测试：原 8 个 mapper unit test 升级为 18 测试覆盖 token 端点 shape /
+  env-gating / round-trip 模拟（happy / error / malformed-id / sandbox-
+  baseUrl）。真 OAuth 端到端待 W8 dogfood gate 配 sandbox.orcid.org
+  client 后跑（criteria #1）。
+- UI：Design.md §6.5 + §7（"Login·Signup ORCID 优先按钮 + email
+  fallback · 不要两个等权 column"）落地为 1fr 1fr grid + 400px form +
+  右侧 specimen quote；ORCID env 未配时按钮 ghost-disabled + 双语 hint
+  替代 PROVIDER_CONFIG_NOT_FOUND 报错。
+- §3.2 风险预警：ORCID JWKS cache 策略仍未实施（review.sign 落地时跑），
+  当前阶段仅做 OAuth 登录，不签 review。
+
+### 7.2 Phase 4 W8 dogfood gate（待跑）
+
+（gate 三项跑通后填：(a) gate 三项 pass/fail；(b) ORCID JWKS 实测开销
++ cache 策略验证；(c) §5 5 个 open questions 答案；(d) AI vs human
+review UX 反馈）
