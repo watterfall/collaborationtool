@@ -250,13 +250,29 @@ ADR-0006/0007/0008/0009/0010/0011 全部 Accepted（部分 with caveat）。
 > **不是 Phase 2 的延伸**，是 Phase 2 与 Phase 3 之间的 ~2 周硬实测期。
 > 目的：把"代码通了"变成"真实服务跑通了"。
 
-1. **molab.org 真 iframe 端到端**：注册账号 → 嵌入 → cell.execute → cell.executed → 写 Figure → PG round-trip
-2. **reviewer / researcher agent plugin 实施**：基于 plugins/citation-agent 模式起 plugins/reviewer-agent + plugins/researcher-agent；require ANTHROPIC_API_KEY；接 ADR-0008 pgboss apps/agent-worker；写 reviewer system prompt + tool 调用形态
-3. **Real Typst CLI subprocess + Auto-Fix 端到端**：CI image 装 typst；importTypstProject 调真 `typst query`；Auto-Fix loop 处理真 typst 编译错误
-4. **Real mystmd CLI subprocess（LaTeX import）**：CI image 装 mystmd；importLatexProject 调真 `myst` 命令
-5. **W7 Evidence Map / AI context pack PG e2e**：seed 多 document 多 claim 多 evidence；GET 两个 endpoint；验证 cross-doc reuse 正确
-6. **5 人协作 e2e**：5 user × 1 doc + 2 reviewer agent + 1 computational cell + 多 revision rebase（D15 e2e 框架扩展）
-7. **W2/W3 spike 报告归档**：Typst.ts WASM bundle/编译性能实测；Loro 生产就绪重评估（per ADR-0010 review log §4 Open questions）
+| # | 项目 | 状态 | 落地 commit |
+|---|---|---|---|
+| 1 | molab.org 真 iframe 端到端 | ⏸ require molab account + browser drivers | (Phase 2.5 dogfood) |
+| 2 | reviewer / researcher agent plugin | ✅ scaffolds + skills + registry 接入 | `ea4176e` |
+| 3 | Real Typst CLI subprocess + Auto-Fix 端到端 | ✅ 工程对接 + 集成测试 | `043fd68` + `2ee4e23` |
+| 4 | Real mystmd CLI subprocess (LaTeX) | ✅ 工程对接 | `14f45e5` |
+| 5 | W7 Evidence Map / AI context pack PG e2e | ⏸ require seeded PG + multi-doc fixtures | (Phase 2.5 dogfood) |
+| 6 | 5 人协作 e2e | ⏸ require browser drivers + browser fleet | (Phase 2.5 dogfood) |
+| 7 | W2/W3 spike 报告归档（Typst.ts + Loro） | ✅ 两 spike 报告归档 | `<本 commit>` |
+
+工程对接 6/7 完成（含 plugins/registry.json id→path + agent-job HTTP route，
+均推 Phase 2 W7 评估时的 follow-up），剩余 3 项 ⏸ 全部 require 外部
+真实服务，留 dogfood 环境跑。
+
+**Spike 报告关键结论**（写入 plan0/research/）：
+
+- `2026-05-09-typst-ts-wasm-spike.md`: **推 Phase 3+ 重测**。CJK 双语
+  字体使 5 MB bundle 目标不达；server-side typst CLI 当前无瓶颈；
+  Phase 4 真有 100+ 用户 / 离线编辑诉求时再评估
+- `2026-05-09-loro-readiness-spike.md`: **继续 Yjs through Phase 3**。
+  Loro pre-1.0 不稳定；y-prosemirror 当前无瓶颈；Phase 3 §一 50+ 协作者
+  subdocument 实施时再评估（Loro 1.0 release / y-prosemirror subdoc
+  story 不顺 / Phase 4 perf 退化均为 trigger）
 
 ### 8.5 Phase 3 起点（推送到 plan0/phase-3-plan-stub.md）
 
