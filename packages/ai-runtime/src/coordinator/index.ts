@@ -17,3 +17,11 @@ export {
   dispatchSyncHandoffs,
   type SyncHandoffRunner,
 } from './dispatch';
+
+// Phase 4 W3 ADR-0008: full coordinator loop orchestrator.
+export {
+  runCoordinatorLoop,
+  type AsyncHandoffEnqueuer,
+  type CoordinatorStepRunner,
+  type RunCoordinatorLoopInput,
+} from './loop';
