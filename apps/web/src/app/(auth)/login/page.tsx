@@ -33,55 +33,101 @@ export default function LoginPage() {
     router.refresh();
   }
 
+  const inputStyle = {
+    background: 'var(--color-paper)',
+    color: 'var(--color-ink)',
+    border: '1.25px solid var(--color-pencil)',
+    borderRadius: 'var(--radius-1)',
+    padding: '8px 12px',
+    fontFamily: 'var(--font-sans)',
+    fontSize: '14px',
+    lineHeight: '1.4',
+    outline: 'none',
+  } as const;
+
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-6 py-16">
       <header>
-        <h1 className="text-3xl font-medium">登录 · Sign in</h1>
-        <p className="mt-2 text-sm text-zinc-500">
-          继续编辑你的论文。
-        </p>
+        <p className="label-cap mb-2">登录 · sign in</p>
+        <h1
+          className="font-serif text-4xl font-medium leading-[1.15]"
+          style={{
+            color: 'var(--color-ink)',
+            letterSpacing: '-0.01em',
+          }}
+        >
+          继续编辑{' '}
+          <span
+            className="italic"
+            style={{ color: 'var(--color-ink-2)', fontWeight: 400 }}
+          >
+            · keep writing
+          </span>
+        </h1>
       </header>
+      <OrcidSignIn />
+      <div className="flex items-center gap-3">
+        <hr className="rule flex-1" />
+        <span className="label-cap">or 邮箱</span>
+        <hr className="rule flex-1" />
+      </div>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1">
-          <span className="text-sm text-zinc-700">邮箱 / Email</span>
+          <span
+            className="font-sans text-xs"
+            style={{ color: 'var(--color-ink-2)' }}
+          >
+            邮箱 · Email
+          </span>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
             required
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none"
+            style={inputStyle}
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-sm text-zinc-700">密码 / Password</span>
+          <span
+            className="font-sans text-xs"
+            style={{ color: 'var(--color-ink-2)' }}
+          >
+            密码 · Password
+          </span>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
             required
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none"
+            style={inputStyle}
           />
         </label>
         {error && (
-          <p className="text-sm text-red-700" role="alert">
+          <p
+            className="font-sans text-sm"
+            role="alert"
+            style={{ color: 'var(--color-accent-ox)' }}
+          >
             {error}
           </p>
         )}
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm text-white hover:bg-zinc-800 disabled:opacity-50"
-        >
-          {pending ? '...' : '登录 / Sign in'}
+        <button type="submit" disabled={pending} className="btn-primary">
+          {pending ? '...' : '登录 · Sign in'}
         </button>
       </form>
-      <OrcidSignIn />
-      <p className="text-sm text-zinc-600">
+      <p
+        className="font-sans text-sm"
+        style={{ color: 'var(--color-ink-2)' }}
+      >
         还没有账户？{' '}
-        <Link href="/signup" className="underline">
-          注册 / Sign up
+        <Link
+          href="/signup"
+          className="underline underline-offset-4"
+          style={{ color: 'var(--color-ink)' }}
+        >
+          注册 · Sign up
         </Link>
       </p>
     </main>

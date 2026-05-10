@@ -23,48 +23,75 @@ export default async function AppLayout({ children }: PropsWithChildren) {
     h.get('x-invoke-path') ?? h.get('x-pathname') ?? '/docs';
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--color-bg)] text-[var(--color-fg)]">
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+    <div
+      className="flex min-h-screen flex-col"
+      style={{
+        background: 'var(--color-paper)',
+        color: 'var(--color-ink)',
+      }}
+    >
+      {/* App chrome — hairline divider, paper bg, sans navigation. The
+          active link gets a 1.5px ink underline; inactive links keep
+          ink-2. ORCID badge uses ORCID's own brand chip (kept as the
+          one explicit deviation from the muted triad — it's a brand
+          mark, not decoration). */}
+      <header style={{ borderBottom: '1px solid var(--color-hairline)' }}>
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
           <Link
             href="/docs"
-            className="font-medium text-zinc-900 dark:text-zinc-100"
+            className="font-serif text-base font-medium"
+            style={{ color: 'var(--color-ink)' }}
           >
             {t.common.nav.brand}
           </Link>
-          <nav className="flex items-center gap-4 text-sm">
+          <nav
+            className="flex items-center gap-5 font-sans text-sm"
+            style={{ color: 'var(--color-ink-2)' }}
+          >
             <Link
               href="/docs"
-              className="text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+              className="underline-offset-4 hover:underline"
+              style={{ color: 'var(--color-ink-2)' }}
             >
               {t.common.nav.docs}
             </Link>
             <Link
               href="/maintenance"
-              className="text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+              className="underline-offset-4 hover:underline"
+              style={{ color: 'var(--color-ink-2)' }}
             >
               {t.common.nav.maintenance}
             </Link>
             <Link
               href="/settings"
-              className="text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+              className="underline-offset-4 hover:underline"
+              style={{ color: 'var(--color-ink-2)' }}
             >
               {t.common.nav.settings}
             </Link>
             <Link
               href="/orgs/new"
-              className="text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+              className="underline-offset-4 hover:underline"
+              style={{ color: 'var(--color-ink-2)' }}
             >
               {t.common.nav.newOrg}
             </Link>
-            <span className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+            <span
+              className="flex items-center gap-2 text-xs"
+              style={{ color: 'var(--color-ink-3)' }}
+            >
               {orcid && (
                 <a
                   href={`https://orcid.org/${orcid}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   title={`ORCID iD ${orcid}`}
-                  className="flex items-center gap-1 rounded bg-[#a6ce39]/10 px-2 py-0.5 text-xs font-mono text-[#5b7a1f] hover:bg-[#a6ce39]/20 dark:text-[#a6ce39] dark:hover:bg-[#a6ce39]/15"
+                  className="flex items-center gap-1 px-2 py-0.5 font-mono text-xs"
+                  style={{
+                    background: 'rgba(166, 206, 57, 0.12)',
+                    color: '#5b7a1f',
+                    borderRadius: 'var(--radius-1)',
+                  }}
                 >
                   <span aria-hidden className="font-bold">
                     iD
