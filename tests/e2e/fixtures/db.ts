@@ -65,6 +65,7 @@ export async function createDocFixture(
     slug,
   });
   await handle.db.insert(schema.documentAcl).values({
+    id: `acl:${documentId}:${input.ownerPrincipalId}`,
     documentId,
     principalId: input.ownerPrincipalId,
     roleId: 'paper-author',
@@ -87,13 +88,18 @@ export async function grantRoleFixture(
   await handle.db
     .insert(schema.documentAcl)
     .values({
+      id: `acl:${input.documentId}:${input.principalId}`,
       documentId: input.documentId,
       principalId: input.principalId,
       roleId: input.roleId,
       capabilityVerbs: [...DEFAULT_ROLE_BUNDLES[input.roleId]],
     })
     .onConflictDoUpdate({
-      target: [schema.documentAcl.documentId, schema.documentAcl.principalId],
+      target: [
+        schema.documentAcl.documentId,
+        schema.documentAcl.principalId,
+        schema.documentAcl.subdocumentId,
+      ],
       set: {
         roleId: input.roleId,
         capabilityVerbs: [...DEFAULT_ROLE_BUNDLES[input.roleId]],

@@ -437,6 +437,7 @@ if (SHOULD_SKIP) {
         'annotation.create',
       ];
       await dbHandle.db.insert(schema.documentAcl).values({
+        id: `acl:${documentId}:${demoUserPrincipalId}`,
         documentId,
         principalId: demoUserPrincipalId,
         roleId: 'paper-reviewer',
@@ -450,15 +451,18 @@ if (SHOULD_SKIP) {
       assert.equal(rows.length, 1);
       assert.deepEqual(rows[0]!.capabilityVerbs, verbs);
 
-      // composite PK rejects duplicate
+      // Phase 4 W5: PK is surrogate id; uniqueness on
+      // (document_id, principal_id, subdocument_id) NULLS NOT DISTINCT
+      // still rejects duplicate root-scope row for same (doc, principal).
       await assert.rejects(
         dbHandle.db.insert(schema.documentAcl).values({
+          id: `acl:${documentId}:${demoUserPrincipalId}:dup`,
           documentId,
           principalId: demoUserPrincipalId,
           roleId: 'paper-author',
           capabilityVerbs: ['document.read'],
         }),
-        matchPgError("document_acl_pkey"),
+        matchPgError('document_acl_doc_principal_subdoc_uniq'),
       );
     });
 

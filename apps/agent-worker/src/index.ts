@@ -28,7 +28,13 @@ import {
   updateProgress,
 } from './job-store';
 import type { AgentJobKind, AnyJobInput, MaintenanceScanJobInput } from './job-types';
-import { scanForFindings, writeFindings } from './maintenance-scan';
+import { httpDoiResolver } from './doi-resolver';
+import {
+  DEFAULT_FINDING_KINDS,
+  scanForFindings,
+  writeFindings,
+  type DoiResolver,
+} from './maintenance-scan';
 
 export interface WorkerConfig {
   databaseUrl: string;
@@ -38,6 +44,9 @@ export interface WorkerConfig {
   anthropicApiKey: string | null;
   /** Skills root for plugin loader. */
   skillsRoot: string;
+  /** Override DoiResolver for broken-citation maintenance scans
+   * (default: HTTP HEAD via doi.org). Tests inject a stub. */
+  doiResolver?: DoiResolver;
 }
 
 const QUEUE_NAMES: AgentJobKind[] = [
@@ -99,7 +108,7 @@ async function handleOne(
     // needed. We branch here before the Anthropic instantiation path
     // so a Postgres-only deployment can run scans without ANTHROPIC_API_KEY.
     if (input.kind === 'maintenance-scan') {
-      await runMaintenanceScan(db, jobId, input);
+      await runMaintenanceScan(db, jobId, input, config);
       return;
     }
 
@@ -166,16 +175,26 @@ async function runMaintenanceScan(
   db: ReturnType<typeof openDatabase>['db'],
   jobId: string,
   input: MaintenanceScanJobInput,
+  config: WorkerConfig,
 ): Promise<void> {
   await updateProgress(db, jobId, 0.2, 'scanning vault for findings');
   const scope =
     input.scope === 'document'
       ? ({ kind: 'document', documentId: input.documentId! } as const)
       : ({ kind: 'vault', vaultPrincipalId: input.vaultPrincipalId! } as const);
+
+  // Resolve which kinds will run + whether broken-citation needs a resolver.
+  const requestedKinds = input.findingKinds ?? [...DEFAULT_FINDING_KINDS];
+  const needsDoiResolver = requestedKinds.includes('broken-citation');
+  const doiResolver = needsDoiResolver
+    ? (config.doiResolver ?? httpDoiResolver())
+    : undefined;
+
   const findings = await scanForFindings(db, {
     scope,
     jobId,
-    ...(input.findingKinds ? { findingKinds: input.findingKinds } : {}),
+    findingKinds: requestedKinds,
+    ...(doiResolver ? { doiResolver } : {}),
   });
   await updateProgress(
     db,

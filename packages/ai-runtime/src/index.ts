@@ -102,6 +102,24 @@ export {
   type RegisteredPlugin,
   type SkillManifest,
   type UiPanelManifest,
+  // Phase 4 W1 ADR-0012 install backend (capability prompt + sandbox
+  // descriptor + install row payload — used by apps/web settings UI).
+  buildCapabilityPrompt,
+  buildSandboxDescriptor,
+  buildLinuxBwrapArgs,
+  buildInstallRowPayload,
+  InstallRejectedError,
+  type BuildInstallRowInput,
+  type BuildSandboxDescriptorInput,
+  type CapabilityPromptRow,
+  type LinuxBwrapDescriptor,
+  type MacOsSandboxExecDescriptor,
+  type PluginInstallOrigin,
+  type PluginInstallRowPayload,
+  type PluginInstallStatus,
+  type SandboxDescriptor,
+  type SandboxPlatform,
+  type WindowsAppContainerDescriptor,
 } from './plugins';
 
 export {

@@ -191,6 +191,7 @@ if (SHOULD_SKIP) {
       // Insert ACL row directly with a verb that's NOT in the current
       // vocabulary (simulating an old materialisation we haven't migrated).
       await handle.db.insert(schema.documentAcl).values({
+        id: `acl:${documentId}:${principalId}`,
         documentId,
         principalId,
         roleId: 'custom',

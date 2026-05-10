@@ -236,6 +236,35 @@ cross-block reference 退化为 cross-doc 协调，复杂度爆。
 
 ## 7. Review log
 
-（Phase 4 W5-W6 dogfood gate 后填；预期内容：(a) gate 三项 pass/fail；
-(b) y-sweet 多 doc 实测开销（IOPS / storage）；(c) §5 open questions 答
-案；(d) crossref_index dual-write 是否成立 vs Y.Map 单主）
+### Phase 4 W5 启动 backend (2026-05-10)
+
+W5 启动 commit 落 schema + 纯 PM 边界检测器，让后续 sync-gateway 重路由
++ snapshot-worker 增量改造能拼起来：
+
+- **Migration 0011**：`subdocument` 表 + `crossref_index` 表 +
+  `block_metadata.subdocument_id` 软外键 + `document_acl` PK 重构（surrogate
+  `id` + `(document_id, principal_id, subdocument_id)` 唯一索引 NULLS
+  NOT DISTINCT）+ `capability_resource_type` enum 加 'subdocument' 第五档
+- **Drizzle schema**：`subdocument` / `crossrefIndex` / 既有表 alter 同步；
+  既有 `materialiseRoleBundle` 加可选 `subdocumentId` 参数（root 兼容
+  默认 null）
+- **editor-core 纯 walker**（`packages/editor-core/src/subdocument/`）：
+  - `detectSubdocBoundariesByH1(pmJson)` —— 按 heading-1 切；Preamble 兜
+    底（pre-h1 内容自成 ord=0）；空 heading 走 "Section N" fallback；
+    h2/h3 不切
+  - `extractCrossRefs(pmJson)` —— 4 类 ref 抽取（citation / dataset → kind=
+    citation / figure / claim / evidence）+ (kind, target, sourceBlockId)
+    去重 + 跳过无 enclosing block 的 ref
+  - 14 单元测试覆盖 split + extract 主路径与边界
+- **typecheck**：全 workspace PASS（既有 e2e fixtures + permissions
+  acl-loader test 跟着 PK 重构同步更新）
+
+dogfood gate 仍未跑（等 sync-gateway 多 subdoc 路由 + snapshot-worker
+增量 + 真 50 客户端 stress + cross-doc ref 真同步 + subdoc-level ACL
+真生效）。
+
+### dogfood gate 待补（W5-W6 末填）
+
+预期内容：(a) gate 三项 pass/fail；(b) y-sweet 多 doc 实测开销（IOPS /
+storage）；(c) §5 open questions 答案；(d) crossref_index dual-write
+是否成立 vs Y.Map 单主。
