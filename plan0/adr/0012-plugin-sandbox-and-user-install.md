@@ -262,6 +262,29 @@ provenance 漏洞。
 
 ## 7. Review log
 
-（Phase 3 W5 dogfood gate 后填；预期内容：(a) gate 三项 pass/fail；
-(b) bwrap 0.5/0.6 兼容矩阵；(c) HTTPS proxy 实测开销（Node 自写 vs
-mitmproxy）；(d) §5 open questions 答案）
+### Phase 3 closeout（2026-05-10，branch `claude/phase-3-to-phase-4-antaC`）
+
+Phase 3 W5 backend schema 已落，UI + bwrap 实施推 Phase 4 dogfood gate
+（require Linux 部署环境）：
+
+- `plugin_install` PG 表 已落（migration 0010；`accepted_capabilities`
+  jsonb + `sandbox_descriptor` jsonb + 三态 status enum + bundle_hash 防
+  tamper）
+- `plugin_install_origin` enum 三档：`git-url` (https only CHECK 强制) /
+  `local-path` (admin only) / `marketplace` (Phase 4+ 预留)
+- `mcp_server.installed_by` (Phase 2 W1) + `plugin_install.installed_by`
+  对称，user role 装 plugin / MCP server 走同一 capability 提示流
+- ADR-0010 §2.5 manifest `required_capabilities[]` 在本表 jsonb snapshot
+  的关系: 安装时 user 同意的子集 ≤ manifest 声明的全集
+
+仍开放（Phase 4 dogfood gate 必答）：
+
+- bwrap 实际启动 + capability deny 真生效 e2e（require Linux host）
+- HTTPS proxy enforce manifest network 域名实施（Node-internal vs
+  mitmproxy 进程）
+- plugin install / uninstall HTTP API 路由 + UI（POST /api/plugin/install）
+- §5 4 个开放问题答案（bwrap 版本下限实测 / sandbox image 大小最小集 /
+  failure 行为 admin 降级 / multi-plugin capability 共享）
+
+Status 维持 **Proposed**；Phase 4 W1 dogfood gate（真 third-party plugin
+装且 capability deny 真生效）通过后 promote Accepted。
