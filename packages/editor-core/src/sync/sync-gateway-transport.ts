@@ -11,7 +11,10 @@
 //   6. ping → reply pong
 //   7. close: stop observing, drop pending sends
 
-import * as Y from 'yjs';
+import {
+  type DocumentHandle,
+  type Disposable,
+} from '@collaborationtool/doc-store';
 
 import {
   FRAME_KIND,
@@ -48,8 +51,8 @@ export type TransportListener = (e: TransportEvent) => void;
 
 export class SyncGatewayTransport {
   private ws: WebSocket | null = null;
-  private ydoc: Y.Doc | null = null;
-  private updateHandler: ((u: Uint8Array, origin: unknown) => void) | null = null;
+  private handle: DocumentHandle | null = null;
+  private updateSub: Disposable | null = null;
   private listeners = new Set<TransportListener>();
   private currentMode: ConnectionMode | null = null;
   private destroyed = false;
@@ -66,10 +69,10 @@ export class SyncGatewayTransport {
     return () => this.listeners.delete(listener);
   }
 
-  /** Start the WebSocket and wire up Y.Doc updates. */
-  connect(ydoc: Y.Doc): void {
+  /** Start the WebSocket and wire up document updates. */
+  connect(handle: DocumentHandle): void {
     if (this.ws) throw new Error('SyncGatewayTransport already connected');
-    this.ydoc = ydoc;
+    this.handle = handle;
 
     const url = new URL(this.options.url);
     url.searchParams.set('docId', this.options.documentId);
@@ -92,23 +95,22 @@ export class SyncGatewayTransport {
       this.emit({ type: 'error', error: new Error('websocket error') }),
     );
 
-    // Send local Y.Doc updates to the gateway. `origin === this` skips
+    // Send local doc updates to the gateway. `origin === this` skips
     // round-tripping our own remote applications.
-    this.updateHandler = (update, origin) => {
+    this.updateSub = handle.observe((update, origin) => {
       if (origin === this) return;
       this.send(update);
-    };
-    ydoc.on('update', this.updateHandler);
+    });
   }
 
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
-    if (this.ydoc && this.updateHandler) {
-      this.ydoc.off('update', this.updateHandler);
+    if (this.updateSub) {
+      this.updateSub.dispose();
+      this.updateSub = null;
     }
-    this.updateHandler = null;
-    this.ydoc = null;
+    this.handle = null;
     if (this.ws) {
       try {
         this.ws.close(1000, 'destroy');
@@ -164,9 +166,9 @@ export class SyncGatewayTransport {
         return;
       }
       case FRAME_KIND.BODY_UPDATE: {
-        if (this.ydoc) {
+        if (this.handle) {
           // origin = this so our own update handler skips re-sending.
-          Y.applyUpdate(this.ydoc, payload, this);
+          this.handle.applyUpdate(payload, this);
         }
         return;
       }

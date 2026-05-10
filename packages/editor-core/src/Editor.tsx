@@ -18,7 +18,10 @@ import type { Editor as TipTapEditor } from '@tiptap/core';
 import { useEffect, useRef, useState } from 'react';
 
 import { PAPER_SCHEMA_EXTENSIONS } from './extensions/all';
-import { isYDocFragmentEmpty, seedYDocFromPmJson } from './seed';
+import {
+  isDocumentFragmentEmpty,
+  seedDocumentFromPmJson,
+} from './seed';
 import { setupSync, type SyncBundle } from './sync/setup';
 import type { ConnectionMode } from './sync/wire';
 
@@ -57,14 +60,14 @@ export function Editor(props: EditorProps): React.ReactElement {
       token: props.token,
     });
 
-    if (props.seedContent && isYDocFragmentEmpty(bundle.ydoc)) {
+    if (props.seedContent && isDocumentFragmentEmpty(bundle.handle)) {
       try {
-        seedYDocFromPmJson(bundle.ydoc, props.seedContent);
+        seedDocumentFromPmJson(bundle.handle, props.seedContent);
       } catch (err) {
         // Don't bring down the editor — log and proceed with an empty
-        // Y.Doc. The user can paste content manually.
+        // doc. The user can paste content manually.
         // eslint-disable-next-line no-console
-        console.warn('[editor-core] seedYDocFromPmJson failed:', err);
+        console.warn('[editor-core] seedDocumentFromPmJson failed:', err);
       }
     }
 

@@ -16,28 +16,33 @@
 // fragment 名；我们的 Editor.tsx 用 TipTap Collaboration 默认值 'default'，
 // 因此显式传 'default' 让两边对齐。
 //
-// 不在这里直接 import yjs/y-prosemirror 类型给 apps/web —— 这两个 dep 已
-// 经在 editor-core 的 package.json 里，apps/web 只通过 editor-core 公共
-// API 使用即可。
+// Phase 4 W7.1 收口：所有 Yjs primitive 都从 @collaborationtool/doc-store
+// 拿（escape hatch 再导出 Y.Doc/encodeStateAsUpdate 等）。直接 import
+// 'yjs' 在 editor-core 已经全部清掉。
+// y-prosemirror 仍然单独 import：它产出 Y.Doc 当桥（PM JSON → Y bytes）
+// 之后我们立即编码成 update bytes 喂给 DocumentHandle，源 Y.Doc 不外泄。
 
-import * as Y from 'yjs';
 import { prosemirrorJSONToYDoc } from 'y-prosemirror';
+
+import {
+  type DocumentHandle,
+  yEncodeStateAsUpdate,
+} from '@collaborationtool/doc-store';
 
 import { paperSchema } from './schema';
 
 const DEFAULT_FRAGMENT_NAME = 'default';
 
 /**
- * Apply a ProseMirror JSON document to an existing Y.Doc as the initial
- * seed for the editor's collaboration fragment. The Y.Doc is mutated
- * in-place; the function returns whether anything was written (i.e. the
- * fragment was non-empty in the JSON).
+ * Apply a ProseMirror JSON document to an existing DocumentHandle as
+ * the initial seed for the editor's collaboration fragment. The handle
+ * is mutated in-place; returns whether anything was written.
  *
  * Throws if the PM JSON does not validate against the paperSchema —
  * better to refuse loudly than ship a corrupt document.
  */
-export function seedYDocFromPmJson(
-  ydoc: Y.Doc,
+export function seedDocumentFromPmJson(
+  handle: DocumentHandle,
   pmJson: unknown,
   options: { fragment?: string } = {},
 ): boolean {
@@ -51,18 +56,19 @@ export function seedYDocFromPmJson(
     pmJson as Parameters<typeof prosemirrorJSONToYDoc>[1],
     fragmentName,
   );
-  const update = Y.encodeStateAsUpdate(seedDoc);
-  Y.applyUpdate(ydoc, update);
+  const update = yEncodeStateAsUpdate(seedDoc);
+  handle.applyUpdate(update);
   // Snapshot whether the fragment now contains anything.
-  const fragment = ydoc.getXmlFragment(fragmentName);
+  const fragment = handle.getXmlFragment(fragmentName);
   return fragment.length > 0;
 }
 
-/** Whether a Y.Doc collaboration fragment is currently empty. */
-export function isYDocFragmentEmpty(
-  ydoc: Y.Doc,
+/** Whether a DocumentHandle's collaboration fragment is currently empty. */
+export function isDocumentFragmentEmpty(
+  handle: DocumentHandle,
   fragmentName: string = DEFAULT_FRAGMENT_NAME,
 ): boolean {
-  const fragment = ydoc.getXmlFragment(fragmentName);
+  const fragment = handle.getXmlFragment(fragmentName);
   return fragment.length === 0;
 }
+

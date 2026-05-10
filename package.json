@@ -37,6 +37,8 @@
     "web:test": "pnpm --filter @collaborationtool/web test",
     "editor:test": "pnpm --filter @collaborationtool/editor-core test",
     "editor:typecheck": "pnpm --filter @collaborationtool/editor-core typecheck",
+    "docstore:test": "pnpm --filter @collaborationtool/doc-store test",
+    "docstore:typecheck": "pnpm --filter @collaborationtool/doc-store typecheck",
     "snapshot:tick": "pnpm --filter @collaborationtool/snapshot-worker tick",
     "snapshot:start": "pnpm --filter @collaborationtool/snapshot-worker start",
     "snapshot:test": "pnpm --filter @collaborationtool/snapshot-worker test",

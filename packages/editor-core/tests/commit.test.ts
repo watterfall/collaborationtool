@@ -1,12 +1,25 @@
 // Commit boundary serialiser round-trip tests.
 // Pure (no PG, no browser); proves bytes preserve PM step + Yjs delta semantics.
+//
+// W7.1 收口：Yjs primitive 通过 @collaborationtool/doc-store 拿
+// (YDoc / YXmlElement / YXmlText / yEncodeStateAsUpdate / yTransact)；
+// 直接 `import * as Y from 'yjs'` 已从 editor-core 全部下线。
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { ySyncPlugin, prosemirrorJSONToYDoc, yDocToProsemirror } from 'y-prosemirror';
 import { EditorState, type Transaction } from '@tiptap/pm/state';
-import * as Y from 'yjs';
+
+import {
+  YDoc,
+  YXmlElement,
+  YXmlText,
+  YjsDocumentHandle,
+  yApplyUpdate,
+  yEncodeStateAsUpdate,
+  yTransact,
+} from '@collaborationtool/doc-store';
 
 import {
   applyYjsUpdate,
@@ -19,11 +32,11 @@ import { paperSchema } from '../src/schema';
 describe('commit boundary', () => {
   it('builds a payload with non-empty bytes', async () => {
     const schema = paperSchema();
-    const baseDoc = new Y.Doc();
-    const resultDoc = new Y.Doc();
+    const baseDoc = new YDoc();
+    const resultDoc = new YDoc();
     // seed result doc with a tiny update so the diff isn't zero-length
-    Y.transact(resultDoc, () => {
-      resultDoc.getXmlFragment('body').insert(0, [new Y.XmlElement('paragraph')]);
+    yTransact(resultDoc, () => {
+      resultDoc.getXmlFragment('body').insert(0, [new YXmlElement('paragraph')]);
     });
 
     const state = EditorState.create({
@@ -44,10 +57,10 @@ describe('commit boundary', () => {
 
   it('PM steps round-trip via deserializeSteps', async () => {
     const schema = paperSchema();
-    const baseDoc = new Y.Doc();
-    const resultDoc = new Y.Doc();
-    Y.transact(resultDoc, () => {
-      resultDoc.getXmlFragment('body').insert(0, [new Y.XmlElement('paragraph')]);
+    const baseDoc = new YDoc();
+    const resultDoc = new YDoc();
+    yTransact(resultDoc, () => {
+      resultDoc.getXmlFragment('body').insert(0, [new YXmlElement('paragraph')]);
     });
 
     const state = EditorState.create({
@@ -77,14 +90,14 @@ describe('commit boundary', () => {
     assert.deepEqual(reSer, original);
   });
 
-  it('Yjs update round-trip applies cleanly to a fresh doc', () => {
-    const baseDoc = new Y.Doc();
-    const resultDoc = new Y.Doc();
+  it('Yjs update round-trip applies cleanly to a fresh handle', () => {
+    const baseDoc = new YjsDocumentHandle({ id: 'base' });
+    const resultDoc = new YjsDocumentHandle({ id: 'result' });
 
-    Y.transact(resultDoc, () => {
+    resultDoc.transact(() => {
       const fragment = resultDoc.getXmlFragment('body');
-      const p = new Y.XmlElement('paragraph');
-      p.insert(0, [new Y.XmlText('hello world')]);
+      const p = new YXmlElement('paragraph');
+      p.insert(0, [new YXmlText('hello world')]);
       fragment.insert(0, [p]);
     });
 
@@ -94,8 +107,8 @@ describe('commit boundary', () => {
       resultDoc,
     });
 
-    // Apply to a fresh doc; should converge to same JSON.
-    const fresh = new Y.Doc();
+    // Apply to a fresh handle; should converge to same JSON.
+    const fresh = new YjsDocumentHandle({ id: 'fresh' });
     applyYjsUpdate({ doc: fresh, yjsUpdateBinary: payload.yjsUpdateBinary });
 
     assert.deepEqual(
@@ -105,13 +118,13 @@ describe('commit boundary', () => {
   });
 
   it('nextStateVector grows as document grows', () => {
-    const doc = new Y.Doc();
-    const sv1 = nextStateVector(doc);
+    const handle = new YjsDocumentHandle({ id: 'sv' });
+    const sv1 = nextStateVector(handle);
 
-    Y.transact(doc, () => {
-      doc.getMap('m').set('k', 'v');
+    handle.transact(() => {
+      handle.getMap('m').set('k', 'v');
     });
-    const sv2 = nextStateVector(doc);
+    const sv2 = nextStateVector(handle);
 
     // Yjs state vectors are clientId → clock; after a write the bytes differ.
     assert.notDeepEqual(Array.from(sv1), Array.from(sv2));
@@ -136,10 +149,10 @@ describe('commit boundary', () => {
     };
 
     const ydoc = prosemirrorJSONToYDoc(schema, initialJson);
-    const update = Y.encodeStateAsUpdate(ydoc);
+    const update = yEncodeStateAsUpdate(ydoc);
 
-    const restored = new Y.Doc();
-    Y.applyUpdate(restored, update);
+    const restored = new YDoc();
+    yApplyUpdate(restored, update);
     const restoredJson = yDocToProsemirror(schema, restored);
 
     assert.deepEqual(restoredJson.toJSON(), initialJson);

@@ -80,4 +80,9 @@ export {
 } from './subdocument';
 
 // Phase 4 W6.2: 新建文档模板首次播种 helpers (apps/web /docs/new).
-export { seedYDocFromPmJson, isYDocFragmentEmpty } from './seed';
+// W7.1: API 改为 DocumentHandle；旧 Y.Doc-flavour 名字保持作 alias，apps/web
+// 暂不动（属于 Phase 5 收口）。
+export {
+  seedDocumentFromPmJson,
+  isDocumentFragmentEmpty,
+} from './seed';

@@ -24,8 +24,14 @@
 // `apps/sync-gateway/README.md` "Verification".
 
 import { WebSocket as NodeWebSocket } from 'ws';
-import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
+
+import {
+  type DocumentHandle,
+  type Disposable,
+  YjsDocumentHandle,
+  YDoc,
+} from '@collaborationtool/doc-store';
 
 import type { YSweetClient } from '../y-sweet/client';
 import type { BodyBackend, BodyUpdateRecord } from './types';
@@ -50,19 +56,28 @@ export interface YSweetBackendOptions {
 export class YSweetBackend implements BodyBackend {
   private readonly documentId: string;
   private readonly client: YSweetClient;
-  private readonly ydoc: Y.Doc;
+  /**
+   * Phase 4 W7.1: gateway-side handle. We hold the underlying Y.Doc as
+   * `handle.yDoc` because y-websocket's WebsocketProvider takes a raw
+   * Y.Doc — until y-websocket itself accepts the abstract handle this
+   * is an intentional escape hatch.
+   */
+  private readonly handle: DocumentHandle;
   private provider: WebsocketProvider | null = null;
   private readonly listeners = new Set<(update: Uint8Array) => void>();
   private readonly onStatus: YSweetBackendOptions['onStatus'];
   private readonly webSocketImpl: typeof WebSocket;
-  private updateHandler: ((update: Uint8Array, origin: unknown) => void) | null = null;
+  private updateSub: Disposable | null = null;
   private destroyed = false;
   private startedAt = 0;
 
   constructor(options: YSweetBackendOptions) {
     this.documentId = options.documentId;
     this.client = options.client;
-    this.ydoc = new Y.Doc();
+    this.handle = new YjsDocumentHandle({
+      id: options.documentId,
+      yDoc: new YDoc(),
+    });
     this.webSocketImpl = options.webSocketImpl
       ?? (NodeWebSocket as unknown as typeof WebSocket);
     if (options.onStatus !== undefined) this.onStatus = options.onStatus;
@@ -92,10 +107,15 @@ export class YSweetBackend implements BodyBackend {
     const roomName =
       u.pathname.replace(/^\/+/, '') + (u.search ? u.search : '');
 
-    const provider = new WebsocketProvider(serverUrl, roomName, this.ydoc, {
-      WebSocketPolyfill: this.webSocketImpl as unknown as never,
-      connect: true,
-    });
+    const provider = new WebsocketProvider(
+      serverUrl,
+      roomName,
+      this.handle.yDoc,
+      {
+        WebSocketPolyfill: this.webSocketImpl as unknown as never,
+        connect: true,
+      },
+    );
     this.provider = provider;
 
     provider.on('status', (e: { status: string }) => {
@@ -115,12 +135,11 @@ export class YSweetBackend implements BodyBackend {
 
     // Forward updates that arrive from y-sweet (NOT our own writes) to
     // listeners so DocRoom can broadcast to local members.
-    this.updateHandler = (update, origin) => {
+    this.updateSub = this.handle.observe((update, origin) => {
       if (this.destroyed) return;
       if (origin === LOCAL_ORIGIN) return;
       for (const l of this.listeners) l(update);
-    };
-    this.ydoc.on('update', this.updateHandler);
+    });
 
     // Wait until either connected or the timeout elapses.
     const timeoutMs = opts.connectTimeoutMs ?? 5_000;
@@ -148,15 +167,15 @@ export class YSweetBackend implements BodyBackend {
     if (!this.provider) {
       throw new Error('YSweetBackend.persist before start()');
     }
-    Y.applyUpdate(this.ydoc, update.bytes, LOCAL_ORIGIN);
+    this.handle.applyUpdate(update.bytes, LOCAL_ORIGIN);
   }
 
   async getState(): Promise<Uint8Array | null> {
-    // y-sweet has already pushed the doc state to our local Y.Doc on
+    // y-sweet has already pushed the doc state to our local handle on
     // start. encodeStateAsUpdate dumps it. If the doc is still empty
     // (first user creates it) we return a minimal empty update so the
     // joiner gets a "blank" state rather than null.
-    return Y.encodeStateAsUpdate(this.ydoc);
+    return this.handle.encodeStateAsUpdate();
   }
 
   onExternalUpdate(listener: (update: Uint8Array) => void): () => void {
@@ -168,10 +187,10 @@ export class YSweetBackend implements BodyBackend {
     if (this.destroyed) return;
     this.destroyed = true;
 
-    if (this.ydoc && this.updateHandler) {
-      this.ydoc.off('update', this.updateHandler);
+    if (this.updateSub) {
+      this.updateSub.dispose();
+      this.updateSub = null;
     }
-    this.updateHandler = null;
     if (this.provider) {
       try {
         this.provider.destroy();
@@ -180,7 +199,9 @@ export class YSweetBackend implements BodyBackend {
       }
       this.provider = null;
     }
-    this.ydoc.destroy();
+    if (this.handle instanceof YjsDocumentHandle) {
+      this.handle.destroy();
+    }
     this.listeners.clear();
   }
 

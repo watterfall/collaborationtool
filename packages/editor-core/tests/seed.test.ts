@@ -1,25 +1,30 @@
-// Phase 4 W6.2 — seedYDocFromPmJson + isYDocFragmentEmpty unit tests.
+// Phase 4 W6.2 — seedDocumentFromPmJson + isDocumentFragmentEmpty unit tests.
+// W7.1 收口：测试改用 DocumentHandle，但仍可通过 handle.yDoc 验证底层
+// Y.Doc 状态作为 escape-hatch 回归断言。
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import * as Y from 'yjs';
+import {
+  YjsDocumentHandle,
+  yEncodeStateAsUpdate,
+} from '@collaborationtool/doc-store';
 
 import {
-  isYDocFragmentEmpty,
-  seedYDocFromPmJson,
+  isDocumentFragmentEmpty,
+  seedDocumentFromPmJson,
 } from '../src/seed';
 
-describe('isYDocFragmentEmpty', () => {
-  it('returns true on a fresh Y.Doc', () => {
-    const ydoc = new Y.Doc();
-    assert.equal(isYDocFragmentEmpty(ydoc), true);
+describe('isDocumentFragmentEmpty', () => {
+  it('returns true on a fresh DocumentHandle', () => {
+    const handle = new YjsDocumentHandle({ id: 'fresh' });
+    assert.equal(isDocumentFragmentEmpty(handle), true);
   });
 });
 
-describe('seedYDocFromPmJson', () => {
+describe('seedDocumentFromPmJson', () => {
   it('seeds a doc with a single paragraph', () => {
-    const ydoc = new Y.Doc();
+    const handle = new YjsDocumentHandle({ id: 'p' });
     const json = {
       type: 'doc',
       content: [
@@ -29,12 +34,12 @@ describe('seedYDocFromPmJson', () => {
         },
       ],
     };
-    seedYDocFromPmJson(ydoc, json);
-    assert.equal(isYDocFragmentEmpty(ydoc), false);
+    seedDocumentFromPmJson(handle, json);
+    assert.equal(isDocumentFragmentEmpty(handle), false);
   });
 
   it('seeds a doc with a claim block', () => {
-    const ydoc = new Y.Doc();
+    const handle = new YjsDocumentHandle({ id: 'c' });
     const json = {
       type: 'doc',
       content: [
@@ -56,21 +61,21 @@ describe('seedYDocFromPmJson', () => {
         },
       ],
     };
-    seedYDocFromPmJson(ydoc, json);
-    assert.equal(isYDocFragmentEmpty(ydoc), false);
+    seedDocumentFromPmJson(handle, json);
+    assert.equal(isDocumentFragmentEmpty(handle), false);
   });
 
   it('throws on PM JSON that does not validate against paperSchema', () => {
-    const ydoc = new Y.Doc();
+    const handle = new YjsDocumentHandle({ id: 'bad' });
     const json = {
       type: 'doc',
       content: [{ type: 'totally-unknown-node' }],
     };
-    assert.throws(() => seedYDocFromPmJson(ydoc, json));
+    assert.throws(() => seedDocumentFromPmJson(handle, json));
   });
 
   it('produces non-empty Yjs update', () => {
-    const ydoc = new Y.Doc();
+    const handle = new YjsDocumentHandle({ id: 'u' });
     const json = {
       type: 'doc',
       content: [
@@ -80,8 +85,9 @@ describe('seedYDocFromPmJson', () => {
         },
       ],
     };
-    seedYDocFromPmJson(ydoc, json);
-    const update = Y.encodeStateAsUpdate(ydoc);
+    seedDocumentFromPmJson(handle, json);
+    // escape hatch: byte-level assertion via handle.yDoc.
+    const update = yEncodeStateAsUpdate(handle.yDoc);
     assert.ok(update.byteLength > 0);
   });
 });

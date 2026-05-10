@@ -28,6 +28,7 @@
     "test": "node --test --import tsx tests/*.test.ts"
   },
   "dependencies": {
+    "@collaborationtool/doc-store": "workspace:*",
     "@collaborationtool/permissions": "workspace:*",
     "@collaborationtool/schema": "workspace:*",
     "@tiptap/core": "^2.10.3",

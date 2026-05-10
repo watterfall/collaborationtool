@@ -18,7 +18,25 @@
 
 import type { Step } from '@tiptap/pm/transform';
 import type { Schema } from '@tiptap/pm/model';
-import * as Y from 'yjs';
+
+import {
+  type DocumentHandle,
+  yApplyUpdate,
+  yEncodeStateAsUpdate,
+  yEncodeStateVector,
+  type YDoc,
+} from '@collaborationtool/doc-store';
+
+/**
+ * Phase 4 W7.1: API accepts DocumentHandle. Internally we still call
+ * Yjs primitives via doc-store re-exports; baseDoc / resultDoc may
+ * come in as raw Y.Doc (legacy callers) or DocumentHandle. We
+ * normalise to Y.Doc for the byte-level encoding.
+ */
+type DocLike = DocumentHandle | YDoc;
+function toYDoc(d: DocLike): YDoc {
+  return 'yDoc' in d ? d.yDoc : d;
+}
 
 export interface CommitPayload {
   pmStepsBinary: Uint8Array;
@@ -29,18 +47,18 @@ export interface CommitPayload {
 export interface SerializeStepsArgs {
   /** Steps that the proposer's PM transactions accumulated. */
   steps: ReadonlyArray<Step>;
-  /** The base Y.Doc (state vector from which the steps applied). */
-  baseDoc: Y.Doc;
-  /** The Y.Doc after the steps were applied (used to compute diff). */
-  resultDoc: Y.Doc;
+  /** The base document (state vector from which the steps applied). */
+  baseDoc: DocLike;
+  /** The document after the steps were applied (used to compute diff). */
+  resultDoc: DocLike;
 }
 
 export function buildCommitPayload(args: SerializeStepsArgs): CommitPayload {
   const stepsJson = args.steps.map((s) => s.toJSON());
   const pmStepsBinary = new TextEncoder().encode(JSON.stringify(stepsJson));
 
-  const baseStateVector = Y.encodeStateVector(args.baseDoc);
-  const yjsUpdateBinary = Y.encodeStateAsUpdate(args.resultDoc, baseStateVector);
+  const baseStateVector = yEncodeStateVector(toYDoc(args.baseDoc));
+  const yjsUpdateBinary = yEncodeStateAsUpdate(toYDoc(args.resultDoc), baseStateVector);
 
   return { pmStepsBinary, yjsUpdateBinary, baseStateVector };
 }
@@ -71,19 +89,19 @@ export async function deserializeSteps(
 }
 
 export interface ApplyYjsUpdateArgs {
-  /** A fresh Y.Doc with the base state already applied. */
-  doc: Y.Doc;
+  /** A fresh document handle with the base state already applied. */
+  doc: DocLike;
   /** The yjsUpdateBinary produced by buildCommitPayload. */
   yjsUpdateBinary: Uint8Array;
 }
 
 /**
  * Apply a previously-encoded Yjs binary delta to a doc. Mutates doc in
- * place; round-trip with `Y.encodeStateAsUpdate(doc)` should yield the
+ * place; round-trip with `encodeStateAsUpdate(doc)` should yield the
  * original update bytes (modulo Yjs's natural compression).
  */
 export function applyYjsUpdate(args: ApplyYjsUpdateArgs): void {
-  Y.applyUpdate(args.doc, args.yjsUpdateBinary);
+  yApplyUpdate(toYDoc(args.doc), args.yjsUpdateBinary);
 }
 
 /**
@@ -91,6 +109,6 @@ export function applyYjsUpdate(args: ApplyYjsUpdateArgs): void {
  * (baseDoc -> baseDoc + this update). Useful for the gateway snapshot
  * worker (D11) when reconciling drafts against a moving body state.
  */
-export function nextStateVector(doc: Y.Doc): Uint8Array {
-  return Y.encodeStateVector(doc);
+export function nextStateVector(doc: DocLike): Uint8Array {
+  return yEncodeStateVector(toYDoc(doc));
 }
