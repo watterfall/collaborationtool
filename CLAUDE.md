@@ -7,10 +7,9 @@
 
 ## 1. 这是什么项目
 
-面向研究者的协作论文平台（详见 [`README.md`](./README.md) 与
-`plan0/paper-platform-system-prompt.md`）。**不是 Overleaf clone**——
-任何"显然"的选择都先自问"为什么不用现成的 Curvenote / MyST / Quarto"，
-只有能说出**具体差异化收益**时才继续造。
+面向研究者的协作论文平台。详见 [`README.md`](./README.md) 与
+`plan0/paper-platform-system-prompt.md`。任何"显然"的选择都先自问
+"现成方案能不能直接用"，只有能说出**具体差异化收益**时才继续造。
 
 ### 第一性原理（决策时优先级，照搬自 system prompt）
 
@@ -32,16 +31,21 @@
 
 ## 2. 必读文件（顺序）
 
-新会话开始时**先读完这三份**，再动代码：
+新会话开始时**先读完这四份**，再动代码：
 
 1. [`STATUS.md`](./STATUS.md) — 唯一的"项目当前在哪"快照（每次 phase
    推进 / commit landed / ADR 状态变化时更新）
 2. [`plan0/paper-platform-system-prompt.md`](./plan0/paper-platform-system-prompt.md) — 项目所有者的技术品味与第一性原理
 3. 当前 phase 的 plan stub：`plan0/phase-{0,1,2,3,4}-execution-plan.md` /
    `phase-*-plan-stub.md`（看 STATUS §1 知道当前在哪个 phase）
+4. [`plan0/improvement-plan-2026-05.md`](./plan0/improvement-plan-2026-05.md)
+   — Council 评审驱动的 Phase 4 W6-W10 + Phase 5 范围调整（Proposed），含
+   砍 / 推 Phase 6+ 清单 + ADR 影响表 + 9 项 dogfood gate
 
 ADR 在 `plan0/adr/0001-0015`——动到对应模块前先读相应 ADR。
 导航 / 依赖图 / 主题聚类 / 阅读顺序建议看 [`plan0/ADR-INDEX.md`](./plan0/ADR-INDEX.md)。
+Council 评审证据基线：[`.brainstorm/COUNCIL.md`](./.brainstorm/COUNCIL.md)
++ 5 份 role 报告（产品 / 架构 / 用户 / AI / 设计）。
 
 ---
 
@@ -147,6 +151,10 @@ skill / MCP server。Phase 2 W1 ADR-0010 已立明显的 kernel vs plugin 边界
 - 任何加 feature 要说明"它替换或省去了哪两个现有 feature"
 - 不做 Phase N+1 才需要的事（看 plan stub §三"不做的事"）
 - 没有 dogfood 痛点不上 ADR-0014（subdocument）等大件
+- **新 ADR moratorium**（improvement-plan-2026-05.md §四）：在
+  ADR-0012 / 0013 / 0014 dogfood gate 跑通并 promote 到 Accepted 之前，
+  **不再起草新 ADR**。先把已 Proposed 的真做穿。例外：
+  ADR-0016 Claim-on-Claim Review 在 Phase 5 Wave B kickoff 前 1 周起草。
 
 ### 5.4 不要重新发明 prior art
 
@@ -246,12 +254,33 @@ pnpm db:seed              # service principal + demo user + 2 platform agent
 
 ### 7.6 跑 dogfood gate
 
-dogfood gate 是 ADR promote 的硬条件。例：
+dogfood gate 是 ADR promote 的硬条件。Phase 4 W9 集中跑：
 
-- ADR-0012 W1 dogfood gate = "bwrap 真启动 + capability deny e2e"（require Linux host）
-- ADR-0013 W2 dogfood gate = "4 endpoint 真 round-trip"（require API key）
+- ADR-0012 = "bwrap 真启动 + capability deny e2e"（require Linux host）
+- ADR-0013 = "4 endpoint 真 round-trip"（require API key）
+- ADR-0008 = "端到端真 multi-agent goal 跑通"（require 真 LLM + crossref MCP）
+- ADR-0011 = "pgboss queue + 6 finding 各 1 fixture + dashboard 实测"
+- ADR-0014 = "50 客户端 stress + cross-doc reference 真同步 + subdocument-level ACL"
 
-跑通后 ADR Status: Proposed → Accepted；STATUS §2 表更新。
+跑通后 ADR Status: Proposed → Accepted；STATUS §2 表更新；改 plan
+stub / improvement-plan ADR 影响表对应行。
+
+---
+
+### 7.7 多 agent 并行执行子任务
+
+把 ≥ 2 个相互独立子任务发给 subagent 并行做：
+
+1. 切独立 feature 分支（`claude/<short-slug>`）
+2. 每个 agent 锁定**互不重叠的文件路径**（同包同文件不能两 agent 同改）
+3. 每个 agent 跑包级 `pnpm <pkg>:test` + `pnpm <pkg>:typecheck` 后 commit
+4. 用 `git add <显式路径>` 不要 `-A` / `.`（避免吃掉别人 WIP）
+5. 不允许在 agent 内 `pnpm install`（依赖已就位，并发装 lock 风险）
+6. 每个 agent 简短回报：改的文件 + 测试 PASS 数 + commit hash
+
+依赖图：W6.4 / W6.5 / W6.2 / W7.3 / W7.4 互不冲突可并行；
+W7.1 doc-store 抽象 → 阻塞 W6.1 AgentPanel inline；
+W6.1 + W7.2 → 阻塞 W6.3 DOI 一键。
 
 ---
 
@@ -270,6 +299,14 @@ dogfood gate 是 ADR promote 的硬条件。例：
 - **Phase 1 SQL grant 已废弃**：用 document-level invitation flow 替代
 - **CrossRef MCP 默认走 in-memory mock**（5 条 fixture）；真 stdio MCP 要
   设 `CROSSREF_MCP_COMMAND`
+- **3 处 ADR-vs-代码诚实度赤字**（Phase 4 W7-W8 必须堵）：
+  (1) `packages/doc-store/` ADR-0001 §5.D 承诺但从未存在 → W7.1 落地；
+  (2) `AgentPluginInput.anthropic` 仍在 → W7.2 改 `provider: ModelProvider`；
+  (3) macOS / Windows sandbox 是字符串占位 → W8 真写 OR UI 显式拦截。
+  详见 `.brainstorm/role-architecture.md` + `improvement-plan-2026-05.md §五`
+- **Phase 5+ 砍 / 推清单**：spatial canvas / 章节 fork-merge UI / Loro 切换
+  评估 / 跨设备 storage adapter / plugin marketplace —— 触碰前先读
+  `improvement-plan-2026-05.md §四`，每条都有"复活条件"
 
 ---
 
