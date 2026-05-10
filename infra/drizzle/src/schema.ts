@@ -44,6 +44,9 @@ import {
   evidenceRelationEnum,
   extractionKindEnum,
   extractionStatusEnum,
+  findingKindEnum,
+  findingSeverityEnum,
+  findingStatusEnum,
   mcpHealthStatusEnum,
   mcpOriginEnum,
   mcpTransportEnum,
@@ -858,6 +861,66 @@ export const sourceExtraction = pgTable(
 );
 
 // ============================================================
+// 23. maintenance_finding — Phase 3 W4 knowledge-maintenance scan
+//     output. Per essay §7.4: scan for unsupported-claim /
+//     outdated-source / duplicated-claim / contradicted-conclusion /
+//     unverified-ai-block / broken-citation.
+//     Job runs in apps/agent-worker via pgboss queue
+//     'maintenance-scan'; one job emits many findings.
+// ============================================================
+
+export const maintenanceFinding = pgTable(
+  'maintenance_finding',
+  {
+    id: text('id').primaryKey(),
+    kind: findingKindEnum('kind').notNull(),
+    severity: findingSeverityEnum('severity').notNull().default('medium'),
+    status: findingStatusEnum('status').notNull().default('open'),
+    jobId: text('job_id').references(() => agentJob.id, {
+      onDelete: 'set null',
+    }),
+    claimId: text('claim_id').references(() => claim.id, { onDelete: 'cascade' }),
+    evidenceId: text('evidence_id').references(() => evidence.id, {
+      onDelete: 'cascade',
+    }),
+    sourceId: text('source_id').references(() => source.id, {
+      onDelete: 'cascade',
+    }),
+    citationId: text('citation_id').references(() => citation.id, {
+      onDelete: 'cascade',
+    }),
+    documentId: text('document_id').references(() => document.id, {
+      onDelete: 'cascade',
+    }),
+    vaultPrincipalId: text('vault_principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'cascade' }),
+    summary: text('summary').notNull(),
+    details: jsonb('details'),
+    foundAt: timestamp('found_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    acknowledgedAt: timestamp('acknowledged_at', { withTimezone: true }),
+    acknowledgedBy: text('acknowledged_by').references(() => principal.id, {
+      onDelete: 'set null',
+    }),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    resolvedBy: text('resolved_by').references(() => principal.id, {
+      onDelete: 'set null',
+    }),
+    dismissedAt: timestamp('dismissed_at', { withTimezone: true }),
+    dismissedBy: text('dismissed_by').references(() => principal.id, {
+      onDelete: 'set null',
+    }),
+    dismissReason: text('dismiss_reason'),
+  },
+  (t) => ({
+    kindIdx: index('maintenance_finding_kind_idx').on(t.kind),
+    jobIdx: index('maintenance_finding_job_idx').on(t.jobId),
+  }),
+);
+
+// ============================================================
 // Type exports — used by application code for fully-typed queries.
 // `db.select().from(document)` returns inferred row types.
 // ============================================================
@@ -884,3 +947,4 @@ export type DbAgentJob = typeof agentJob.$inferSelect;
 export type DbAgentJobEvent = typeof agentJobEvent.$inferSelect;
 export type DbSource = typeof source.$inferSelect;
 export type DbSourceExtraction = typeof sourceExtraction.$inferSelect;
+export type DbMaintenanceFinding = typeof maintenanceFinding.$inferSelect;

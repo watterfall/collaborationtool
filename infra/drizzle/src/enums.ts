@@ -190,3 +190,28 @@ export const extractionKindEnum = pgEnum('extraction_kind', [
   'evidence',
   'question',
 ]);
+
+// ---------- Knowledge maintenance scan (Phase 3 W4) ----------
+
+export const findingKindEnum = pgEnum('finding_kind', [
+  'unsupported-claim',
+  'outdated-source',
+  'duplicated-claim',
+  'contradicted-conclusion',
+  'unverified-ai-block',
+  'broken-citation',
+]);
+
+export const findingSeverityEnum = pgEnum('finding_severity', [
+  'info',
+  'low',
+  'medium',
+  'high',
+]);
+
+export const findingStatusEnum = pgEnum('finding_status', [
+  'open',
+  'acknowledged',
+  'resolved',
+  'dismissed',
+]);

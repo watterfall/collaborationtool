@@ -39,7 +39,11 @@ export interface WorkerConfig {
   skillsRoot: string;
 }
 
-const QUEUE_NAMES: AgentJobKind[] = ['reviewer', 'researcher'];
+const QUEUE_NAMES: AgentJobKind[] = [
+  'reviewer',
+  'researcher',
+  'maintenance-scan',
+];
 
 /**
  * Start the worker. Returns a stop() function that drains in-flight

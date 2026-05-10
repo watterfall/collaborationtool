@@ -7,7 +7,7 @@
 
 import type { DocumentId, PrincipalId } from '@collaborationtool/schema';
 
-export type AgentJobKind = 'reviewer' | 'researcher';
+export type AgentJobKind = 'reviewer' | 'researcher' | 'maintenance-scan';
 
 /** Reviewer agent — reads the entire document, emits a list of
  * proposed revisions + reviewer-note threads. */
@@ -39,7 +39,35 @@ export interface ResearcherJobInput {
   skillId: string;
 }
 
-export type AnyJobInput = ReviewerJobInput | ResearcherJobInput;
+/** Knowledge maintenance scan — Phase 3 W4. Per essay §7.4: scan
+ * a vault (per-user or per-doc scope) for unsupported claims,
+ * outdated sources, duplicates, contradictions. Emits multiple
+ * `maintenance_finding` rows (per-finding row in PG). */
+export interface MaintenanceScanJobInput {
+  kind: 'maintenance-scan';
+  triggeringPrincipalId: PrincipalId;
+  /** Scope of the scan. */
+  scope: 'document' | 'vault';
+  /** Required when scope='document'. */
+  documentId?: DocumentId;
+  /** Required when scope='vault'; scans all docs/sources/claims
+   * owned by this principal. */
+  vaultPrincipalId?: PrincipalId;
+  /** Restrict to specific finding kinds (default: all 6). */
+  findingKinds?: Array<
+    | 'unsupported-claim'
+    | 'outdated-source'
+    | 'duplicated-claim'
+    | 'contradicted-conclusion'
+    | 'unverified-ai-block'
+    | 'broken-citation'
+  >;
+}
+
+export type AnyJobInput =
+  | ReviewerJobInput
+  | ResearcherJobInput
+  | MaintenanceScanJobInput;
 
 /** SSE event payloads written to `agent_job_event.payload`. */
 export type JobEventPayload =

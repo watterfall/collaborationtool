@@ -54,22 +54,28 @@ describe('AgentJobKind discriminated union', () => {
     const inputs: AnyJobInput[] = [
       {
         kind: 'reviewer',
-        documentId: 'd' as AnyJobInput['documentId'],
-        triggeringPrincipalId: 'p' as AnyJobInput['triggeringPrincipalId'],
+        documentId: 'd' as ReviewerJobInput['documentId'],
+        triggeringPrincipalId: 'p' as ReviewerJobInput['triggeringPrincipalId'],
         pluginPath: '/p',
         skillId: 's',
       },
       {
         kind: 'researcher',
-        documentId: 'd' as AnyJobInput['documentId'],
-        triggeringPrincipalId: 'p' as AnyJobInput['triggeringPrincipalId'],
+        documentId: 'd' as ResearcherJobInput['documentId'],
+        triggeringPrincipalId: 'p' as ResearcherJobInput['triggeringPrincipalId'],
         query: 'q',
         allowedMcpServerIds: [],
         pluginPath: '/p',
         skillId: 's',
       },
+      {
+        kind: 'maintenance-scan',
+        triggeringPrincipalId: 'p' as ReviewerJobInput['triggeringPrincipalId'],
+        scope: 'vault',
+        vaultPrincipalId: 'p' as ReviewerJobInput['triggeringPrincipalId'],
+      },
     ];
-    assert.equal(inputs.length, 2);
+    assert.equal(inputs.length, 3);
   });
 });
 
