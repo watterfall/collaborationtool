@@ -49,6 +49,18 @@ export interface ChipDescriptor {
   mode?: ChipMode;
 }
 
+/**
+ * Mode discriminator for chips that share an `AgentKind` but trigger
+ * different sub-flows. Phase 4 W6.3 introduces `'doi-direct'`: same
+ * kind=`citation`, but the host bypasses passage analysis and looks up
+ * the user-supplied DOI directly via CrossRef MCP `lookup_doi`.
+ *
+ * `undefined` mode = the existing analyse-passage path. The route +
+ * citation plugin treat absent `mode` as the legacy behaviour, so older
+ * clients keep working.
+ */
+export type ChipMode = 'doi-direct';
+
 export const AGENT_CHIPS: readonly ChipDescriptor[] = [
   {
     kind: 'inline-editor',
