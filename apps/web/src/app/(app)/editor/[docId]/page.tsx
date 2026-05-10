@@ -12,7 +12,6 @@ import { getPrincipalIdForUser } from '@/lib/principal';
 
 import EditorClient from './editor-client';
 import ExportDrawer from './components/ExportDrawer';
-import AgentPanel from './components/AgentPanel';
 import RevisionInbox from './components/RevisionInbox';
 import ShareDialog from './components/ShareDialog';
 
@@ -81,8 +80,11 @@ export default async function EditorPage({
 
       <EditorClient documentId={doc.id} />
 
-      <AgentPanel documentId={doc.id} blockId="blk-cursor" />
-
+      {/*
+        Phase 4 W6.1：旧 AgentPanel 折叠侧边栏被 InlineAgentMenu (⌘K
+        floating menu) 替代。AI 提议直接落到下方 RevisionInbox。
+        参见第一性原理 #3「AI 是协作者不是侧边栏」。
+      */}
       {(ctx.documentCapabilities.has('block.review') ||
         ctx.documentCapabilities.has('block.commit')) && (
         <RevisionInbox documentId={doc.id} />

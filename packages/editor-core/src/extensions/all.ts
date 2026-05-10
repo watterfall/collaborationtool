@@ -14,6 +14,7 @@ import Italic from '@tiptap/extension-italic';
 import Paragraph from '@tiptap/extension-paragraph';
 import Text from '@tiptap/extension-text';
 
+import { AgentTrigger } from './agent-trigger';
 import { AnnotationAnchor } from './annotation-anchor';
 import { CitationRef } from './citation-ref';
 import { Claim } from './claim';
@@ -59,10 +60,14 @@ export const PAPER_SCHEMA_EXTENSIONS = [
   CitationRef,
   DatasetRef,
   FootnoteRef,
+
+  // Behavioural extension (no schema impact) — Phase 4 W6.1, ⌘K agent menu.
+  AgentTrigger,
 ];
 
 // Re-export individual extensions for callers that need to swap one out.
 export {
+  AgentTrigger,
   AnnotationAnchor,
   CitationRef,
   Claim,

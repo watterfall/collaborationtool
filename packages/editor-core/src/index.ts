@@ -5,9 +5,11 @@
 // future render packages.
 
 export { Editor, type EditorProps } from './Editor';
+export type { Editor as TipTapEditor } from '@tiptap/core';
 export { paperSchema, freshPaperSchema } from './schema';
 export {
   PAPER_SCHEMA_EXTENSIONS,
+  AgentTrigger,
   AnnotationAnchor,
   CitationRef,
   Claim,
@@ -20,6 +22,19 @@ export {
   FootnoteRef,
   InlineEquation,
 } from './extensions/all';
+export {
+  getActiveSelectionContext,
+  findEnclosingBlock,
+  chipRelevance,
+  AGENT_MENU_OPEN_EVENT,
+  AGENT_MENU_CLOSE_EVENT,
+  AGENT_INVOKE_EVENT,
+  type AgentKind,
+  type AgentSelectionContext,
+  type AgentInvokeRequest,
+  type AgentMenuOpenDetail,
+  type AgentTriggerOptions,
+} from './extensions/agent-trigger';
 export type { ComputationalKernel } from './extensions/computational-cell';
 export type {
   ClaimType,

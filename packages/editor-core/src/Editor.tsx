@@ -41,6 +41,12 @@ export interface EditorProps {
   /** Optional callback for parent UI (mode badge, agent panel, etc.) */
   onModeChange?: (mode: ConnectionMode) => void;
   onRejected?: (reason: string) => void;
+  /**
+   * Phase 4 W6.1: hand the live TipTap editor up to the parent so
+   * features like the inline agent floating menu can subscribe to its
+   * DOM events / commands without re-mounting their own editor.
+   */
+  onEditorReady?: (editor: TipTapEditor) => void;
 }
 
 export function Editor(props: EditorProps): React.ReactElement {
@@ -49,8 +55,10 @@ export function Editor(props: EditorProps): React.ReactElement {
   const [error, setError] = useState<string | null>(null);
   const onModeChangeRef = useRef(props.onModeChange);
   const onRejectedRef = useRef(props.onRejected);
+  const onEditorReadyRef = useRef(props.onEditorReady);
   onModeChangeRef.current = props.onModeChange;
   onRejectedRef.current = props.onRejected;
+  onEditorReadyRef.current = props.onEditorReady;
 
   useEffect(() => {
     let cancelled = false;
@@ -127,6 +135,7 @@ export function Editor(props: EditorProps): React.ReactElement {
       sync={sync}
       mode={mode}
       readOnly={mode === 'reader'}
+      onEditorReadyRef={onEditorReadyRef}
     />
   );
 }
@@ -135,12 +144,14 @@ interface EditorMountedProps {
   sync: SyncBundle;
   mode: ConnectionMode | null;
   readOnly: boolean;
+  onEditorReadyRef: React.MutableRefObject<((editor: TipTapEditor) => void) | undefined>;
 }
 
 function EditorMounted({
   sync,
   mode,
   readOnly,
+  onEditorReadyRef,
 }: EditorMountedProps): React.ReactElement {
   const editor: TipTapEditor | null = useEditor(
     {
@@ -155,6 +166,12 @@ function EditorMounted({
     },
     [sync.ydoc, readOnly],
   );
+
+  useEffect(() => {
+    if (editor) {
+      onEditorReadyRef.current?.(editor);
+    }
+  }, [editor, onEditorReadyRef]);
 
   if (!editor) return <div className="h-32" />;
 
