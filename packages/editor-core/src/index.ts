@@ -11,6 +11,7 @@ export {
   PAPER_SCHEMA_EXTENSIONS,
   AgentTrigger,
   AnnotationAnchor,
+  CitationPasteHandler,
   CitationRef,
   Claim,
   ComputationalCell,
@@ -22,6 +23,17 @@ export {
   FootnoteRef,
   InlineEquation,
 } from './extensions/all';
+export {
+  DOI_PATTERN,
+  extractDoi,
+  citationPasteHandlerPluginKey,
+  CITATION_LOOKUP_START_EVENT,
+  CITATION_LOOKUP_DONE_EVENT,
+  CITATION_LOOKUP_FAIL_EVENT,
+  type CitationLookupFn,
+  type CitationLookupResult,
+  type CitationPasteHandlerOptions,
+} from './extensions/citation-paste-handler';
 export {
   getActiveSelectionContext,
   findEnclosingBlock,

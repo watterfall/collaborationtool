@@ -50,10 +50,31 @@ export async function runAgent(
 
   // Hint protocol: citation skill consumes `flaggedDoiCandidates: string[]`.
   // Other keys silently ignored (forward-compat per AgentPluginInput).
+  //
+  // Phase 4 W6.3 — `mode: 'doi-direct'` (with a `doi` hint) is the
+  // user-typed-DOI sub-flow (chip-citation-doi + paste handler in the
+  // editor). The plugin narrows the candidate set to that single DOI so
+  // the runner goes straight to CrossRef MCP `lookup_doi` instead of
+  // trying to extract DOI candidates from `passage`. Without `doi-direct`,
+  // the legacy "passage analyse" path runs (host already crawled the
+  // selection — Phase 4 W7.x will add an LLM-driven extraction step).
   const hints: Record<string, unknown> = {};
-  const raw = input.hints['flaggedDoiCandidates'];
-  if (Array.isArray(raw) && raw.every((x) => typeof x === 'string')) {
-    hints['flaggedDoiCandidates'] = raw as string[];
+  const mode = input.hints['mode'];
+  const directDoi = input.hints['doi'];
+  if (
+    mode === 'doi-direct' &&
+    typeof directDoi === 'string' &&
+    directDoi.trim().length > 0
+  ) {
+    hints['flaggedDoiCandidates'] = [directDoi.trim()];
+    // Forward mode for downstream provenance / observability hooks
+    // (mock provider ignores; real Anthropic prompt template can branch).
+    hints['mode'] = 'doi-direct';
+  } else {
+    const raw = input.hints['flaggedDoiCandidates'];
+    if (Array.isArray(raw) && raw.every((x) => typeof x === 'string')) {
+      hints['flaggedDoiCandidates'] = raw as string[];
+    }
   }
 
   return input.provider.runAgent({

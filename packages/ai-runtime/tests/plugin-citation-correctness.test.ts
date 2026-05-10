@@ -148,4 +148,87 @@ describe('citation plugin (W3 dogfood) — correctness', () => {
       /agent\.invoke:citation/,
     );
   });
+
+  it('Phase 4 W6.3 — mode=doi-direct narrows hints to a single DOI lookup', async () => {
+    // The route layer only sets `flaggedDoiCandidates: [doi]` when the
+    // user explicitly hands a DOI (chip-citation-doi or paste handler).
+    // The plugin layer additionally accepts `{ mode, doi }` directly
+    // from third-party callers — confirm both sides settle to the same
+    // single-DOI behaviour in the proposal output.
+    _resetSkillCache();
+    const result = await invokeAgentViaPlugin(
+      {
+        pluginPath: PLUGIN_ROOT,
+        principalContext: PRINCIPAL,
+        documentId: '00000000-0000-7000-8000-00000000d001',
+        blockId: '00000000-0000-7000-8000-00000000b001',
+        // No DOI in the passage — the plugin must rely on the doi-direct
+        // hint path (legacy code would have looked at passage and found
+        // nothing to verify).
+        passage: 'No DOI in this paragraph.',
+        hints: {
+          mode: 'doi-direct',
+          doi: '10.1145/3531146.3533104',
+          // Intentionally empty flaggedDoiCandidates: doi-direct must
+          // narrow on its own.
+          flaggedDoiCandidates: [],
+        },
+        skillId: 'citation-lookup',
+        skillsRoot: SKILLS_ROOT,
+        mcpSpecs: [
+          {
+            id: 'crossref-mock',
+            buildTransport: crossrefMockTransport().buildTransport,
+          },
+        ],
+      },
+      { persistToDb: false },
+    );
+
+    const { proposal } = result;
+    // Single CrossRef call; revision matches the passed DOI.
+    assert.equal(proposal.toolCalls.length, 1);
+    assert.equal(proposal.toolCalls[0]!.toolName, 'lookup_doi');
+    assert.equal(proposal.revisedFragments.length, 1);
+    assert.match(
+      proposal.revisedFragments[0]!.replacementText,
+      /10\.1145\/3531146\.3533104/,
+    );
+    // CSL JSON came through (foundation models fixture in mock).
+    assert.ok(proposal.revisedFragments[0]!.citationCslJson);
+  });
+
+  it('Phase 4 W6.3 — mode=doi-direct without a DOI falls back to legacy path', async () => {
+    // Defensive: the route layer should never send mode=doi-direct with
+    // an empty doi (UI guards), but the plugin must not panic if it does.
+    // Falls back to flaggedDoiCandidates from hints; with [] that yields
+    // an empty proposal.
+    _resetSkillCache();
+    const result = await invokeAgentViaPlugin(
+      {
+        pluginPath: PLUGIN_ROOT,
+        principalContext: PRINCIPAL,
+        documentId: '00000000-0000-7000-8000-00000000d001',
+        blockId: '00000000-0000-7000-8000-00000000b001',
+        passage: 'No DOI in this paragraph.',
+        hints: {
+          mode: 'doi-direct',
+          doi: '',
+          flaggedDoiCandidates: [],
+        },
+        skillId: 'citation-lookup',
+        skillsRoot: SKILLS_ROOT,
+        mcpSpecs: [
+          {
+            id: 'crossref-mock',
+            buildTransport: crossrefMockTransport().buildTransport,
+          },
+        ],
+      },
+      { persistToDb: false },
+    );
+
+    assert.equal(result.proposal.revisedFragments.length, 0);
+    assert.equal(result.proposal.toolCalls.length, 0);
+  });
 });

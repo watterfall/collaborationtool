@@ -16,6 +16,7 @@ import Text from '@tiptap/extension-text';
 
 import { AgentTrigger } from './agent-trigger';
 import { AnnotationAnchor } from './annotation-anchor';
+import { CitationPasteHandler } from './citation-paste-handler';
 import { CitationRef } from './citation-ref';
 import { Claim } from './claim';
 import { ComputationalCell } from './computational-cell';
@@ -63,12 +64,18 @@ export const PAPER_SCHEMA_EXTENSIONS = [
 
   // Behavioural extension (no schema impact) — Phase 4 W6.1, ⌘K agent menu.
   AgentTrigger,
+
+  // Behavioural extension — Phase 4 W6.3, paste DOI → CrossRef lookup →
+  // inline citation-ref insert. apps/web supplies the actual `onLookup`
+  // via `CitationPasteHandler.configure({ onLookup })` at mount time.
+  CitationPasteHandler,
 ];
 
 // Re-export individual extensions for callers that need to swap one out.
 export {
   AgentTrigger,
   AnnotationAnchor,
+  CitationPasteHandler,
   CitationRef,
   Claim,
   ComputationalCell,

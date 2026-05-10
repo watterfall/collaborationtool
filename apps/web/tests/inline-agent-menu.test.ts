@@ -33,10 +33,17 @@ const baseCtx: AgentSelectionContext = {
 };
 
 describe('AGENT_CHIPS — vocabulary + bilingual labels', () => {
-  it('exposes exactly 4 chips covering inline-editor / citation / researcher / reviewer', () => {
-    assert.equal(AGENT_CHIPS.length, 4);
+  it('exposes 5 chips: inline-editor / citation (verify) / citation (DOI direct) / researcher / reviewer', () => {
+    // Phase 4 W6.3 added a second `kind=citation` chip with mode='doi-direct'.
+    assert.equal(AGENT_CHIPS.length, 5);
     const kinds = AGENT_CHIPS.map((c) => c.kind).sort();
-    assert.deepEqual(kinds, ['citation', 'inline-editor', 'researcher', 'reviewer']);
+    assert.deepEqual(kinds, [
+      'citation',
+      'citation',
+      'inline-editor',
+      'researcher',
+      'reviewer',
+    ]);
   });
 
   it('every chip label has 中英双语 (CJK + Latin) split by " / "', () => {
@@ -47,11 +54,15 @@ describe('AGENT_CHIPS — vocabulary + bilingual labels', () => {
     }
   });
 
-  it('inline-editor + citation chips are routeSupported=true; researcher / reviewer are WIP', () => {
-    const supported = AGENT_CHIPS.filter((c) => c.routeSupported).map((c) => c.kind).sort();
-    const wip = AGENT_CHIPS.filter((c) => !c.routeSupported).map((c) => c.kind).sort();
-    assert.deepEqual(supported, ['citation', 'inline-editor']);
-    assert.deepEqual(wip, ['researcher', 'reviewer']);
+  it('inline-editor + both citation chips are routeSupported=true; researcher / reviewer are WIP', () => {
+    const supported = AGENT_CHIPS.filter((c) => c.routeSupported).map((c) => c.testId).sort();
+    const wip = AGENT_CHIPS.filter((c) => !c.routeSupported).map((c) => c.testId).sort();
+    assert.deepEqual(supported, [
+      'chip-citation',
+      'chip-citation-doi',
+      'chip-inline-editor',
+    ]);
+    assert.deepEqual(wip, ['chip-researcher', 'chip-reviewer']);
   });
 
   it('every chip has a stable testId (ASCII, kebab) for e2e selectors', () => {
@@ -60,6 +71,14 @@ describe('AGENT_CHIPS — vocabulary + bilingual labels', () => {
     }
     const ids = new Set(AGENT_CHIPS.map((c) => c.testId));
     assert.equal(ids.size, AGENT_CHIPS.length, 'no duplicate testId');
+  });
+
+  it('exactly one citation chip carries mode=doi-direct (the W6.3 DOI sub-flow)', () => {
+    const doiChips = AGENT_CHIPS.filter(
+      (c) => c.kind === 'citation' && c.mode === 'doi-direct',
+    );
+    assert.equal(doiChips.length, 1);
+    assert.equal(doiChips[0]!.testId, 'chip-citation-doi');
   });
 });
 

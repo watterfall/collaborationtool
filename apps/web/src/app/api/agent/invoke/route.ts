@@ -52,6 +52,12 @@ interface InvokeBody {
   passage?: unknown;
   flaggedDoiCandidates?: unknown;
   userInstruction?: unknown;
+  // Phase 4 W6.3 — citation `doi-direct` sub-mode (chip + paste handler).
+  // When `mode === 'doi-direct'` and `doi` is a non-empty string, the
+  // route forwards `flaggedDoiCandidates: [doi]` + a `mode` hint to the
+  // citation plugin so it bypasses passage analysis.
+  doi?: unknown;
+  mode?: unknown;
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -158,11 +164,29 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   try {
     if (kind === 'citation') {
-      const flagged = Array.isArray(body.flaggedDoiCandidates)
-        ? (body.flaggedDoiCandidates as unknown[]).filter(
-            (x): x is string => typeof x === 'string',
-          )
-        : [];
+      // Phase 4 W6.3 — `mode: 'doi-direct'` carries a single user-supplied
+      // DOI; route narrows the hints map so the plugin agent skips passage
+      // analysis and goes straight to CrossRef MCP `lookup_doi`.
+      const mode =
+        typeof body.mode === 'string' && body.mode === 'doi-direct'
+          ? 'doi-direct'
+          : undefined;
+      const directDoi =
+        mode === 'doi-direct' && typeof body.doi === 'string' && body.doi.trim()
+          ? body.doi.trim()
+          : undefined;
+      const flagged = directDoi
+        ? [directDoi]
+        : Array.isArray(body.flaggedDoiCandidates)
+          ? (body.flaggedDoiCandidates as unknown[]).filter(
+              (x): x is string => typeof x === 'string',
+            )
+          : [];
+      const citationHints: Record<string, unknown> = {
+        flaggedDoiCandidates: flagged,
+      };
+      if (mode) citationHints['mode'] = mode;
+      if (directDoi) citationHints['doi'] = directDoi;
       // Build MCP spec list. Mock fallback is created inline because
       // Phase 1.5 #6 wired the env-var path; W3 keeps that in place
       // until ADR-0006 mcp_server registry resolution lands W4.
@@ -177,7 +201,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           documentId: body.documentId,
           blockId: body.blockId,
           passage: body.passage,
-          hints: { flaggedDoiCandidates: flagged },
+          hints: citationHints,
           skillId: 'citation-lookup',
           skillsRoot,
           mcpSpecs: [crossrefSpec],

@@ -10,12 +10,23 @@
 //   - 找证据 / Find evidence → kind=researcher
 //   - 评审 / Review        → kind=reviewer
 //
-// 路由 `/api/agent/invoke` 当前只接 `inline-editor` + `citation`；
-// `researcher` / `reviewer` 走相同 contract，路由 400 时由 React 层 toast。
-// Phase 4 W7.x 会扩 route，这里 chip 表先把 4 个 kind 都列上，避免 UI 层
-// 之后还要回头改。
+// Phase 4 W6.3 (`.brainstorm/role-user.md §5 P2`)新增第 5 个 chip：
+//   - 插入引用 / Cite by DOI → kind=citation, mode='doi-direct'
+// 用户点击后 menu 切换为 DOI 输入模式（一个 input + 确认按钮，不开模态框）。
+//
+// 路由 `/api/agent/invoke` 当前接 `inline-editor` + `citation`（含 doi-
+// direct 子模式）；`researcher` / `reviewer` 走相同 contract，路由 400 时
+// 由 React 层 toast。
 
 import type { AgentKind, AgentSelectionContext } from '@collaborationtool/editor-core';
+
+/**
+ * Mode discriminator for chips that share an `AgentKind` but trigger
+ * different sub-flows. Phase 4 W6.3 introduces `'doi-direct'`: same
+ * kind=`citation`, but the host bypasses passage analysis and looks up
+ * the user-supplied DOI directly via CrossRef MCP `lookup_doi`.
+ */
+export type ChipMode = 'doi-direct';
 
 export interface ChipDescriptor {
   kind: AgentKind;
@@ -29,6 +40,13 @@ export interface ChipDescriptor {
    * `researcher` / `reviewer` are still wiring up.
    */
   routeSupported: boolean;
+  /**
+   * Optional sub-mode discriminator. Phase 4 W6.3: `'doi-direct'` is the
+   * citation chip variant that takes a user-typed DOI instead of crawling
+   * the selected passage. The InlineAgentMenu renders a DOI input field
+   * inline (not a modal) when `mode === 'doi-direct'` is clicked.
+   */
+  mode?: ChipMode;
 }
 
 export const AGENT_CHIPS: readonly ChipDescriptor[] = [
@@ -43,6 +61,13 @@ export const AGENT_CHIPS: readonly ChipDescriptor[] = [
     label: '核引用 / Verify citation',
     testId: 'chip-citation',
     routeSupported: true,
+  },
+  {
+    kind: 'citation',
+    label: '插入引用 / Cite by DOI',
+    testId: 'chip-citation-doi',
+    routeSupported: true,
+    mode: 'doi-direct',
   },
   {
     kind: 'researcher',
@@ -63,14 +88,25 @@ export const AGENT_CHIPS: readonly ChipDescriptor[] = [
  * different "instruction" field names per kind (citation: flaggedDoiCandidates,
  * inline-editor: userInstruction). Centralised here so the React component
  * stays declarative.
+ *
+ * Phase 4 W6.3: when `mode === 'doi-direct'` and `doi` is supplied, the
+ * citation body carries `{ doi, mode: 'doi-direct' }` instead of the
+ * passage-crawl flaggedDoiCandidates list. The route forwards both fields
+ * to the citation plugin's hints map so the plugin layer narrows on its
+ * own (third-party callers that hit the plugin directly get the same
+ * narrowing without needing the route to do it for them).
  */
 export function buildInvokeRequestBody(args: {
   kind: AgentKind;
   documentId: string;
   context: AgentSelectionContext;
   instructions?: string;
+  /** Phase 4 W6.3 — citation `doi-direct` chip submits the user's DOI here. */
+  doi?: string;
+  /** Phase 4 W6.3 — sub-mode discriminator. */
+  mode?: ChipMode;
 }): Record<string, unknown> {
-  const { kind, documentId, context, instructions } = args;
+  const { kind, documentId, context, instructions, doi, mode } = args;
   const base = {
     kind,
     documentId,
@@ -79,6 +115,11 @@ export function buildInvokeRequestBody(args: {
   };
 
   if (kind === 'citation') {
+    if (mode === 'doi-direct' && typeof doi === 'string' && doi.trim().length > 0) {
+      // Direct lookup path — bypass passage analysis. Plugin uses CrossRef
+      // MCP `lookup_doi` with the supplied DOI.
+      return { ...base, doi: doi.trim(), mode };
+    }
     // No DOI list at the menu layer — agent extracts from passage. UI can
     // surface a follow-up textarea once we have a real "verify single DOI"
     // mode; today we send no flagged candidates and let the agent crawl.
@@ -96,6 +137,18 @@ export function buildInvokeRequestBody(args: {
   return { ...base };
 }
 
+/**
+ * DOI shape validator — local import-safe check (lightweight; the source
+ * of truth is `editor-core` `DOI_PATTERN`). We duplicate the pattern here
+ * to avoid a cross-package import in the menu helpers (apps/web's tests
+ * pin this without pulling in editor-core's PM imports).
+ */
+const DOI_VALIDATION_PATTERN = /^10\.\d{4,9}\/[-._;()/:A-Z0-9]+$/i;
+
+export function isValidDoiInput(value: string): boolean {
+  return DOI_VALIDATION_PATTERN.test(value.trim());
+}
+
 export interface MenuStrings {
   title: string;
   emptyHint: string;
@@ -104,6 +157,12 @@ export interface MenuStrings {
   unsupportedHint: string;
   pendingHint: string;
   closeLabel: string;
+  /** Phase 4 W6.3 — DOI sub-mode strings (chip-citation-doi). */
+  doiInputLabel: string;
+  doiInputPlaceholder: string;
+  doiSubmitLabel: string;
+  doiInvalidError: string;
+  doiBackLabel: string;
 }
 
 /** Bilingual strings for every menu surface. Aligns with COPY_BUTTON_LABEL idiom. */
@@ -115,6 +174,11 @@ export const MENU_STRINGS: MenuStrings = {
   unsupportedHint: '该动作仍在接通中（路由暂不支持） / Action wiring up — route not enabled yet',
   pendingHint: '调用中… / Invoking…',
   closeLabel: '关闭 / Close',
+  doiInputLabel: '输入 DOI / Enter DOI',
+  doiInputPlaceholder: '10.1145/3531146.3533104',
+  doiSubmitLabel: '查找并插入 / Look up & insert',
+  doiInvalidError: 'DOI 格式不正确 / Invalid DOI format',
+  doiBackLabel: '返回 / Back',
 };
 
 /** Should the chip be primary (call out) given the current selection? */

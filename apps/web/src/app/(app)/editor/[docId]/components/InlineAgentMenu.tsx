@@ -28,6 +28,8 @@ import {
   MENU_STRINGS,
   buildInvokeRequestBody,
   chipVisualLevel,
+  isValidDoiInput,
+  type ChipDescriptor,
 } from '@/lib/inline-agent-menu';
 
 export interface InlineAgentMenuProps {
@@ -74,12 +76,18 @@ export default function InlineAgentMenu({
   const [pendingKind, setPendingKind] = useState<AgentKind | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [instructions, setInstructions] = useState('');
+  // Phase 4 W6.3 — DOI sub-mode (chip-citation-doi). When non-null, the
+  // menu renders an inline DOI input form instead of the chip grid.
+  const [doiInputMode, setDoiInputMode] = useState<ChipDescriptor | null>(null);
+  const [doiInput, setDoiInput] = useState('');
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const close = useCallback(() => {
     setOpenState(null);
     setError(null);
     setInstructions('');
+    setDoiInputMode(null);
+    setDoiInput('');
   }, []);
 
   // Listen on the editor's DOM for open / close events emitted by
@@ -130,7 +138,22 @@ export default function InlineAgentMenu({
 
   const invoker = onInvoke ?? DEFAULT_INVOKER;
 
-  const handleClick = async (kind: AgentKind) => {
+  const handleChipClick = (chip: ChipDescriptor) => {
+    // Phase 4 W6.3 — DOI sub-mode chip → swap UI to the DOI input form,
+    // do NOT invoke yet (user types DOI, hits Enter / Submit, then we
+    // POST with mode='doi-direct').
+    if (chip.mode === 'doi-direct') {
+      setDoiInputMode(chip);
+      setError(null);
+      return;
+    }
+    void handleInvoke(chip.kind);
+  };
+
+  const handleInvoke = async (
+    kind: AgentKind,
+    extras: { doi?: string; mode?: 'doi-direct' } = {},
+  ) => {
     setPendingKind(kind);
     setError(null);
     try {
@@ -139,12 +162,12 @@ export default function InlineAgentMenu({
         documentId,
         context,
         ...(instructions.trim() ? { instructions } : {}),
+        ...(extras.doi !== undefined ? { doi: extras.doi } : {}),
+        ...(extras.mode !== undefined ? { mode: extras.mode } : {}),
       });
       const res = await invoker(body);
       if (!res.ok) {
         setError(res.error ?? '未知错误 / Unknown error');
-        // RevisionInbox refresh is auto via its own poll button; no
-        // explicit dispatch needed here.
         return;
       }
       // Success → emit `agentMenu:invoke` so any analytics layer can
@@ -160,6 +183,21 @@ export default function InlineAgentMenu({
     } finally {
       setPendingKind(null);
     }
+  };
+
+  const handleDoiSubmit = () => {
+    const trimmed = doiInput.trim();
+    if (!isValidDoiInput(trimmed)) {
+      setError(MENU_STRINGS.doiInvalidError);
+      return;
+    }
+    void handleInvoke('citation', { doi: trimmed, mode: 'doi-direct' });
+  };
+
+  const handleDoiBack = () => {
+    setDoiInputMode(null);
+    setDoiInput('');
+    setError(null);
   };
 
   // Floating positioning: anchor below selection, clamped to viewport.
@@ -190,62 +228,124 @@ export default function InlineAgentMenu({
         </button>
       </div>
 
-      {passageEmpty && (
+      {passageEmpty && !doiInputMode && (
         <p className="mb-2 rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
           {MENU_STRINGS.emptyHint}
         </p>
       )}
 
-      <div className="mb-2 grid grid-cols-2 gap-1.5">
-        {AGENT_CHIPS.map((chip) => {
-          const level = chipVisualLevel(context, chip.kind);
-          const isPending = pendingKind === chip.kind;
-          const disabled = passageEmpty || pendingKind !== null;
-          const aria = level === 'primary' ? 'true' : undefined;
-          const styleClass =
-            level === 'primary'
-              ? 'border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900'
-              : level === 'secondary'
-                ? 'border-zinc-700 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-300 dark:bg-zinc-800 dark:text-zinc-100'
-                : 'border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300';
-          return (
-            <button
-              key={chip.kind}
-              type="button"
-              data-testid={chip.testId}
-              data-chip-level={level}
-              data-route-supported={String(chip.routeSupported)}
-              aria-current={aria}
-              disabled={disabled}
-              onClick={() => void handleClick(chip.kind)}
-              title={chip.routeSupported ? chip.label : MENU_STRINGS.unsupportedHint}
-              className={`rounded-md border px-2.5 py-1.5 text-left text-[11px] disabled:opacity-50 ${styleClass} ${
-                !chip.routeSupported ? 'opacity-60' : ''
-              }`}
-            >
-              {isPending ? MENU_STRINGS.pendingHint : chip.label}
-              {!chip.routeSupported && (
-                <span className="ml-1 rounded bg-zinc-200 px-1 text-[9px] text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
-                  WIP
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {!doiInputMode && (
+        <div
+          className="mb-2 grid grid-cols-2 gap-1.5"
+          data-testid="inline-agent-menu-chip-grid"
+        >
+          {AGENT_CHIPS.map((chip) => {
+            const level = chipVisualLevel(context, chip.kind);
+            const isPending = pendingKind === chip.kind && !chip.mode;
+            // chip-citation-doi accepts cursor-only invocation (no passage
+            // required — user types the DOI directly). Only disable for
+            // chips that operate on the passage.
+            const disabled =
+              (chip.mode === 'doi-direct' ? false : passageEmpty) ||
+              pendingKind !== null;
+            const aria = level === 'primary' ? 'true' : undefined;
+            const styleClass =
+              level === 'primary'
+                ? 'border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900'
+                : level === 'secondary'
+                  ? 'border-zinc-700 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-300 dark:bg-zinc-800 dark:text-zinc-100'
+                  : 'border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300';
+            return (
+              <button
+                key={chip.testId}
+                type="button"
+                data-testid={chip.testId}
+                data-chip-level={level}
+                data-route-supported={String(chip.routeSupported)}
+                data-chip-mode={chip.mode ?? ''}
+                aria-current={aria}
+                disabled={disabled}
+                onClick={() => handleChipClick(chip)}
+                title={chip.routeSupported ? chip.label : MENU_STRINGS.unsupportedHint}
+                className={`rounded-md border px-2.5 py-1.5 text-left text-[11px] disabled:opacity-50 ${styleClass} ${
+                  !chip.routeSupported ? 'opacity-60' : ''
+                }`}
+              >
+                {isPending ? MENU_STRINGS.pendingHint : chip.label}
+                {!chip.routeSupported && (
+                  <span className="ml-1 rounded bg-zinc-200 px-1 text-[9px] text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                    WIP
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-      <label className="mt-1 flex flex-col gap-1">
-        <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
-          {MENU_STRINGS.instructionsLabel}
-        </span>
-        <input
-          type="text"
-          value={instructions}
-          onChange={(e) => setInstructions(e.target.value)}
-          placeholder={MENU_STRINGS.instructionsPlaceholder}
-          className="rounded border border-zinc-300 bg-white px-2 py-1 text-[11px] focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-100"
-        />
-      </label>
+      {!doiInputMode && (
+        <label className="mt-1 flex flex-col gap-1">
+          <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+            {MENU_STRINGS.instructionsLabel}
+          </span>
+          <input
+            type="text"
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+            placeholder={MENU_STRINGS.instructionsPlaceholder}
+            className="rounded border border-zinc-300 bg-white px-2 py-1 text-[11px] focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-100"
+          />
+        </label>
+      )}
+
+      {doiInputMode && (
+        <div data-testid="inline-agent-menu-doi-form" className="flex flex-col gap-2">
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+              {MENU_STRINGS.doiInputLabel}
+            </span>
+            <input
+              type="text"
+              data-testid="doi-input"
+              value={doiInput}
+              autoFocus
+              onChange={(e) => {
+                setDoiInput(e.target.value);
+                if (error) setError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleDoiSubmit();
+                }
+              }}
+              placeholder={MENU_STRINGS.doiInputPlaceholder}
+              className="rounded border border-zinc-300 bg-white px-2 py-1 font-mono text-[11px] focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-100"
+            />
+          </label>
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              data-testid="doi-back"
+              onClick={handleDoiBack}
+              className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-[11px] text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+            >
+              {MENU_STRINGS.doiBackLabel}
+            </button>
+            <button
+              type="button"
+              data-testid="doi-submit"
+              disabled={pendingKind !== null || doiInput.trim().length === 0}
+              onClick={handleDoiSubmit}
+              className="rounded-md border border-zinc-900 bg-zinc-900 px-2.5 py-1 text-[11px] text-white hover:bg-zinc-800 disabled:opacity-50 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+            >
+              {pendingKind === 'citation'
+                ? MENU_STRINGS.pendingHint
+                : MENU_STRINGS.doiSubmitLabel}
+            </button>
+          </div>
+        </div>
+      )}
 
       {error && (
         <p
