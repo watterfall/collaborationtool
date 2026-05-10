@@ -81,10 +81,14 @@ export type {
 export {
   loadPlugin,
   loadAgentPlugin,
+  loadPluginRegistry,
+  findAgentByKind,
+  resolvePluginAbsolutePath,
   parseManifest,
   PluginLoadError,
   PluginManifestError,
   MANIFEST_FILENAME,
+  _resetPluginRegistryCache,
   type AgentManifest,
   type AgentPluginInput,
   type AgentPluginModule,
@@ -95,6 +99,7 @@ export {
   type McpServerManifest,
   type PluginKind,
   type PluginManifest,
+  type RegisteredPlugin,
   type SkillManifest,
   type UiPanelManifest,
 } from './plugins';

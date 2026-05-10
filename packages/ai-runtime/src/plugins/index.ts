@@ -10,6 +10,13 @@ export {
   PluginLoadError,
 } from './loader';
 export { parseManifest, PluginManifestError } from './manifest';
+export {
+  loadPluginRegistry,
+  findAgentByKind,
+  resolvePluginAbsolutePath,
+  _resetPluginRegistryCache,
+  type RegisteredPlugin,
+} from './registry';
 export type {
   AgentManifest,
   AgentPluginInput,

@@ -27,7 +27,9 @@ import { headers } from 'next/headers';
 
 import {
   crossrefMockTransport,
+  findAgentByKind,
   invokeAgentViaPlugin,
+  resolvePluginAbsolutePath,
 } from '@collaborationtool/ai-runtime';
 import { loadPrincipalContext } from '@collaborationtool/permissions';
 
@@ -108,24 +110,25 @@ export async function POST(request: Request): Promise<NextResponse> {
   // packages/skills (when we move skills under a package).
   const skillsRoot = path.resolve(process.cwd(), '..', '..', 'skills');
 
-  // Plugin roots — Phase 2 W3+W5 dogfood. ADR-0006 §2.7 (registry
-  // table) currently catalogs MCP servers only; agent-plugin id → path
-  // lookup is the Phase 2 W7 + ADR-0010 review log follow-up. For now
-  // the route knows there are exactly two agent plugins (citation +
-  // inline-editor) and can hardcode their locations.
-  const citationPluginRoot = path.resolve(
-    process.cwd(),
-    '..',
-    '..',
-    'plugins',
-    'citation-agent',
+  // Phase 2.5: plugin path resolved via registry (`plugins/registry.json`)
+  // instead of hardcoded inline. Phase 3 will fold in user-installed
+  // plugins from a PG `plugin` table.
+  const repoRoot = path.resolve(process.cwd(), '..', '..');
+  const citationPluginEntry = await findAgentByKind(repoRoot, 'citation');
+  const inlineEditorPluginEntry = await findAgentByKind(repoRoot, 'editor');
+  if (!citationPluginEntry || !inlineEditorPluginEntry) {
+    return NextResponse.json(
+      { error: 'plugin-registry-incomplete' },
+      { status: 500 },
+    );
+  }
+  const citationPluginRoot = resolvePluginAbsolutePath(
+    repoRoot,
+    citationPluginEntry,
   );
-  const inlineEditorPluginRoot = path.resolve(
-    process.cwd(),
-    '..',
-    '..',
-    'plugins',
-    'inline-editor-agent',
+  const inlineEditorPluginRoot = resolvePluginAbsolutePath(
+    repoRoot,
+    inlineEditorPluginEntry,
   );
 
   const distinctId = anonDistinctId(principalId);
