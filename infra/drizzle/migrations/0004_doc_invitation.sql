@@ -12,7 +12,7 @@
 
 CREATE TABLE "doc_invitation" (
   "id" text PRIMARY KEY,
-  "document_id" uuid NOT NULL REFERENCES "document"("id") ON DELETE CASCADE,
+  "document_id" text NOT NULL REFERENCES "document"("id") ON DELETE CASCADE,
   "inviter_principal_id" text NOT NULL REFERENCES "principal"("id") ON DELETE RESTRICT,
   "email" text NOT NULL,
   "role_id" text NOT NULL,

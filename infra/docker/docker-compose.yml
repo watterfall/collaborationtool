@@ -62,33 +62,35 @@ services:
     image: ghcr.io/jamsocket/y-sweet:latest
     container_name: collaborationtool-ysweet
     restart: unless-stopped
+    # Image default CMD is `serve-doc` (single-doc mode). We want the
+    # multi-doc `serve` mode so the gateway can mint per-document tokens.
+    command: ["y-sweet", "serve", "--host=0.0.0.0", "s3://y-sweet/docs"]
     depends_on:
       minio:
         condition: service_healthy
       minio-bucket-init:
         condition: service_completed_successfully
     environment:
-      # y-sweet stores docs at this S3-compat URL. Path-style works
-      # against both MinIO (dev) and most S3-compats (R2 / Tigris).
-      STORAGE: s3://y-sweet/docs
+      # S3-compat target for doc persistence. Path-style works against
+      # both MinIO (dev) and most S3-compats (R2 / Tigris).
       AWS_ENDPOINT_URL_S3: http://minio:9000
       AWS_ACCESS_KEY_ID: collab
       AWS_SECRET_ACCESS_KEY: collab12345
       AWS_REGION: us-east-1
-      AWS_S3_FORCE_PATH_STYLE: "true"
-      # Bearer token clients must present. apps/sync-gateway holds the
-      # matching value in its YSWEET_AUTH env so it can issue client
-      # tokens / fetch state. CHANGE THIS IN PRODUCTION.
-      Y_SWEET_AUTH: dev-y-sweet-auth-token-replace-in-prod
+      AWS_S3_USE_PATH_STYLE: "true"
+      # Server-side private key. New y-sweet validates this as a
+      # structured token (generated via `y-sweet gen-auth`). The matching
+      # server_token goes into apps/sync-gateway's YSWEET_AUTH so it can
+      # mint per-doc client tokens. ROTATE BOTH IN PRODUCTION.
+      Y_SWEET_AUTH: UcFSSu_5QSsOuZedIhQpix7QzK7X3IwDcW27iqMd
       # Public host the y-websocket clients connect to. Phase 1 dev:
       # localhost. Phase 1.5 production sets this to the deployment URL.
-      Y_SWEET_HOST: localhost:8080
+      Y_SWEET_URL_PREFIX: http://localhost:8080
     ports:
       - "8080:8080"
+    # Image has no curl/wget; use bash /dev/tcp to probe the listener.
     healthcheck:
-      test:
-        - "CMD-SHELL"
-        - "wget -qO- http://localhost:8080/check_store >/dev/null || exit 1"
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 6

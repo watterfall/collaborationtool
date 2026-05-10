@@ -18,7 +18,10 @@ const config: NextConfig = {
   // editor-core ships ESM with TipTap / Yjs / KaTeX deps; we want Next
   // to transpile it as part of the app bundle so pnpm-workspace ESM
   // packages don't trip dual-package hazards.
-  transpilePackages: ['@collaborationtool/editor-core'],
+  transpilePackages: [
+    '@collaborationtool/editor-core',
+    '@collaborationtool/doc-store',
+  ],
   reactStrictMode: true,
   experimental: {
     // Phase 1 not using ppr / typed routes; revisit Phase 2.
