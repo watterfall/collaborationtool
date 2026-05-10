@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-09（claude/review-project-goals-TpFuH，**Phase 3 启动 W1-W7 backend + 2 新 ADR**：Phase 2 W1-W7 全交付 + 6 ADR Accepted（前史）；Phase 2.5 工程对接 6/7 完成（剩 3 项依赖外部服务）。**Phase 3 启动 7 commits**：(1) ADR-0012 Plugin sandbox + capability UI（W5 enabler，commit `0ce4e51`）；(2) ADR-0013 ModelProvider abstraction（BYO 模型 W7 enabler，commit `b1c9ddc`）；(3) source + source_extraction PG schema（W1/W2 backend，commit `4269489`，第 21+22 表）；(4) plugins/source-extractor scaffold + skill（W2 AI ingestion，commit `8fcb7c7`）；(5) ModelProvider abstraction in ai-runtime + Anthropic adapter（W7 第一步，commit `e93fb78`）；(6) maintenance_finding PG 表 + scan job descriptor（W4 backend，commit `f0f5841`，第 23 表）；(7) coordinator agent handoff types + plugin scaffold（W6 backend，commit `b7c4ef6`）。**30 包全 typecheck PASS / 92+ 测试 PASS**（ai-runtime 48 + editor-core 29 + 各 import / molab / auto-fix / agent-worker 测试）。**Phase 3 推迟项**：W3 Draft Composer（dogfood-driven）+ W8 spatial canvas spike（视觉前端）+ 6 plugin 真 LLM 调试（require ANTHROPIC_API_KEY）+ Bubblewrap/HTTPS proxy 实施（require Linux 部署环境）+ user_model_pref schema（W7 末）+ 真 reviewer/researcher 跑通（同 Phase 2.5）。Phase 3 §二 6 开放问题：§2.5 + §2.6 通过 ADR-0012/0013 答完；§2.1 + §2.3 通过 source / maintenance schema 部分答；§2.2 Draft Composer 显式 dogfood-trigger；§2.4 50+ 协作者 + Yjs subdoc 推 W4 后期。user 哲学 reaffirmed：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
+最后更新：2026-05-10（claude/phase-3-to-phase-4-antaC，**Phase 4 启动 W1-W4 backend + 2 新 ADR**）。Phase 3 closeout 4 commits 已 landed；Phase 4 启动 6 commits：(P4-1) ADR-0014 Yjs subdocument 章节级拆分（W5-W6 enabler，Proposed）；(P4-2) ADR-0015 Open peer review + ORCID-signed reviews（W8 enabler，Proposed）；(P4-3) W1 plugin install backend — `buildCapabilityPrompt` + `buildSandboxDescriptor` + `buildLinuxBwrapArgs` + `buildInstallRowPayload` + `InstallRejectedError`，bwrap arg vector 含 `--unshare-{user,pid,ipc,uts}` + `--die-with-parent` + `--clearenv`；macOS / Windows 占位描述符；13 单元测试；(P4-4) W2 BYO model resolver — 4 档优先级 `document-override > user-pref > manifest-hint > env-default` + manifest schema 加 `prefers_provider` 字段（coordinator-agent 已声明 Anthropic 长上下文偏好）+ 9 单元测试；(P4-5) W3 coordinator real loop — `runCoordinatorLoop` 多步 dispatcher（sync + async 混合 + scratchpad 累积 + `[final]` 终止 + maxSteps 硬停 + allowedAgentKinds 过滤）+ 7 单元测试；(P4-6) W4 maintenance scan — 3 SQL-pure finding 生成器（`unsupported-claim` / `outdated-source` / `unverified-ai-block`）+ `scanForFindings` / `writeFindings` + apps/agent-worker 路由 maintenance-scan job + 7 单元测试。**ai-runtime 测试 69 → 98 PASS**（+13 install + 9 resolver + 7 coordinator-loop）；**agent-worker 测试 5 → 12 PASS**（+7 maintenance-scan）；**全 workspace typecheck PASS**。Phase 4 推迟项：W3 dogfood gate（bwrap 真启动 require Linux + Anthropic round-trip require API key）+ W2 dogfood gate（4 endpoint round-trip）+ W3 端到端真 multi-agent 跑通 + W4 残 3 finding kind（duplicated-claim 语义 / contradicted-conclusion 综合 / broken-citation 网络）。ADR-0012/0013 维持 **Proposed**；ADR-0014/0015 起草 **Proposed**，分别 W5-W6 / W8 dogfood gate 后 promote。)
 
 ---
 
@@ -26,13 +26,22 @@
 
 **Phase 2.5（工程对接 + 真服务实测）：6/7 工程对接已交付**（剩 3 项依赖真服务推 dogfood 环境）。spike 结论：Typst.ts WASM **推 Phase 3+ 重测**；Loro **继续 Yjs through Phase 3**（subdocument trigger 时再评估）。
 
-**Phase 3：启动**（`plan0/phase-3-plan-stub.md` W1-W8）。本会话已交付 W1-W7 backend：
-- W1+W2: source + source_extraction PG schema + source-extractor plugin（PDF.js / readability 真 ingestion 流水线 + Source Reader UI 推 dogfood）
-- W4: maintenance_finding PG 表 + scan job descriptor（real scan logic + LLM "duplicate detection" 推 W4 末实施）
-- W5: ADR-0012 plugin sandbox 设计（Bubblewrap + capability UI；实施推 dogfood + Linux 部署环境）
-- W6: coordinator agent handoff types + plugin scaffold（LLM-driven dispatch loop 推 W6 末）
-- W7: ADR-0013 ModelProvider abstraction + Anthropic adapter（OpenAI-compat / Ollama / custom-http 推 W7 末）
+**Phase 3：✅ backend 完成（W1-W7 schema + scaffold + closeout 4 件）**。详见 `plan0/phase-3-plan-stub.md` + `plan0/phase-4-plan-stub.md`：
+- W1+W2: source + source_extraction PG schema + source-extractor plugin（PDF.js / readability 真 ingestion 流水线 + Source Reader UI 推 Phase 4 W4）
+- W4: maintenance_finding PG 表 + scan job descriptor（real scan logic + LLM "duplicate detection" 推 Phase 4 W4 实施）
+- W5: ADR-0012 plugin sandbox 设计 + plugin_install PG 表（migration 0010）；Bubblewrap + capability deny e2e 推 Phase 4 W1 dogfood gate
+- W6: coordinator handoff types + dispatch 工具（parseCoordinatorDecision + dispatchSyncHandoffs，9 单元测试）+ agent_job.parent_job_id 字段；LLM dispatch loop 推 Phase 4 W3
+- W7: ADR-0013 ModelProvider abstraction + 4 adapter（anthropic / openai-compat / ollama / custom-http）+ user_model_pref + document_model_override PG 表；4 endpoint 真 round-trip 推 Phase 4 W2 dogfood gate
 - 推迟：W3 Draft Composer（dogfood-trigger）+ W8 spatial canvas spike（前端）
+
+**Phase 4：启动**（`plan0/phase-4-plan-stub.md` W1-W10）。本会话已交付 W1-W4 backend + 2 新 ADR：
+- W1 (ADR-0012): plugin install backend — capability prompt + 沙箱描述符（bwrap arg vector / macOS sandbox-exec 占位 / Windows AppContainer 占位）+ install row 校验（capability superset / https-only git-url）+ 13 单元测试（dogfood gate 真 bwrap 启动推 W1 末 require Linux host）
+- W2 (ADR-0013): provider resolver — 4 档优先级 lookup（document-override > user-pref > manifest-hint > env-default）+ manifest schema 加 `prefers_provider` 字段 + coordinator-agent manifest 已声明长上下文偏好 + 9 单元测试
+- W3 (ADR-0008): coordinator real loop — `runCoordinatorLoop` 多步 dispatcher（sync + async 混合 / scratchpad / `[final]` 终止 / maxSteps 硬停 / allowedAgentKinds 过滤）+ 7 单元测试（真 LLM 端到端推 W3 末）
+- W4 (ADR-0011): maintenance scan worker — 3 SQL-pure finding 生成器（unsupported-claim / outdated-source / unverified-ai-block）+ apps/agent-worker 路由 maintenance-scan job kind + 7 单元测试（残 3 finding kind 推 W4 末）
+- 起草 ADR-0014 / ADR-0015：subdocument 章节级拆分（W5-W6）+ 开放同行评审 ORCID（W8）
+
+**Phase 4 推迟项**：W5-W6 Yjs subdocument 实施 + W7 章节 fork-merge UI + W8 ORCID 真集成 + W9 跨设备同步 + W10 Loro / Automerge 3 review。
 
 ---
 
@@ -51,8 +60,10 @@
 | 0009 | Diff library + revision overlay UI + rebase semantics | **Accepted (Phase 0 spike + Phase 1 D14 实证)** | proto-d-diff-library spike + D14 acceptRevision 流程已实证 prosemirror-changeset 选型；Phase 2 W2-W3 实施未额外开 commit（已经在 Phase 1 D14 落地大部分 contributor 路径） |
 | 0010 | 扩展系统边界 + Plugin API + Skill 元数据扩展 + Dogfood 路径 | **Accepted** | W3 dogfood gate 三项 criteria 全 PASS + W4-W5 follow-up inline-editor 切到 plugin 路径完成（hardcode `agents/citation.ts` + `agents/inline-editor.ts` 全删；`packages/ai-runtime/src/agents/` 目录已删） |
 | 0011 | Claim/Evidence/Counterpoint/Synthesis 一等知识对象层 | **Accepted** | W5 schema + PM 节点（claim + evidence block container）+ W7 Evidence Map / AI context pack 路由全 PASS；§7 review log 写 W7 dogfood gate criteria 三项 |
-| 0012 | Plugin sandbox + 用户安装路径 + capability 提示 UI | **Proposed** | 2026-05-09 Phase 3 W5 起草；OS 沙箱选 Bubblewrap (Linux) / sandbox-exec (macOS Phase 4) / AppContainer (Windows Phase 4)；HTTPS proxy enforce manifest network domains；plugin PG 表 schema；W5 dogfood gate 三项 criteria（真第三方 plugin 装载 / OS 沙箱真隔离 / capability deny 真生效） |
-| 0013 | ModelProvider abstraction + BYO 模型 + 配置存储 | **Proposed** | 2026-05-09 Phase 3 W7 起草；4 wireFormat（anthropic / openai-compat / ollama / custom-http），配置存储双层（user_model_pref + document_model_override），API key env 变量 self-host 友好；plugin manifest 加 prefers_provider；Anthropic adapter 已实施（commit `e93fb78`），其余 3 adapter W7 后续；W7 dogfood gate 三项 criteria |
+| 0012 | Plugin sandbox + 用户安装路径 + capability 提示 UI | **Proposed** | 2026-05-09 Phase 3 W5 起草；OS 沙箱选 Bubblewrap (Linux) / sandbox-exec (macOS Phase 5) / AppContainer (Windows Phase 5)；HTTPS proxy enforce manifest network domains；**Phase 3 closeout**: plugin_install PG 表 + 3 enum 落地（migration 0010）；**Phase 4 W1**: capability prompt + sandbox descriptor (bwrap arg vector) + install row 校验 + 13 单元测试。bwrap 真启动 + capability deny e2e 推 W1 末 dogfood gate (require Linux host) |
+| 0013 | ModelProvider abstraction + BYO 模型 + 配置存储 | **Proposed** | 2026-05-09 Phase 3 W7 起草；4 wireFormat（anthropic / openai-compat / ollama / custom-http），配置存储双层（user_model_pref + document_model_override），API key env 变量 self-host 友好；plugin manifest 加 prefers_provider；**Phase 3 closeout**: 4 adapter 全交付 + 11 单元测试 + user_model_pref / document_model_override 表落地（migration 0010）；**Phase 4 W2**: provider resolver 4 档优先级 + coordinator manifest 声明长上下文偏好 + 9 单元测试。4 endpoint 真 round-trip 推 W2 末 dogfood gate |
+| 0014 | Yjs subdocument 章节级拆分 + cross-reference sync | **Proposed** | 2026-05-10 Phase 4 W5-W6 起草；heading-1 默认拆分粒度 + root crossRefs Y.Map + 自动 + 手动双轨拆分 + subdocument 独立 ACL；新表 subdocument + crossref_index + capability_resource_type enum 加 'subdocument'；W5-W6 dogfood gate 三项（50 客户端并发 / 跨 subdoc reference 真同步 / subdocument-level ACL 真生效）|
+| 0015 | Open peer review + ORCID-signed reviews | **Proposed** | 2026-05-10 Phase 4 W8 起草；ORCID OAuth → JWS detached signature；review 一等对象表 + visibility 矩阵（private / authors-only / public）+ 三 capability（review.submit / publish / sign）+ AI vs human review 显式区分；W8 dogfood gate 三项（真 ORCID 端到端 / author reject-review 路径 / withdrawn review archive）|
 
 ---
 

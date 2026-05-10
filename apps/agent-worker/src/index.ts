@@ -27,7 +27,8 @@ import {
   markRunning,
   updateProgress,
 } from './job-store';
-import type { AgentJobKind, AnyJobInput } from './job-types';
+import type { AgentJobKind, AnyJobInput, MaintenanceScanJobInput } from './job-types';
+import { scanForFindings, writeFindings } from './maintenance-scan';
 
 export interface WorkerConfig {
   databaseUrl: string;
@@ -94,6 +95,14 @@ async function handleOne(
   });
 
   try {
+    // Phase 4 W4: maintenance-scan handler is SQL-pure; no LLM/MCP
+    // needed. We branch here before the Anthropic instantiation path
+    // so a Postgres-only deployment can run scans without ANTHROPIC_API_KEY.
+    if (input.kind === 'maintenance-scan') {
+      await runMaintenanceScan(db, jobId, input);
+      return;
+    }
+
     // Anthropic instantiation deferred to here (worker lifetime ≫ job).
     // Per-job re-instantiation is fine: ~5ms object construction, no
     // network on construct.
@@ -117,6 +126,7 @@ async function handleOne(
     // wires the real PC reload from agent_job.triggering_principal_id.
     void invokeAgentViaPlugin;
     void config.skillsRoot;
+    void anthropic;
     void input;
     // STUB: real reviewer/researcher handler lands W4-W7. For now, mark
     // done with empty outputs so pgboss + agent_job rows demo-end-to-end.
@@ -144,6 +154,50 @@ async function handleOne(
       errorMessage,
     });
   }
+}
+
+/** Phase 4 W4: maintenance-scan handler. SQL-pure; runs the 3
+ * statically-computable finding generators (unsupported-claim /
+ * outdated-source / unverified-ai-block) and writes results into
+ * maintenance_finding. Other 3 finding kinds (duplicated-claim
+ * semantic / contradicted-conclusion synthesis-aware / broken-citation
+ * external network check) stay deferred to W4 末. */
+async function runMaintenanceScan(
+  db: ReturnType<typeof openDatabase>['db'],
+  jobId: string,
+  input: MaintenanceScanJobInput,
+): Promise<void> {
+  await updateProgress(db, jobId, 0.2, 'scanning vault for findings');
+  const scope =
+    input.scope === 'document'
+      ? ({ kind: 'document', documentId: input.documentId! } as const)
+      : ({ kind: 'vault', vaultPrincipalId: input.vaultPrincipalId! } as const);
+  const findings = await scanForFindings(db, {
+    scope,
+    jobId,
+    ...(input.findingKinds ? { findingKinds: input.findingKinds } : {}),
+  });
+  await updateProgress(
+    db,
+    jobId,
+    0.7,
+    `writing ${findings.length} finding(s)`,
+  );
+  await writeFindings(db, findings);
+  await markDone(db, {
+    jobId,
+    outputRevisionIds: [],
+    outputThreadIds: [],
+    costTokenInput: 0,
+    costTokenOutput: 0,
+    costUsdMilli: 0,
+  });
+  await appendEvent(db, jobId, {
+    kind: 'done',
+    outputRevisionIds: [],
+    outputThreadIds: [],
+    cost: { inputTokens: 0, outputTokens: 0, usdMilli: 0 },
+  });
 }
 
 // CLI entry: `pnpm --filter @collaborationtool/agent-worker start`.

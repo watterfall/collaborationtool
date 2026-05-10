@@ -282,6 +282,39 @@ user 哲学"避免过度兼容性"反对。
 
 ## 7. Review log
 
-（Phase 3 W7 dogfood gate 后填；预期内容：(a) gate 三项 pass/fail；
-(b) Anthropic / OpenAI / Ollama tool-use 兼容矩阵实测；(c) §5 open
-questions 答案；(d) per-org keystore 升级路径）
+### Phase 3 closeout（2026-05-10，branch `claude/phase-3-to-phase-4-antaC`）
+
+Phase 3 W7 4 wireFormat adapter 全部交付（types 稳定 + 网络 dispatch
++ 单元测试覆盖）。dogfood gate（真 endpoint 验证）推 Phase 4：
+
+- `packages/ai-runtime/src/providers/`：
+  - `anthropic.ts`（Phase 3 commit `e93fb78`）— 走 `@anthropic-ai/sdk`
+  - `openai-compat.ts`（closeout）— `/v1/chat/completions` + tool-use
+    loop；429 → `rate-limited`；401/403 → `auth-failed`
+  - `ollama.ts`（closeout）— `/api/chat` + Ollama 0.3+ tool_calls；404 →
+    `config-invalid`（"模型未 pull"）；默认 endpoint `http://localhost:11434`
+  - `custom-http.ts`（closeout）— escape hatch；user 提供 `serializeRequest`
+    + `parseResponse` callback；可选 toolCalls 循环
+- `user_model_pref` + `document_model_override` PG 表 已落（migration
+  0010）；查找优先级 document_model_override → user_model_pref → ENV
+- API key 安全策略：表内只存 `api_key_env_var`（指向 host env 变量名），
+  不存原始 secret（ADR-0013 §2.6 落地）
+- `model_provider_wire_format` enum 在 PG 与代码同源（4 档对齐 WireFormat
+  union type）
+- 单元测试：11 项 stub-fetch 覆盖（OpenAI happy + tool-use loop + 429；
+  Ollama 默认 / custom endpoint / 404 / JSON 解析；custom-http 配置校
+  验 + single-shot + tool-use 循环）
+
+仍开放（Phase 4 dogfood gate 必答）：
+
+- 真 endpoint round-trip 实测：vLLM + DeepSeek + OpenRouter（OpenAI-compat），
+  本机 Llama 3.1 / Qwen 2.5（Ollama），corp gateway（custom-http）
+- plugin manifest 加 `prefers_provider` 字段 + apps/web settings UI
+- per-org keystore（多 tenant SaaS 部署）升级路径：env-var 不够时切 KMS
+- A/B 同 plugin 不同 provider 输出对比 UI（Researcher 跨 provider）
+- §5 5 个开放问题最终答案（API key naming / Ollama endpoint / health check /
+  token budget / A/B UI）
+
+Status 维持 **Proposed**；Phase 4 W2 dogfood gate（4 wireFormat 真
+round-trip + plugin manifest prefers_provider 落地）通过后 promote
+Accepted。

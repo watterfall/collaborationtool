@@ -1,6 +1,8 @@
-// Phase 3 W6 Coordinator public API. Phase 3 W6 commit (this file)
-// ships **types only**; the LLM-driven dispatch logic lands in
-// plugins/coordinator-agent/agent.ts later in W6.
+// Phase 3 W6 Coordinator public API.
+// Closeout commit: types + small in-process dispatch helpers
+// (parseCoordinatorDecision + dispatchSyncHandoffs). The full
+// LLM-driven loop lives in plugins/coordinator-agent/agent.ts; the
+// async-handoff agent_job insert lives in apps/agent-worker.
 
 export type {
   AgentHandoff,
@@ -9,3 +11,17 @@ export type {
   CoordinatorJobInput,
   HandoffResult,
 } from './types';
+
+export {
+  parseCoordinatorDecision,
+  dispatchSyncHandoffs,
+  type SyncHandoffRunner,
+} from './dispatch';
+
+// Phase 4 W3 ADR-0008: full coordinator loop orchestrator.
+export {
+  runCoordinatorLoop,
+  type AsyncHandoffEnqueuer,
+  type CoordinatorStepRunner,
+  type RunCoordinatorLoopInput,
+} from './loop';

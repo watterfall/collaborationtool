@@ -35,3 +35,15 @@ runtime_mode: propose
 quota:
   daily_invocations: 30
   timeout_seconds: 1800   # 30 min for multi-agent dispatch
+
+# Phase 4 W2 ADR-0013 §2.5: provider preference hint. The coordinator's
+# multi-step decisions benefit from a long-context model (full doc state
+# + scratchpad accumulate ~50k tokens by step 6). User config still
+# overrides — this is a default.
+prefers_provider:
+  wire_format: anthropic
+  model_id: claude-sonnet-4-6
+  rationale: |
+    Coordinator scratchpad + handoff results grow over multiple steps;
+    a 200k-context model avoids early truncation that would make the
+    final summary lossy.

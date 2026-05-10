@@ -215,3 +215,24 @@ export const findingStatusEnum = pgEnum('finding_status', [
   'resolved',
   'dismissed',
 ]);
+
+// ---------- ModelProvider abstraction (Phase 3 W7 ADR-0013) ----------
+
+export const modelProviderWireFormatEnum = pgEnum(
+  'model_provider_wire_format',
+  ['anthropic', 'openai-compat', 'ollama', 'custom-http'],
+);
+
+// ---------- Plugin install (Phase 3 W5 ADR-0012) ----------
+
+export const pluginInstallStatusEnum = pgEnum('plugin_install_status', [
+  'enabled',
+  'disabled',
+  'uninstalled',
+]);
+
+export const pluginInstallOriginEnum = pgEnum('plugin_install_origin', [
+  'git-url',
+  'local-path',
+  'marketplace',
+]);

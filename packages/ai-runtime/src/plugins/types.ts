@@ -102,6 +102,19 @@ export interface AgentManifest extends BasePluginManifest {
     dailyInvocations?: number;
     timeoutSeconds?: number;
   };
+  /** Phase 4 W2 ADR-0013 §2.5: agent author hints which provider works
+   * best for this agent (e.g. researcher prefers high-context Anthropic;
+   * inline-editor is fine on a 7B local Ollama). User config still
+   * overrides — this is a default, not a lock. */
+  prefersProvider?: {
+    /** Wire format the agent expects to work. The host honours unless
+     * user pinned a specific provider for this doc/principal. */
+    wireFormat: 'anthropic' | 'openai-compat' | 'ollama' | 'custom-http';
+    /** Preferred model id (informational; UI shows in settings). */
+    modelId?: string;
+    /** Why this preference — surfaced as a tooltip in settings. */
+    rationale?: string;
+  };
 }
 
 /** MCP server — independent process speaking the MCP protocol. The

@@ -112,24 +112,54 @@ export {
 } from './plugin-host';
 
 // Phase 3 W7 ADR-0013: ModelProvider abstraction (BYO model).
-// Anthropic adapter ships in this commit; openai-compat / ollama /
-// custom-http land later in W7.
+// Phase 3 closeout ships all 4 wire-format adapters; Phase 4 W2 adds
+// the lookup precedence resolver.
 export {
   createAnthropicProvider,
+  createOpenAICompatProvider,
+  createOllamaProvider,
+  createCustomHttpProvider,
   ProviderError,
+  isUserConfigured,
+  resolveProvider,
+  type CustomHttpHistoryEntry,
+  type CustomHttpParsed,
+  type CustomHttpProviderOptions,
+  type CustomHttpRequestSpec,
+  type DocumentModelOverrideSnapshot,
+  type EnvDefault,
+  type EnvResolver,
+  type ManifestPrefersProvider,
   type ModelProvider,
+  type OllamaProviderOptions,
+  type OpenAICompatProviderOptions,
   type ProviderConfig,
   type ProviderFeatures,
   type ProviderRunInput,
+  type ResolveProviderInput,
+  type ResolvedProvider,
+  type UserModelPrefSnapshot,
   type WireFormat,
 } from './providers';
 
-// Phase 3 W6: Coordinator agent handoff types.
-// plugins/coordinator-agent/ 实施 LLM-driven dispatch 逻辑 W6 后续。
+// Phase 3 W6: Coordinator handoff types + closeout dispatch helpers.
+// Phase 4 W3: full multi-step loop orchestrator. plugins/coordinator-
+// agent wires LLM provider call; apps/agent-worker handles async
+// parent_job_id insertion.
 export type {
   AgentHandoff,
+  AsyncHandoffEnqueuer,
   CoordinatorDecision,
   CoordinatorFinalReport,
   CoordinatorJobInput,
+  CoordinatorStepRunner,
   HandoffResult,
+  RunCoordinatorLoopInput,
+  SyncHandoffRunner,
+} from './coordinator';
+
+export {
+  parseCoordinatorDecision,
+  dispatchSyncHandoffs,
+  runCoordinatorLoop,
 } from './coordinator';
