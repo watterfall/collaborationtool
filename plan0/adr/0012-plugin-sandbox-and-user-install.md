@@ -288,3 +288,46 @@ Phase 3 W5 backend schema 已落，UI + bwrap 实施推 Phase 4 dogfood gate
 
 Status 维持 **Proposed**；Phase 4 W1 dogfood gate（真 third-party plugin
 装且 capability deny 真生效）通过后 promote Accepted。
+
+## Phase 4 W1 Implementation Review Log（settings UI 半交付）
+
+W1 backend（capability prompt + sandbox descriptor + install row payload；
+commit 2bd0c2e）+ settings UI（this commit）覆盖 capability 提示路径与
+install row 持久化；剩 dogfood gate（git clone + tarball extract + bwrap
+真启动 + capability deny e2e）require Linux host。
+
+UI（apps/web）：
+
+- `/(app)/settings/plugins` Server Component：列已装 plugin（自身 vault）
+  + 粘贴 manifest JSON 两步安装流程
+- 步骤 1：textarea 收 manifest JSON → GET form 把 payload 写到
+  `?manifest=` query
+- 步骤 2：Server Component 读 query → `previewManifest()` 渲染 capability
+  prompt（per-row 复选框 + bilingual zh/en 解释 + 核心 badge）+ manifest
+  元数据 + sandbox 平台
+- 提交 → Server Action 调 `buildInstallRowPayload`（capability superset
+  校验 + git-url https-only 校验）→ INSERT plugin_install 行
+- 卸载：状态切 `uninstalled` + stamp `archived_at`
+
+API（apps/web）：`GET/POST /api/settings/plugins` + `DELETE` uninstall
+
+共享 lib（`apps/web/src/lib/plugin-install.ts`）：
+
+- `previewManifest(json)` —— 三档 verdict（invalid-json / invalid-manifest
+  / ok+preview）
+- `filterAcceptedCapabilities(manifest, requested)` —— 强制 accepted ⊆
+  manifest.required_capabilities（前端勾选 → 后端再校验，避免 bypass）
+- `detectHostPlatform()` —— `process.platform` → SandboxPlatform
+
+`@collaborationtool/ai-runtime` top-level 加 7 项 install helper 导出
+（`buildCapabilityPrompt` / `buildSandboxDescriptor` /
+`buildLinuxBwrapArgs` / `buildInstallRowPayload` /
+`InstallRejectedError` 等），apps/web 不必从子路径导入。
+
+测试（apps/web）：8 项覆盖 happy + invalid JSON + invalid manifest
++ 三档 capability 过滤 + sandbox 平台；全 workspace typecheck PASS。
+
+**dogfood gate 残项**：git clone 实际拉取 + 校验仓库内容 / 真 tarball
+SHA-256 / bwrap 进程启动 + capability deny e2e（agent 试图调 deny 的
+capability 时 EPERM 而非 silent fallback）—— 都需 Linux host + bwrap
+0.8+ 实测（apps/agent-worker 接 plugin invocation 时落）。

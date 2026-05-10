@@ -318,3 +318,48 @@ Phase 3 W7 4 wireFormat adapter 全部交付（types 稳定 + 网络 dispatch
 Status 维持 **Proposed**；Phase 4 W2 dogfood gate（4 wireFormat 真
 round-trip + plugin manifest prefers_provider 落地）通过后 promote
 Accepted。
+
+## Phase 4 W2 Implementation Review Log（settings UI 半交付）
+
+Phase 4 W2 backend（4 adapter + 4 档 resolver；commit a5b277c + ebfa934）
++ settings UI（this commit）覆盖了 user_model_pref CRUD + ENV-default
+状态可见性；dogfood gate（4 wireFormat 真 endpoint round-trip）仍
+require API key + 真服务。
+
+UI（apps/web）：
+
+- `/(app)/settings/models` Server Component：
+  - **环境兜底**只读卡片：显示 ANTHROPIC_API_KEY 是否配置 + default
+    modelId（`claude-sonnet-4-6`）
+  - **我的偏好**列表：每行展示 wireFormat / providerId / modelId /
+    endpoint / api-key env var；env var 是否在 host 进程已设以
+    `✓` / `⚠ 未设` 实时反馈
+  - **添加偏好**表单：`providerId` / `wireFormat`（4 wireFormat 下拉）/
+    `modelId` / `endpointUrl` / `apiKeyEnvVar` / `label`
+- 删除 = `DELETE /api/settings/models/<id>` + revalidate
+
+API（apps/web）：`GET/POST /api/settings/models` + `DELETE` 删除
+
+共享 lib（`apps/web/src/lib/byo-model.ts`）：
+
+- `validateModelPrefInput(raw)` —— 纯校验 verdict：providerId / modelId
+  required / wireFormat ∈ 4 / endpoint required for non-anthropic /
+  endpoint http(s) 校验 / api-key env-var 名形如 `[A-Z_][A-Z0-9_]*` /
+  extraHeaders 字典型校验
+- `WIRE_FORMAT_DEFAULTS` —— 4 wireFormat 的 placeholder 提示用默认值
+- `isEnvVarSet(name)` —— host 进程 env 探测；UI 用来标"已配置"
+
+**安全模型**（落地 ADR-0013 §2.6）：
+
+- `user_model_pref.api_key_env_var` 列只存环境变量名（如
+  `OPENROUTER_API_KEY`），密钥本身从不入 PG
+- UI 不显示密钥值；只显示 env var 名 + 是否 set
+- 切多 tenant SaaS（per-org keystore）走 KMS 是 §5 仍开放项
+
+测试（apps/web）：13 项覆盖 happy（4 wireFormat × validate）+ trim 行为
++ extraHeaders + 8 拒绝路径；全 workspace typecheck PASS。
+
+**dogfood gate 残项**：4 wireFormat 真 endpoint round-trip（vLLM /
+DeepSeek / OpenRouter / Ollama / corp gateway）+ tool-use 兼容矩阵 +
+plugin manifest prefers_provider 真 dispatch 测试 —— 都 require API
+key + 真服务环境，推 W2 末。
