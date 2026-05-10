@@ -66,6 +66,10 @@ export class LatexImportError extends Error {
   }
 }
 
+// Phase 2.5: real `myst` (mystmd CLI) subprocess wrapper.
+export { runMystExport, probeMystBinary } from './cli';
+export type { MystExportOptions, MystExportResult } from './cli';
+
 export const REQUIRED_CAPABILITIES: Capability[] = [
   'document.create',
   'block.commit',
