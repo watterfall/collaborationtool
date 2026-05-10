@@ -31,7 +31,7 @@
 
 ## 2. 必读文件（顺序）
 
-新会话开始时**先读完这四份**，再动代码：
+新会话开始时**先读完这五份**，再动代码：
 
 1. [`STATUS.md`](./STATUS.md) — 唯一的"项目当前在哪"快照（每次 phase
    推进 / commit landed / ADR 状态变化时更新）
@@ -40,7 +40,12 @@
    `phase-*-plan-stub.md`（看 STATUS §1 知道当前在哪个 phase）
 4. [`plan0/improvement-plan-2026-05.md`](./plan0/improvement-plan-2026-05.md)
    — Council 评审驱动的 Phase 4 W6-W10 + Phase 5 范围调整（Proposed），含
-   砍 / 推 Phase 6+ 清单 + ADR 影响表 + 9 项 dogfood gate
+   砍 / 推 Phase 6+ 清单 + ADR 影响表 + 9 项 dogfood gate +
+   §11 Design.md 对齐章节
+5. [`plan0/Design.md`](./plan0/Design.md) — 设计 SoT（2026-05-11 v1）：
+   tokens（颜色 / 字体 / 间距 / 半径 / 描边）+ 9 surface 准则 + reject
+   criteria 13 条 + AI-as-collaborator pattern + provenance reveal 动效。
+   **动到 `apps/web/src/` 前必读；reject criteria 是 commit gate**
 
 ADR 在 `plan0/adr/0001-0015`——动到对应模块前先读相应 ADR。
 导航 / 依赖图 / 主题聚类 / 阅读顺序建议看 [`plan0/ADR-INDEX.md`](./plan0/ADR-INDEX.md)。
@@ -128,6 +133,20 @@ P4(3): W1 plugin install backend — capability prompt + sandbox descriptor + 13
 - feature work 在 `claude/<short-slug>` 分支
 - 当前会话指定分支：见 system prompt"Git Development Branch Requirements"
 - 推送到分支后**用户明确请求**才开 PR（默认不开）
+
+### 4.6 Design.md commit gate（动 `apps/web/src/` 时）
+
+提 commit 前自查 Design.md §11 reject criteria 13 条，**新增不能为正**：
+
+```bash
+# 不能新增的字符串（grep diff staged 文件）
+git diff --staged apps/web/src | grep -E "bg-blue-(500|600|700)|rounded-(lg|xl|2xl|full)|bg-zinc-(50|100|200)|shadow-(sm|md|lg|xl)|#3B82F6|#2563EB|#0EA5E9"
+# 命中即不通过；改用 Design.md tokens（var(--color-paper) / var(--color-ink) / var(--color-accent-ink) / .rule / .pill-* / button-primary / button-ghost）
+```
+
+例外仅头像 / pill 999px 圆形 + ORCID 官方绿。
+
+新组件**必须**落到 `apps/web/src/components/design/*`（token-driven，禁止散落硬编码）。
 
 ---
 

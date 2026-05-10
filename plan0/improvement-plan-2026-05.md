@@ -262,4 +262,49 @@
 - 本文件：`plan0/improvement-plan-2026-05.md`（**Proposed**，待项目所有者评审）
 - Council 评审：`.brainstorm/COUNCIL.md`
 - 5 份 role 证据：`.brainstorm/role-{product,architecture,user,ai,design}.md`
+- 设计 SoT：`plan0/Design.md`（2026-05-11 v1，Claude Design 9-surface 落地）+ `plan0/claude-design-brief.md`
+
+---
+
+## 十一、Design.md 对齐（2026-05-11 增订）
+
+> `plan0/Design.md` 是设计 SoT；本节列出 W8-W10 与 Phase 5 受其影响的调整。
+
+### 11.1 已交付 commit 的回审（W6 阶段交付物 vs Design.md reject criteria）
+
+| Commit | 任务 | Design.md 风险点 | 处理 |
+|---|---|---|---|
+| `fd6fa1b` W6.5 | ShareDialog amber/emerald 双 banner | reject #5 rainbow status pill —— amber-50 / emerald-100 / red-50 全用 → ban | W10 design audit 改为 status pill 风格（999px radius，1px 同色边 accent-ink/ox/moss，无填充） |
+| `824617d` W6.2 | doc 3 模板 | reject #4 emoji icon —— 自查模板 JSON 无 emoji | 通过；JSON 内是 specimen 自身内容 |
+| `633b1c8` landing/i18n/theme | LocaleToggle / ThemeToggle | §14 v1 不做 dark；§13 reject criteria #10 dark mode 用 slate ban | 保留 ThemeToggle 基础设施（cookie + FOUC script + `.dark` class），dark token 留 v2 warm-deep；当前 dark 渲染仍走 light tokens 不破坏视觉 |
+| `633b1c8` landing/i18n/theme | maintenance / settings dark variant amber/red 改 | 同 reject #5 → 已迁移到 hairline list，需对齐 status pill | W10 design audit 中复核 |
+| `d654040` Design.md + 4 surface refactor | Landing / docs list / chrome / docs/new | Phase 1 必做 4 项已 ✅ | 保留；W10 verify |
+
+### 11.2 W8 调整
+
+- **W8.3 plugin install URL/paste 双轨**：UI 使用 Design.md §5.4 Provenance card 风格（paper bg + 1.5px hairline + 3 节布局），不用 Tailwind 默认 card。capability prompt 列表 → hairline list（§5.8）
+- **W8.2 ORCID 集成 UI**：Login / Signup 走 Design.md §6.5 single column 400px + 右侧 specimen quote + ORCID CTA primary（accent-ink）+ email/password 折叠次级；现有 OrcidSignIn 组件需要重 styling
+
+### 11.3 W10 新增子项
+
+| ID | 任务 |
+|---|---|
+| **W10.7** | **Design.md 9-surface compliance audit**：逐 surface 跑 reject criteria #1-#13 验收。已交付 4 surface（Landing / docs list / chrome / docs/new）verify；新增审计 5 surface：Editor / Maintenance / Settings(+models +plugins) / orgs/new / invite/[id] |
+| **W10.8** | **`apps/web/src/components/design/` token-driven 组件库**：Button / Mono-disc / Status pill / Provenance card / Citation popover / Block hover-rail / Margin marginalia entry / Hairline rule —— 8 个 SoT 组件，散落硬编码全清 |
+| **W10.9** | **Provenance reveal delight 动效**（Design.md §9）：3 状态（idle → click halo → unfolded card）180ms cubic-bezier；这是唯一被钦定的动效。Phase 5 Wave A AgentTimeline 之前必须落 |
+| **W10.10** | **Phosphor `bold` 1.4px stroke icon 系统**（替代 emoji / 纯字符 / heroicons-outline）——评估 `phosphor-react` 包尺寸；不引则自家 SVG 子集 |
+
+### 11.4 Phase 5 调整
+
+- **Wave A AgentTimeline**：必须遵守 Design.md §5.2 Mono-disc + §8 quota + interrupt button + propose/apply 二元状态；不要 chat bubble drawer
+- **Wave B Claim-on-Claim Review**：UI 落 Design.md §5.7 marginalia entry（`border-left: 2px solid var(--accent-*)` + caption-cap accent-color actor + 时间）；reviewer verdict 走 status pill（accent-ox endorses / accent-ink challenges / accent-moss refines）；ORCID 签名展示用 Provenance card §5.4
+- **Wave C 元 dogfood**：landing 4 段叙事按 Design.md §6.3 12-col 1.1fr 0.9fr hero + 4 段 hairline 内联格式；不要 marketing animation / hero gradient
+
+### 11.5 reject criteria 进 commit gate
+
+每次提交动 `apps/web/src/` 时 **commit 前自查 Design.md §11 reject criteria 13 条**（grep `bg-blue` `rounded-(lg|xl|2xl)` `bg-zinc-(50|100|200)` `shadow-(sm|md|lg|xl)` 命中数），新增不能为正。
+
+### 11.6 不再起 ADR-0017 设计系统
+
+Design.md 自身是设计 SoT，无需新 ADR（遵守 §三新 ADR moratorium）。设计修订改本文件 §16 修订表。如未来重大改版（v2 dark / 大幅 type ramp 改）再起 ADR-0017。
 - 待新建：ADR-0016 草稿（Wave B kickoff 前 1 周）
