@@ -1,5 +1,11 @@
 'use client';
 
+// Phase 4 W10.7 — Design.md compliance: amber/red filled banners →
+// hairline left-rules; zinc-* button styles → editorial token + Button
+// variants; chip-grid 3-level visual states preserved via primary/ghost
+// /link variants instead of zinc shade gradient. Reject criteria
+// #1/#2/#5/#6.
+
 // Phase 4 W6.1 — InlineAgentMenu.
 //
 // 兑现第一性原理 #3「AI 是协作者不是侧边栏」：替代旧 AgentPanel 折叠
@@ -23,6 +29,7 @@ import {
 } from '@collaborationtool/editor-core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { Button } from '@/components/design';
 import {
   AGENT_CHIPS,
   MENU_STRINGS,
@@ -31,6 +38,50 @@ import {
   isValidDoiInput,
   type ChipDescriptor,
 } from '@/lib/inline-agent-menu';
+
+const CHIP_BASE_STYLE: React.CSSProperties = {
+  display: 'block',
+  width: '100%',
+  textAlign: 'left',
+  padding: '8px 10px',
+  fontFamily: 'var(--font-sans)',
+  fontSize: '11px',
+  cursor: 'pointer',
+  background: 'var(--color-paper)',
+  color: 'var(--color-ink)',
+  border: '1px solid var(--color-hairline)',
+  borderRadius: 'var(--radius-1)',
+  transition: 'background 120ms ease-out, border-color 120ms ease-out',
+};
+
+function chipStyle(level: 'primary' | 'secondary' | 'normal'): React.CSSProperties {
+  if (level === 'primary') {
+    return {
+      ...CHIP_BASE_STYLE,
+      background: 'var(--color-ink)',
+      color: 'var(--color-paper)',
+      border: '1px solid var(--color-ink)',
+      fontWeight: 500,
+    };
+  }
+  if (level === 'secondary') {
+    return {
+      ...CHIP_BASE_STYLE,
+      border: '1px solid var(--color-pencil)',
+    };
+  }
+  return CHIP_BASE_STYLE;
+}
+
+const FIELD_STYLE: React.CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: '11px',
+  padding: '6px 10px',
+  background: 'var(--color-paper)',
+  color: 'var(--color-ink)',
+  border: '1px solid var(--color-hairline)',
+  borderRadius: 'var(--radius-1)',
+};
 
 export interface InlineAgentMenuProps {
   /** Live TipTap editor — see Editor.onEditorReady. */
@@ -213,48 +264,83 @@ export default function InlineAgentMenu({
       role="dialog"
       aria-label={MENU_STRINGS.title}
       data-testid="inline-agent-menu"
-      className="fixed z-50 w-[340px] rounded-md border border-zinc-200 bg-white p-3 text-xs shadow-lg dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-      style={{ top, left }}
+      style={{
+        position: 'fixed',
+        zIndex: 50,
+        width: '340px',
+        background: 'var(--color-paper)',
+        color: 'var(--color-ink)',
+        border: '1px solid var(--color-hairline)',
+        borderRadius: 'var(--radius-2)',
+        padding: '12px 14px',
+        fontSize: '12px',
+        top,
+        left,
+      }}
     >
-      <div className="mb-2 flex items-center justify-between">
-        <strong className="text-zinc-700 dark:text-zinc-200">{MENU_STRINGS.title}</strong>
-        <button
-          type="button"
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '8px',
+        }}
+      >
+        <strong
+          className="label-cap"
+          style={{ color: 'var(--color-ink-3)' }}
+        >
+          {MENU_STRINGS.title}
+        </strong>
+        <Button
+          variant="link"
+          size="sm"
           onClick={close}
-          aria-label={MENU_STRINGS.closeLabel}
-          className="rounded px-1.5 py-0.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          ariaLabel={MENU_STRINGS.closeLabel}
         >
           ×
-        </button>
+        </Button>
       </div>
 
       {passageEmpty && !doiInputMode && (
-        <p className="mb-2 rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+        <p
+          style={{
+            marginBottom: '8px',
+            borderLeft: '2px solid var(--color-accent-ox)',
+            padding: '6px 10px',
+            fontFamily: 'var(--font-serif)',
+            fontStyle: 'italic',
+            fontSize: '11px',
+            color: 'var(--color-accent-ox)',
+          }}
+        >
           {MENU_STRINGS.emptyHint}
         </p>
       )}
 
       {!doiInputMode && (
         <div
-          className="mb-2 grid grid-cols-2 gap-1.5"
           data-testid="inline-agent-menu-chip-grid"
+          style={{
+            marginBottom: '8px',
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '6px',
+          }}
         >
           {AGENT_CHIPS.map((chip) => {
             const level = chipVisualLevel(context, chip.kind);
             const isPending = pendingKind === chip.kind && !chip.mode;
-            // chip-citation-doi accepts cursor-only invocation (no passage
-            // required — user types the DOI directly). Only disable for
-            // chips that operate on the passage.
             const disabled =
               (chip.mode === 'doi-direct' ? false : passageEmpty) ||
               pendingKind !== null;
             const aria = level === 'primary' ? 'true' : undefined;
-            const styleClass =
-              level === 'primary'
-                ? 'border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900'
-                : level === 'secondary'
-                  ? 'border-zinc-700 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-300 dark:bg-zinc-800 dark:text-zinc-100'
-                  : 'border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300';
+            const baseStyle = chipStyle(level);
+            const finalStyle: React.CSSProperties = {
+              ...baseStyle,
+              opacity: !chip.routeSupported ? 0.6 : disabled ? 0.5 : 1,
+              cursor: disabled ? 'not-allowed' : 'pointer',
+            };
             return (
               <button
                 key={chip.testId}
@@ -267,13 +353,20 @@ export default function InlineAgentMenu({
                 disabled={disabled}
                 onClick={() => handleChipClick(chip)}
                 title={chip.routeSupported ? chip.label : MENU_STRINGS.unsupportedHint}
-                className={`rounded-md border px-2.5 py-1.5 text-left text-[11px] disabled:opacity-50 ${styleClass} ${
-                  !chip.routeSupported ? 'opacity-60' : ''
-                }`}
+                style={finalStyle}
               >
                 {isPending ? MENU_STRINGS.pendingHint : chip.label}
                 {!chip.routeSupported && (
-                  <span className="ml-1 rounded bg-zinc-200 px-1 text-[9px] text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                  <span
+                    style={{
+                      marginLeft: '4px',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '9px',
+                      color: 'var(--color-ink-3)',
+                      borderLeft: '1px solid var(--color-hairline)',
+                      paddingLeft: '4px',
+                    }}
+                  >
                     WIP
                   </span>
                 )}
@@ -284,8 +377,13 @@ export default function InlineAgentMenu({
       )}
 
       {!doiInputMode && (
-        <label className="mt-1 flex flex-col gap-1">
-          <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+        <label
+          style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}
+        >
+          <span
+            className="label-cap"
+            style={{ color: 'var(--color-ink-3)' }}
+          >
             {MENU_STRINGS.instructionsLabel}
           </span>
           <input
@@ -293,15 +391,23 @@ export default function InlineAgentMenu({
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
             placeholder={MENU_STRINGS.instructionsPlaceholder}
-            className="rounded border border-zinc-300 bg-white px-2 py-1 text-[11px] focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-100"
+            style={FIELD_STYLE}
           />
         </label>
       )}
 
       {doiInputMode && (
-        <div data-testid="inline-agent-menu-doi-form" className="flex flex-col gap-2">
-          <label className="flex flex-col gap-1">
-            <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+        <div
+          data-testid="inline-agent-menu-doi-form"
+          style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+        >
+          <label
+            style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}
+          >
+            <span
+              className="label-cap"
+              style={{ color: 'var(--color-ink-3)' }}
+            >
               {MENU_STRINGS.doiInputLabel}
             </span>
             <input
@@ -320,29 +426,36 @@ export default function InlineAgentMenu({
                 }
               }}
               placeholder={MENU_STRINGS.doiInputPlaceholder}
-              className="rounded border border-zinc-300 bg-white px-2 py-1 font-mono text-[11px] focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-100"
+              style={FIELD_STYLE}
             />
           </label>
-          <div className="flex items-center justify-between gap-2">
-            <button
-              type="button"
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+            }}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
               data-testid="doi-back"
               onClick={handleDoiBack}
-              className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-[11px] text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
             >
               {MENU_STRINGS.doiBackLabel}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
               data-testid="doi-submit"
               disabled={pendingKind !== null || doiInput.trim().length === 0}
               onClick={handleDoiSubmit}
-              className="rounded-md border border-zinc-900 bg-zinc-900 px-2.5 py-1 text-[11px] text-white hover:bg-zinc-800 disabled:opacity-50 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
             >
               {pendingKind === 'citation'
                 ? MENU_STRINGS.pendingHint
                 : MENU_STRINGS.doiSubmitLabel}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -350,14 +463,30 @@ export default function InlineAgentMenu({
       {error && (
         <p
           role="alert"
-          className="mt-2 rounded border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] text-red-800 dark:border-red-700 dark:bg-red-900/30 dark:text-red-200"
+          style={{
+            marginTop: '8px',
+            borderLeft: '2px solid var(--color-accent-ox)',
+            padding: '6px 10px',
+            fontFamily: 'var(--font-serif)',
+            fontStyle: 'italic',
+            fontSize: '11px',
+            color: 'var(--color-accent-ox)',
+          }}
         >
           {error}
         </p>
       )}
 
-      <p className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-500">
-        提议会写入下方 <strong>待评审修订</strong>。 / Proposals appear in the
+      <p
+        style={{
+          marginTop: '8px',
+          fontFamily: 'var(--font-sans)',
+          fontSize: '10px',
+          color: 'var(--color-ink-3)',
+          fontStyle: 'italic',
+        }}
+      >
+        提议会写入下方 <strong style={{ fontStyle: 'normal' }}>待评审修订</strong>。 / Proposals appear in the
         Revision Inbox below.
       </p>
     </div>

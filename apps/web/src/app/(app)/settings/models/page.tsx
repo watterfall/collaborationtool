@@ -3,6 +3,12 @@
 // User manages their user_model_pref rows here. The 4-tier resolver
 // (document-override > user-pref > manifest-hint > env-default) reads
 // these at agent invoke time. ENV-default fallback is shown read-only.
+//
+// Phase 4 W10.7 — Design.md §11 reject criteria sweep: replaced
+// `bg-emerald-100` env-status banner + `bg-zinc-100` mono labels with
+// StatusPill + editorial mono spans; submit / delete buttons go through
+// the SoT `<Button>` (variant=primary | ghost). Hairline list dividers
+// instead of filled cards.
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -12,6 +18,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { schema } from '@collaborationtool/drizzle';
 
+import { Button, HairlineRule, StatusPill } from '@/components/design';
 import { auth } from '@/lib/auth';
 import {
   WIRE_FORMAT_DEFAULTS,
@@ -22,6 +29,26 @@ import {
 } from '@/lib/byo-model';
 import { getDb } from '@/lib/db';
 import { getPrincipalIdForUser } from '@/lib/principal';
+
+const FIELD_STYLE: React.CSSProperties = {
+  width: '100%',
+  fontFamily: 'var(--font-mono)',
+  fontSize: '13px',
+  lineHeight: 1.55,
+  padding: '8px 10px',
+  background: 'var(--color-paper)',
+  color: 'var(--color-ink)',
+  border: '1px solid var(--color-hairline)',
+  borderRadius: 'var(--radius-1)',
+};
+
+const MONO_TAG_STYLE: React.CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: '11px',
+  color: 'var(--color-accent-ink)',
+  borderRight: '1px solid var(--color-hairline)',
+  paddingRight: '8px',
+};
 
 const WIRE_FORMAT_LABEL: Record<WireFormat, string> = {
   anthropic: 'Anthropic（官方 SDK）',
@@ -49,107 +76,203 @@ export default async function ModelsSettingsPage() {
   const anthropicEnvSet = isEnvVarSet('ANTHROPIC_API_KEY');
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
+    <div
+      className="mx-auto max-w-4xl px-6 py-10"
+      style={{ background: 'var(--color-paper)', color: 'var(--color-ink)' }}
+    >
       <header className="mb-6">
-        <h1 className="text-3xl font-medium text-zinc-900 dark:text-zinc-100">
+        <h1
+          style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: '30px',
+            fontWeight: 500,
+            letterSpacing: '-0.005em',
+          }}
+        >
           模型 · Models
         </h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          自带 LLM endpoint。优先级 document-override &gt; user-pref &gt;
-          manifest-hint &gt; env-default（详见 ADR-0013）。
+        <p
+          style={{
+            fontFamily: 'var(--font-sans)',
+            fontSize: '13px',
+            color: 'var(--color-ink-3)',
+            marginTop: '6px',
+          }}
+        >
+          自带 LLM endpoint · 优先级 document-override &gt; user-pref &gt;
+          manifest-hint &gt; env-default（详见 ADR-0013）
         </p>
+        <HairlineRule weight="thick" className="mt-3" />
       </header>
 
-      <section className="mb-8 rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-          环境兜底 / Env default
-        </h2>
-        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          没有 user-pref 命中时使用。
-        </p>
-        <div className="mt-3 flex items-center justify-between text-sm">
+      <section className="mb-8">
+        <div
+          className="label-cap"
+          style={{ color: 'var(--color-ink-3)', marginBottom: '8px' }}
+        >
+          ENV DEFAULT · 环境兜底
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 0',
+            borderTop: '1px solid var(--color-hairline)',
+            borderBottom: '1px solid var(--color-hairline)',
+            fontSize: '13px',
+          }}
+        >
           <div>
-            <span className="font-mono text-xs text-zinc-700 dark:text-zinc-300">
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '12px',
+                color: 'var(--color-accent-ink)',
+              }}
+            >
               anthropic
             </span>
-            <span className="ml-2 text-zinc-500 dark:text-zinc-400">
+            <span
+              style={{
+                marginLeft: '10px',
+                fontFamily: 'var(--font-serif)',
+                fontSize: '14px',
+                color: 'var(--color-ink-2)',
+              }}
+            >
               claude-sonnet-4-6
             </span>
           </div>
-          <span
-            className={
-              'rounded px-1.5 py-0.5 text-xs ' +
-              (anthropicEnvSet
-                ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200'
-                : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400')
-            }
-          >
-            {anthropicEnvSet ? 'ANTHROPIC_API_KEY 已配置' : '走 mock runner'}
-          </span>
+          <StatusPill
+            status={anthropicEnvSet ? 'applied' : 'proposed'}
+            label={anthropicEnvSet ? 'ANTHROPIC_API_KEY 已配置' : '走 mock runner'}
+            labelEn={anthropicEnvSet ? 'API key set' : 'Mock runner'}
+          />
         </div>
       </section>
 
-      <section className="mb-6">
-        <h2 className="mb-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">
-          我的偏好 / My prefs
-        </h2>
+      <section className="mb-8">
+        <div
+          className="label-cap"
+          style={{ color: 'var(--color-ink-3)', marginBottom: '8px' }}
+        >
+          MY PREFS · 我的偏好
+        </div>
         {prefs.length === 0 ? (
-          <p className="rounded-md border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
-            还没有自带模型偏好。下面的表单可加一个。
+          <p
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontStyle: 'italic',
+              fontSize: '14px',
+              color: 'var(--color-ink-3)',
+              padding: '20px 0',
+              borderTop: '1px solid var(--color-hairline)',
+              borderBottom: '1px solid var(--color-hairline)',
+              textAlign: 'center',
+            }}
+          >
+            还没有自带模型偏好 · No preferences yet — add one below.
           </p>
         ) : (
-          <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-950">
+          <ul
+            style={{
+              listStyle: 'none',
+              padding: 0,
+              margin: 0,
+              borderTop: '1px solid var(--color-hairline)',
+            }}
+          >
             {prefs.map((p) => {
               const apiKeyOk = isEnvVarSet(p.apiKeyEnvVar);
               return (
                 <li
                   key={p.id}
-                  className="flex items-start justify-between gap-3 px-4 py-3"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    padding: '14px 0',
+                    borderBottom: '1px solid var(--color-hairline)',
+                  }}
                 >
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                        {p.wireFormat}
-                      </span>
-                      <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <span style={MONO_TAG_STYLE}>{p.wireFormat}</span>
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-serif)',
+                          fontSize: '15px',
+                          fontWeight: 500,
+                          color: 'var(--color-ink)',
+                        }}
+                      >
                         {p.providerId}
                       </span>
                       {p.label && (
-                        <span className="text-zinc-500 dark:text-zinc-400">
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-sans)',
+                            fontSize: '12px',
+                            color: 'var(--color-ink-3)',
+                            fontStyle: 'italic',
+                          }}
+                        >
                           {p.label}
                         </span>
                       )}
                     </div>
-                    <div className="mt-1 grid grid-cols-1 gap-y-0.5 text-xs text-zinc-600 sm:grid-cols-2 dark:text-zinc-300">
+                    <div
+                      style={{
+                        marginTop: '4px',
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: '2px 12px',
+                        fontSize: '12px',
+                        color: 'var(--color-ink-2)',
+                      }}
+                    >
                       <span>
-                        <span className="text-zinc-500 dark:text-zinc-400">
+                        <span style={{ color: 'var(--color-ink-3)' }}>
                           model:
                         </span>{' '}
-                        <span className="font-mono">{p.modelId}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)' }}>
+                          {p.modelId}
+                        </span>
                       </span>
                       {p.endpointUrl && (
                         <span>
-                          <span className="text-zinc-500 dark:text-zinc-400">
+                          <span style={{ color: 'var(--color-ink-3)' }}>
                             endpoint:
                           </span>{' '}
-                          <span className="font-mono">{p.endpointUrl}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)' }}>
+                            {p.endpointUrl}
+                          </span>
                         </span>
                       )}
                       {p.apiKeyEnvVar && (
                         <span>
-                          <span className="text-zinc-500 dark:text-zinc-400">
+                          <span style={{ color: 'var(--color-ink-3)' }}>
                             api-key env:
                           </span>{' '}
                           <span
-                            className={
-                              'font-mono ' +
-                              (apiKeyOk
-                                ? 'text-emerald-700 dark:text-emerald-300'
-                                : 'text-amber-700 dark:text-amber-300')
-                            }
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              color: apiKeyOk
+                                ? 'var(--color-accent-moss)'
+                                : 'var(--color-accent-ox)',
+                            }}
                           >
                             {p.apiKeyEnvVar}
-                            {apiKeyOk ? ' ✓' : ' ⚠ 未设'}
+                            {apiKeyOk ? ' ✓' : ' · 未设'}
                           </span>
                         </span>
                       )}
@@ -157,12 +280,9 @@ export default async function ModelsSettingsPage() {
                   </div>
                   <form action={deletePrefAction}>
                     <input type="hidden" name="id" value={p.id} />
-                    <button
-                      type="submit"
-                      className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-700 hover:bg-red-50 hover:text-red-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-red-950 dark:hover:text-red-200"
-                    >
-                      删除
-                    </button>
+                    <Button variant="ghost" size="sm" type="submit">
+                      删除 · Delete
+                    </Button>
                   </form>
                 </li>
               );
@@ -171,20 +291,39 @@ export default async function ModelsSettingsPage() {
         )}
       </section>
 
-      <section className="rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
-          添加偏好 / Add pref
-        </h2>
-        <form action={createPrefAction} className="grid grid-cols-1 gap-3 text-sm">
+      <section
+        style={{
+          background: 'var(--color-paper-2)',
+          border: '1px solid var(--color-hairline)',
+          padding: '20px 22px',
+        }}
+      >
+        <div
+          className="label-cap"
+          style={{ color: 'var(--color-ink-3)', marginBottom: '12px' }}
+        >
+          ADD PREF · 添加偏好
+        </div>
+        <form
+          action={createPrefAction}
+          style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}
+        >
           <Field label="provider id" name="providerId" required placeholder="my-anthropic" />
           <div>
-            <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-300">
-              wire format
+            <label
+              className="label-cap"
+              style={{
+                display: 'block',
+                marginBottom: '6px',
+                color: 'var(--color-ink-3)',
+              }}
+            >
+              WIRE FORMAT
             </label>
             <select
               name="wireFormat"
-              className="w-full rounded border border-zinc-300 px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
               defaultValue="anthropic"
+              style={FIELD_STYLE}
             >
               {WIRE_FORMATS.map((wf) => (
                 <option key={wf} value={wf}>
@@ -210,12 +349,14 @@ export default async function ModelsSettingsPage() {
             placeholder="ANTHROPIC_API_KEY"
           />
           <Field label="label（可选；UI 显示用）" name="label" />
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             type="submit"
-            className="self-start rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="self-start"
           >
-            添加
-          </button>
+            添加 · Add
+          </Button>
         </form>
       </section>
     </div>
@@ -235,15 +376,22 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-300">
-        {label}
+      <label
+        className="label-cap"
+        style={{
+          display: 'block',
+          marginBottom: '6px',
+          color: 'var(--color-ink-3)',
+        }}
+      >
+        {label.toUpperCase()}
       </label>
       <input
         type="text"
         name={name}
         required={required}
         placeholder={placeholder}
-        className="w-full rounded border border-zinc-300 px-2 py-1.5 font-mono text-xs dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+        style={FIELD_STYLE}
       />
     </div>
   );

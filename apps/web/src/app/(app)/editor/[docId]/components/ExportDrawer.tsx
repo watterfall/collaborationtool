@@ -1,6 +1,10 @@
 'use client';
 
+// Phase 4 W10.7 — Design.md compliance refactor.
+
 import { useState } from 'react';
+
+import { Button, HairlineRule } from '@/components/design';
 
 const FORMATS = [
   { id: 'html', label: 'HTML', mime: 'text/html', ext: 'html' },
@@ -73,37 +77,108 @@ export default function ExportDrawer({
 
   return (
     <div className="my-4">
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={() => setOpen((v) => !v)}
-        className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100"
       >
-        {open ? '关闭导出 / Hide export' : '导出 / Export'}
-      </button>
+        {open ? '关闭导出 · Hide export' : '导出 · Export'}
+      </Button>
       {open && (
-        <div className="mt-3 rounded-md border border-zinc-200 bg-white p-4 text-sm">
-          <h3 className="mb-2 text-base font-medium">选择格式 / Pick a format</h3>
-          <ul className="grid grid-cols-2 gap-2">
+        <div
+          style={{
+            marginTop: '12px',
+            background: 'var(--color-paper)',
+            border: '1px solid var(--color-hairline)',
+            padding: '14px 16px',
+            fontSize: '13px',
+          }}
+        >
+          <h3
+            className="label-cap"
+            style={{ color: 'var(--color-ink-3)' }}
+          >
+            PICK A FORMAT · 选择格式
+          </h3>
+          <HairlineRule className="mt-2" />
+          <ul
+            style={{
+              marginTop: '10px',
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '8px',
+              listStyle: 'none',
+              padding: 0,
+            }}
+          >
             {FORMATS.map((f) => (
               <li key={f.id}>
                 <button
                   type="button"
                   onClick={() => void downloadFormat(f.id)}
                   disabled={pending !== null}
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-left hover:border-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    background: 'var(--color-paper)',
+                    color: 'var(--color-ink)',
+                    border: '1px solid var(--color-hairline)',
+                    borderRadius: 'var(--radius-1)',
+                    padding: '10px 12px',
+                    cursor: pending !== null ? 'not-allowed' : 'pointer',
+                    opacity: pending !== null ? 0.55 : 1,
+                    transition: 'border-color 120ms ease-out',
+                  }}
+                  className="export-format-button"
                 >
-                  <div className="font-medium">{f.label}</div>
-                  <div className="text-xs text-zinc-500">.{f.ext}</div>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-serif)',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {f.label}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '11px',
+                      color: 'var(--color-ink-3)',
+                      marginTop: '2px',
+                    }}
+                  >
+                    .{f.ext}
+                  </div>
                 </button>
               </li>
             ))}
           </ul>
           {error && (
-            <p className="mt-3 text-sm text-red-700" role="alert">
+            <p
+              role="alert"
+              style={{
+                marginTop: '10px',
+                borderLeft: '2px solid var(--color-accent-ox)',
+                paddingLeft: '10px',
+                fontStyle: 'italic',
+                fontSize: '12px',
+                color: 'var(--color-accent-ox)',
+              }}
+            >
               {error}
             </p>
           )}
-          <p className="mt-3 text-xs text-zinc-500">
+          <p
+            style={{
+              marginTop: '10px',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '11px',
+              color: 'var(--color-ink-3)',
+              fontStyle: 'italic',
+              lineHeight: 1.6,
+            }}
+          >
             HTML / JATS / Markdown / Word 走 @collaborationtool/render-myst；
             Typst source / PDF 走 @collaborationtool/render-typst。PDF 需要服务器
             安装 typst CLI（&gt;= 0.14）。Word 是 Phase 1.5 加入。

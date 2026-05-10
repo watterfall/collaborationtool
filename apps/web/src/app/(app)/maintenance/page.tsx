@@ -4,6 +4,17 @@
 // from PG (faster than self-fetching the HTTP route). Mutations go
 // through the /api/maintenance/findings/<id>/transition route via a
 // Server Action that revalidates this path.
+//
+// Phase 4 W10.7 — Design.md compliance:
+//   - Severity badges (red/amber/blue/zinc) → StatusPill (3 states +
+//     "info" treated as proposed accent-ink). Reject criteria #5 says
+//     status pill 红黄绿蓝四色齐发 = P1.
+//   - Status filter tabs (filled `bg-zinc-900` pill) → hairline border-
+//     bottom anchors per Design.md §6.3 (links, not pills, for nav).
+//   - Severity emoji icons → MonoDisc kind=agent (M monogram for
+//     "Maintenance" findings — they're surfaced by the maintenance-scan
+//     agent worker per ADR-0011).
+//   - Cards (`rounded-md border bg-white`) → hairline list rows.
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -13,11 +24,19 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 
 import { schema } from '@collaborationtool/drizzle';
 
+import {
+  Button,
+  HairlineRule,
+  MonoDisc,
+  StatusPill,
+  type StatusPillStatus,
+} from '@/components/design';
 import { auth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import {
   FINDING_STATUSES,
   validateTransition,
+  severityToPillStatus,
   type FindingStatus,
 } from '@/lib/maintenance';
 import { getPrincipalIdForUser } from '@/lib/principal';
@@ -34,19 +53,17 @@ const KIND_LABEL: Record<string, string> = {
   'broken-citation': '引用失效',
 };
 
-const SEVERITY_BADGE: Record<string, string> = {
-  high: 'bg-red-100 text-red-900 ring-red-200 dark:bg-red-900/30 dark:text-red-200 dark:ring-red-900/40',
-  medium:
-    'bg-amber-100 text-amber-900 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:ring-amber-900/40',
-  low: 'bg-zinc-100 text-zinc-700 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700',
-  info: 'bg-blue-100 text-blue-900 ring-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:ring-blue-900/40',
-};
-
 const SEVERITY_LABEL: Record<string, string> = {
   high: '高',
   medium: '中',
   low: '低',
   info: '提示',
+};
+const SEVERITY_LABEL_EN: Record<string, string> = {
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+  info: 'Info',
 };
 
 export default async function MaintenancePage({
@@ -109,17 +126,44 @@ export default async function MaintenancePage({
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div
+      className="mx-auto max-w-5xl px-6 py-10"
+      style={{ background: 'var(--color-paper)', color: 'var(--color-ink)' }}
+    >
       <header className="mb-6">
-        <h1 className="text-3xl font-medium text-zinc-900 dark:text-zinc-100">
+        <h1
+          style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: '30px',
+            fontWeight: 500,
+            letterSpacing: '-0.005em',
+          }}
+        >
           维护 · Maintenance
         </h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <p
+          style={{
+            fontFamily: 'var(--font-sans)',
+            fontSize: '13px',
+            color: 'var(--color-ink-3)',
+            marginTop: '6px',
+          }}
+        >
           知识库巡检发现 · 接受 / 已修复 / 误报后归档（详见 ADR-0011 §7.4）
         </p>
+        <HairlineRule weight="thick" className="mt-3" />
       </header>
 
-      <nav className="mb-4 flex gap-1 text-sm">
+      <nav
+        aria-label="筛选状态 / Filter by status"
+        style={{
+          display: 'flex',
+          gap: '18px',
+          marginBottom: '16px',
+          borderBottom: '1px solid var(--color-hairline)',
+          paddingBottom: '4px',
+        }}
+      >
         {STATUSES.map((s) => {
           const active = s === activeStatus;
           const n = c[s];
@@ -127,21 +171,26 @@ export default async function MaintenancePage({
             <Link
               key={s}
               href={`/maintenance?status=${s}`}
-              className={
-                'rounded-md px-3 py-1.5 ' +
-                (active
-                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                  : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700')
-              }
+              style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize: '13px',
+                color: active ? 'var(--color-ink)' : 'var(--color-ink-3)',
+                borderBottom: active
+                  ? '1.5px solid var(--color-pencil)'
+                  : '1px solid transparent',
+                paddingBottom: '6px',
+                textDecoration: 'none',
+              }}
+              aria-current={active ? 'page' : undefined}
             >
               {STATUS_LABEL[s]}
               <span
-                className={
-                  'ml-1.5 text-xs ' +
-                  (active
-                    ? 'text-zinc-300 dark:text-zinc-700'
-                    : 'text-zinc-500 dark:text-zinc-400')
-                }
+                style={{
+                  marginLeft: '6px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '11px',
+                  color: 'var(--color-ink-3)',
+                }}
               >
                 {n}
               </span>
@@ -151,63 +200,162 @@ export default async function MaintenancePage({
       </nav>
 
       {rows.length === 0 ? (
-        <p className="rounded-md border border-dashed border-zinc-300 p-10 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
-          暂无 {STATUS_LABEL[activeStatus]} 状态的发现。
-          {activeStatus === 'open' && '若刚跑完 maintenance scan job 再刷新本页。'}
+        <p
+          style={{
+            fontFamily: 'var(--font-serif)',
+            fontStyle: 'italic',
+            fontSize: '14px',
+            color: 'var(--color-ink-3)',
+            padding: '40px 0',
+            borderTop: '1px solid var(--color-hairline)',
+            borderBottom: '1px solid var(--color-hairline)',
+            textAlign: 'center',
+          }}
+        >
+          暂无 {STATUS_LABEL[activeStatus]} 状态的发现 · No findings.
+          {activeStatus === 'open' &&
+            ' 若刚跑完 maintenance scan job 再刷新本页。'}
         </p>
       ) : (
-        <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-950">
-          {rows.map((f) => (
-            <li key={f.id} className="px-4 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <div className="mb-1 flex flex-wrap items-center gap-2 text-xs">
+        <ul
+          style={{
+            listStyle: 'none',
+            padding: 0,
+            margin: 0,
+            borderTop: '1px solid var(--color-hairline)',
+          }}
+        >
+          {rows.map((f) => {
+            const pillStatus: StatusPillStatus = severityToPillStatus(
+              f.severity,
+            );
+            return (
+              <li
+                key={f.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: '14px',
+                  padding: '16px 0',
+                  borderBottom: '1px solid var(--color-hairline)',
+                }}
+              >
+                <MonoDisc
+                  kind="agent"
+                  monogram="M"
+                  actorName="Maintenance scan"
+                  actorNameEn="Maintenance scan"
+                  size="md"
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    <StatusPill
+                      status={pillStatus}
+                      label={SEVERITY_LABEL[f.severity] ?? f.severity}
+                      labelEn={SEVERITY_LABEL_EN[f.severity] ?? f.severity}
+                    />
                     <span
-                      className={
-                        'rounded px-1.5 py-0.5 ring-1 ring-inset ' +
-                        (SEVERITY_BADGE[f.severity] ?? '')
-                      }
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '11px',
+                        color: 'var(--color-accent-ink)',
+                      }}
                     >
-                      {SEVERITY_LABEL[f.severity] ?? f.severity}
-                    </span>
-                    <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                       {KIND_LABEL[f.kind] ?? f.kind}
                     </span>
-                    <span className="text-zinc-500 dark:text-zinc-400">
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '11px',
+                        color: 'var(--color-ink-3)',
+                      }}
+                    >
                       {f.foundAt.toISOString().slice(0, 16).replace('T', ' ')}
                     </span>
                     {f.documentId && (
                       <Link
                         href={`/editor/${f.documentId}`}
-                        className="text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-300"
+                        style={{
+                          fontFamily: 'var(--font-sans)',
+                          fontSize: '12px',
+                          color: 'var(--color-ink)',
+                          borderBottom: '1px solid var(--color-pencil)',
+                          paddingBottom: '1px',
+                          textDecoration: 'none',
+                        }}
                       >
-                        打开文档
+                        打开文档 · Open
                       </Link>
                     )}
                   </div>
-                  <p className="text-sm text-zinc-900 dark:text-zinc-100">
+                  <p
+                    style={{
+                      fontFamily: 'var(--font-serif)',
+                      fontSize: '15px',
+                      lineHeight: 1.6,
+                      color: 'var(--color-ink)',
+                      margin: 0,
+                    }}
+                  >
                     {f.summary}
                   </p>
                   {f.details != null ? (
-                    <details className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                      <summary className="cursor-pointer select-none">
-                        细节
+                    <details
+                      style={{
+                        marginTop: '6px',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '11px',
+                        color: 'var(--color-ink-3)',
+                      }}
+                    >
+                      <summary
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        细节 · Details
                       </summary>
-                      <pre className="mt-1 overflow-x-auto rounded bg-zinc-50 p-2 text-[11px] dark:bg-zinc-900 dark:text-zinc-300">
+                      <pre
+                        style={{
+                          marginTop: '6px',
+                          padding: '10px 12px',
+                          background: 'var(--color-paper-2)',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '11px',
+                          color: 'var(--color-ink-2)',
+                          overflowX: 'auto',
+                          borderRadius: 'var(--radius-1)',
+                        }}
+                      >
                         {JSON.stringify(f.details, null, 2)}
                       </pre>
                     </details>
                   ) : null}
                   {f.dismissReason && (
-                    <p className="mt-1 text-xs italic text-zinc-500 dark:text-zinc-400">
+                    <p
+                      style={{
+                        marginTop: '4px',
+                        fontFamily: 'var(--font-serif)',
+                        fontStyle: 'italic',
+                        fontSize: '12px',
+                        color: 'var(--color-ink-3)',
+                      }}
+                    >
                       已忽略：{f.dismissReason}
                     </p>
                   )}
                 </div>
                 <FindingActions findingId={f.id} status={f.status as Status} />
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
@@ -230,30 +378,38 @@ function FindingActions({
 }) {
   if (status === 'resolved' || status === 'dismissed') return null;
   return (
-    <div className="flex shrink-0 flex-col gap-1 text-xs">
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+        flexShrink: 0,
+      }}
+    >
       {status === 'open' && (
         <form action={transitionAction}>
           <input type="hidden" name="findingId" value={findingId} />
           <input type="hidden" name="to" value="acknowledged" />
-          <button
-            type="submit"
-            className="rounded border border-zinc-300 bg-white px-2 py-1 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
-          >
-            知悉
-          </button>
+          <Button variant="ghost" size="sm" type="submit">
+            知悉 · Ack
+          </Button>
         </form>
       )}
       <form action={transitionAction}>
         <input type="hidden" name="findingId" value={findingId} />
         <input type="hidden" name="to" value="resolved" />
-        <button
-          type="submit"
-          className="rounded border border-zinc-300 bg-white px-2 py-1 text-zinc-700 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-emerald-950"
-        >
-          已修复
-        </button>
+        <Button variant="ghost" size="sm" type="submit">
+          已修复 · Resolved
+        </Button>
       </form>
-      <form action={transitionAction}>
+      <form
+        action={transitionAction}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+        }}
+      >
         <input type="hidden" name="findingId" value={findingId} />
         <input type="hidden" name="to" value="dismissed" />
         <input
@@ -261,14 +417,20 @@ function FindingActions({
           name="reason"
           required
           placeholder="忽略原因…"
-          className="w-28 rounded border border-zinc-300 px-1.5 py-0.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+          style={{
+            width: '110px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '11px',
+            padding: '4px 8px',
+            background: 'var(--color-paper)',
+            color: 'var(--color-ink)',
+            border: '1px solid var(--color-hairline)',
+            borderRadius: 'var(--radius-1)',
+          }}
         />
-        <button
-          type="submit"
-          className="ml-1 rounded border border-zinc-300 bg-white px-2 py-1 text-zinc-700 hover:bg-amber-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-amber-950"
-        >
-          忽略
-        </button>
+        <Button variant="ghost" size="sm" type="submit">
+          忽略 · Dismiss
+        </Button>
       </form>
     </div>
   );

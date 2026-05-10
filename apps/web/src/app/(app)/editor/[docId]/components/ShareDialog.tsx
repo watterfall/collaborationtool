@@ -9,9 +9,20 @@
 // self-host deployments that flow leaves普通 user 够不着邀请链接 —
 // `.brainstorm/role-user.md §2` 列为 onboarding 阻塞点。本组件在
 // fallback 分支必须显式渲染 acceptUrl + 一键复制 + 中英双语提示。
+//
+// Phase 4 W10.7 — refactored from `bg-amber-100` / `bg-emerald-100`
+// banner colors (Design.md reject #5: "status pill 红黄绿蓝四色齐发")
+// to a single `<StatusPill>` whose status reflects mail outcome:
+//   webhook OK  → status=applied   (邮件已发送 / Mail dispatched)
+//   fallback    → status=blocked   (邮件未配置 / Mail unsent)
+// The acceptUrl + copy button stay in both branches; the helper
+// `shareDialogStatusCopy` keeps tone='emerald'|'amber' for backwards
+// compatibility with the W6.5 unit tests, but tone is no longer used
+// for color — only as the StatusPill status mapping below.
 
 import { useEffect, useState } from 'react';
 
+import { Button, HairlineRule, StatusPill } from '@/components/design';
 import {
   COPY_BUTTON_LABEL,
   copyTextToClipboard,
@@ -112,18 +123,32 @@ export default function ShareDialog({ documentId }: { documentId: string }) {
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded border border-zinc-300 px-3 py-1 text-sm text-zinc-700 hover:bg-zinc-50"
-      >
-        分享 / Share
-      </button>
+      <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
+        分享 · Share
+      </Button>
     );
   }
 
   const status = lastResult ? shareDialogStatusCopy(lastResult.backend) : null;
   const fallback = lastResult ? isFallbackBackend(lastResult.backend) : false;
+  // Map W6.5 helper tone → Design.md StatusPill status (reject #5).
+  // amber = mail backend not configured → blocked (oxblood accent)
+  // emerald = mail dispatched           → applied (moss accent)
+  const pillStatus: 'blocked' | 'applied' | null = status
+    ? status.tone === 'amber'
+      ? 'blocked'
+      : 'applied'
+    : null;
+  const pillLabelZh = status
+    ? status.tone === 'amber'
+      ? '邮件未配置'
+      : '邮件已发送'
+    : '';
+  const pillLabelEn = status
+    ? status.tone === 'amber'
+      ? 'Mail unsent'
+      : 'Mail dispatched'
+    : '';
   const copyButtonLabel =
     copyState === 'copying'
       ? COPY_BUTTON_LABEL.copying
@@ -134,34 +159,80 @@ export default function ShareDialog({ documentId }: { documentId: string }) {
           : COPY_BUTTON_LABEL.idle;
 
   return (
-    <div className="my-4 rounded-md border border-zinc-200 bg-white p-4 text-sm">
+    <section
+      className="my-4"
+      style={{
+        background: 'var(--color-paper)',
+        border: '1px solid var(--color-hairline)',
+        padding: '14px 16px',
+        fontSize: '13px',
+      }}
+    >
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-medium">邀请协作者 / Invite collaborator</h2>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="text-xs text-zinc-500 hover:text-zinc-700"
+        <h2
+          style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: '17px',
+            fontWeight: 500,
+            color: 'var(--color-ink)',
+          }}
         >
-          收起 ✕
-        </button>
+          邀请协作者 · Invite collaborator
+        </h2>
+        <Button
+          variant="link"
+          size="sm"
+          onClick={() => setOpen(false)}
+          ariaLabel="收起对话框"
+          ariaLabelEn="Close dialog"
+        >
+          收起 ×
+        </Button>
       </div>
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      <HairlineRule />
+      <form onSubmit={onSubmit} className="mt-3 flex flex-col gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-zinc-700">邮箱 / Email</span>
+          <span
+            className="label-cap"
+            style={{ color: 'var(--color-ink-3)' }}
+          >
+            EMAIL · 邮箱
+          </span>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="rounded border border-zinc-300 px-3 py-1.5 focus:border-zinc-900 focus:outline-none"
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '13px',
+              padding: '6px 10px',
+              background: 'var(--color-paper)',
+              color: 'var(--color-ink)',
+              border: '1px solid var(--color-hairline)',
+              borderRadius: 'var(--radius-1)',
+            }}
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-zinc-700">角色 / Role</span>
+          <span
+            className="label-cap"
+            style={{ color: 'var(--color-ink-3)' }}
+          >
+            ROLE · 角色
+          </span>
           <select
             value={roleId}
             onChange={(e) => setRoleId(e.target.value)}
-            className="rounded border border-zinc-300 px-3 py-1.5 focus:border-zinc-900 focus:outline-none"
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '13px',
+              padding: '6px 10px',
+              background: 'var(--color-paper)',
+              color: 'var(--color-ink)',
+              border: '1px solid var(--color-hairline)',
+              borderRadius: 'var(--radius-1)',
+            }}
           >
             {ROLE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -171,63 +242,135 @@ export default function ShareDialog({ documentId }: { documentId: string }) {
           </select>
         </label>
         {error && (
-          <p className="text-red-700 dark:text-red-300" role="alert">
+          <p
+            role="alert"
+            style={{
+              color: 'var(--color-accent-ox)',
+              borderLeft: '2px solid var(--color-accent-ox)',
+              paddingLeft: '10px',
+              fontStyle: 'italic',
+              fontSize: '12px',
+            }}
+          >
             {error}
           </p>
         )}
-        {lastResult && status && (
+        {lastResult && status && pillStatus && (
           <div
             data-testid="share-dialog-result"
             data-backend={lastResult.backend}
             data-fallback={fallback ? 'true' : 'false'}
-            className={
-              status.tone === 'amber'
-                ? 'flex flex-col gap-2 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200'
-                : 'flex flex-col gap-2 rounded border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200'
-            }
+            data-tone={status.tone}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              borderLeft: `2px solid ${
+                pillStatus === 'blocked'
+                  ? 'var(--color-accent-ox)'
+                  : 'var(--color-accent-moss)'
+              }`,
+              padding: '10px 12px',
+              background: 'transparent',
+            }}
           >
-            <p className="font-medium">{status.headline}</p>
-            <p className="leading-relaxed">{status.body}</p>
+            <div className="flex items-center gap-2">
+              <StatusPill
+                status={pillStatus}
+                label={pillLabelZh}
+                labelEn={pillLabelEn}
+              />
+              <span
+                style={{
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '12px',
+                  color: 'var(--color-ink-3)',
+                }}
+              >
+                {status.headline}
+              </span>
+            </div>
+            <p
+              style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: '13px',
+                lineHeight: 1.6,
+                color: 'var(--color-ink-2)',
+                fontStyle: 'italic',
+                margin: 0,
+              }}
+            >
+              {status.body}
+            </p>
             <code
               data-testid="share-dialog-accept-url"
-              className="break-all rounded border border-zinc-200 bg-white px-2 py-1 font-mono text-[11px] text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '11px',
+                color: 'var(--color-ink)',
+                background: 'var(--color-paper-2)',
+                padding: '6px 10px',
+                wordBreak: 'break-all',
+                border: '1px solid var(--color-hairline)',
+                borderRadius: 'var(--radius-1)',
+              }}
             >
               {lastResult.acceptUrl}
             </code>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onCopyLink}
               data-testid="share-dialog-copy-button"
               data-copy-state={copyState}
               disabled={copyState === 'copying'}
-              className={
-                status.tone === 'amber'
-                  ? 'self-start rounded-md bg-amber-700 px-3 py-1 text-[11px] font-medium text-white hover:bg-amber-800 disabled:opacity-50 dark:bg-amber-800 dark:hover:bg-amber-700'
-                  : 'self-start rounded-md bg-emerald-700 px-3 py-1 text-[11px] font-medium text-white hover:bg-emerald-800 disabled:opacity-50 dark:bg-emerald-800 dark:hover:bg-emerald-700'
-              }
+              className="self-start"
             >
               {copyButtonLabel}
-            </button>
+            </Button>
           </div>
         )}
-        <button
+        <Button
+          variant="primary"
+          size="sm"
           type="submit"
           disabled={pending}
-          className="self-start rounded-md bg-zinc-900 px-4 py-1.5 text-white hover:bg-zinc-800 disabled:opacity-50"
+          className="self-start"
         >
-          {pending ? '...' : '发送邀请 / Send'}
-        </button>
+          {pending ? '...' : '发送邀请 · Send'}
+        </Button>
       </form>
       {pendingList.length > 0 && (
         <div className="mt-4">
-          <h3 className="mb-1 text-xs font-medium text-zinc-600">
-            待接受 / Pending ({pendingList.length})
+          <HairlineRule />
+          <h3
+            className="label-cap mt-3"
+            style={{ color: 'var(--color-ink-3)' }}
+          >
+            PENDING · 待接受（{pendingList.length}）
           </h3>
-          <ul className="flex flex-col gap-1 text-xs">
+          <ul
+            style={{
+              marginTop: '6px',
+              padding: 0,
+              listStyle: 'none',
+              fontSize: '12px',
+              fontFamily: 'var(--font-sans)',
+            }}
+          >
             {pendingList.map((r) => (
-              <li key={r.id} className="flex justify-between text-zinc-600">
+              <li
+                key={r.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  color: 'var(--color-ink-2)',
+                  padding: '4px 0',
+                  borderBottom: '1px solid var(--color-hairline)',
+                }}
+              >
                 <span>{r.email}</span>
-                <span>
+                <span style={{ color: 'var(--color-ink-3)' }}>
                   {r.roleId} · 到期 {r.expiresAt.slice(0, 10)}
                 </span>
               </li>
@@ -235,6 +378,6 @@ export default function ShareDialog({ documentId }: { documentId: string }) {
           </ul>
         </div>
       )}
-    </div>
+    </section>
   );
 }

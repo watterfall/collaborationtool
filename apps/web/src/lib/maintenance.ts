@@ -101,3 +101,27 @@ export function validateTransition(args: {
   }
   return { ok: true, updates };
 }
+
+// ---------------------------------------------------------------------------
+// Phase 4 W10.7 — severity → StatusPill mapping (Design.md §11 reject #5).
+//
+// Maintenance findings have 4 severity levels (high / medium / low / info).
+// Design.md only allows 3 statuses on StatusPill (proposed / applied /
+// blocked); collapsing 4 → 3 is acceptable because severity is an *axis*,
+// not a state — high/medium share blocking semantics ("must address"),
+// low signals applied (already-fine), info is informational (proposed).
+
+export function severityToPillStatus(
+  severity: string,
+): 'blocked' | 'proposed' | 'applied' {
+  switch (severity) {
+    case 'high':
+    case 'medium':
+      return 'blocked';
+    case 'info':
+      return 'proposed';
+    case 'low':
+    default:
+      return 'applied';
+  }
+}

@@ -1,6 +1,12 @@
 'use client';
 
+// Phase 4 W10.7 — Design.md compliance: replaced `rounded-md border bg-white`
+// container + `bg-zinc-100` reload button with hairline border + ghost
+// Button. Reject criteria #2 / #5 / #6.
+
 import { useCallback, useEffect, useState } from 'react';
+
+import { Button } from '@/components/design';
 
 import RevisionDiff, { type RevisionForDiff } from './RevisionDiff';
 
@@ -54,44 +60,109 @@ export default function RevisionInbox({ documentId }: RevisionInboxProps) {
   }, [documentId, pollKey]);
 
   return (
-    <section className="my-6 rounded-md border border-zinc-200 bg-white">
-      <header className="flex items-center justify-between border-b border-zinc-200 px-4 py-2">
+    <section
+      style={{
+        marginTop: '24px',
+        marginBottom: '24px',
+        background: 'var(--color-paper)',
+        border: '1px solid var(--color-hairline)',
+        borderRadius: 'var(--radius-2)',
+      }}
+    >
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 16px',
+          borderBottom: '1px solid var(--color-hairline)',
+        }}
+      >
         <div>
-          <h3 className="text-sm font-medium">
-            待评审修订 / Pending revisions
+          <h3
+            className="label-cap"
+            style={{ color: 'var(--color-ink-3)' }}
+          >
+            PENDING REVISIONS · 待评审修订
           </h3>
           {revisions !== null && (
-            <p className="text-xs text-zinc-500">
+            <p
+              style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize: '11px',
+                color: 'var(--color-ink-3)',
+                marginTop: '2px',
+              }}
+            >
               {loading ? '加载中…' : `${revisions.length} 条待处理`}
             </p>
           )}
         </div>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={refresh}
-          className="rounded-md border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100"
           disabled={loading}
         >
-          刷新 / Reload
-        </button>
+          刷新 · Reload
+        </Button>
       </header>
 
       {error ? (
-        <div className="px-4 py-3 text-xs text-red-700" role="alert">
+        <div
+          role="alert"
+          style={{
+            padding: '12px 16px',
+            fontFamily: 'var(--font-serif)',
+            fontStyle: 'italic',
+            fontSize: '12px',
+            color: 'var(--color-accent-ox)',
+          }}
+        >
           {error === 'no-review-capability'
             ? '你没有 block.review 权限，看不到他人提议。'
             : error}
         </div>
       ) : !revisions ? (
-        <div className="px-4 py-3 text-xs text-zinc-500">加载中…</div>
+        <div
+          style={{
+            padding: '12px 16px',
+            fontFamily: 'var(--font-serif)',
+            fontStyle: 'italic',
+            fontSize: '12px',
+            color: 'var(--color-ink-3)',
+          }}
+        >
+          加载中…
+        </div>
       ) : revisions.length === 0 ? (
-        <div className="px-4 py-3 text-xs text-zinc-500">
-          没有待评审的修订。Agent 提议会出现在这里。
+        <div
+          style={{
+            padding: '12px 16px',
+            fontFamily: 'var(--font-serif)',
+            fontStyle: 'italic',
+            fontSize: '12px',
+            color: 'var(--color-ink-3)',
+          }}
+        >
+          没有待评审的修订 · Agent 提议会出现在这里。
         </div>
       ) : (
-        <ul className="divide-y divide-zinc-100">
-          {revisions.map((rev) => (
-            <li key={rev.id} className="px-4 py-3">
+        <ul
+          style={{
+            listStyle: 'none',
+            margin: 0,
+            padding: 0,
+          }}
+        >
+          {revisions.map((rev, i) => (
+            <li
+              key={rev.id}
+              style={{
+                padding: '12px 16px',
+                borderTop: i === 0 ? 0 : '1px solid var(--color-hairline)',
+              }}
+            >
               <RevisionDiff revision={rev} onActed={refresh} />
             </li>
           ))}

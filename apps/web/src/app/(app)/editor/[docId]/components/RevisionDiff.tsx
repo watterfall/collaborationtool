@@ -1,6 +1,19 @@
 'use client';
 
+// Phase 4 W10.7 — Design.md compliance:
+//   - amber/emerald/red filled badges → StatusPill (proposed/applied/blocked)
+//   - removed `bg-zinc-50` fragment block backgrounds
+//   - accept/reject/modify buttons go through SoT Button
+//   - text-red / text-green diff coloring kept (it's diff semantics, not
+//     status pills, and Design.md §11 #5 narrowly bans pills with red+
+//     green together — diff +/- colored text is editorial precedent)
+//
+// Note: text-red-700 / text-green-700 in fragment diffs are recolored to
+// editorial accent-ox / accent-moss tokens.
+
 import { useState } from 'react';
+
+import { Button, StatusPill } from '@/components/design';
 
 export interface RevisionForDiff {
   id: string;
@@ -79,33 +92,101 @@ export default function RevisionDiff({
     .replace('T', ' ')
     .slice(0, 16);
 
+  const fieldStyle: React.CSSProperties = {
+    fontFamily: 'var(--font-mono)',
+    fontSize: '12px',
+    padding: '6px 10px',
+    background: 'var(--color-paper)',
+    color: 'var(--color-ink)',
+    border: '1px solid var(--color-hairline)',
+    borderRadius: 'var(--radius-1)',
+  };
+
   return (
-    <div className="text-sm">
-      <header className="flex items-start justify-between">
+    <div style={{ fontSize: '13px' }}>
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: '12px',
+        }}
+      >
         <div>
-          <p className="text-xs text-zinc-500">
+          <p
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '11px',
+              color: 'var(--color-ink-3)',
+              margin: 0,
+            }}
+          >
             {isAgentProposal ? 'Agent' : 'User'} ·{' '}
-            <code className="text-[10px]">{revision.proposedBy.slice(0, 24)}</code>
+            <code
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '10px',
+                color: 'var(--color-accent-ink)',
+              }}
+            >
+              {revision.proposedBy.slice(0, 24)}
+            </code>
             {' · '}
             {dateStr}
           </p>
           {revision.rationale && (
-            <p className="mt-1 text-zinc-700">{revision.rationale}</p>
+            <p
+              style={{
+                marginTop: '4px',
+                fontFamily: 'var(--font-serif)',
+                fontStyle: 'italic',
+                fontSize: '13px',
+                color: 'var(--color-ink-2)',
+              }}
+            >
+              “{revision.rationale}”
+            </p>
           )}
         </div>
-        <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-900">
-          {revision.status}
-        </span>
+        <StatusPill
+          status="proposed"
+          label={revision.status === 'draft' ? '草稿' : '已提议'}
+          labelEn={revision.status === 'draft' ? 'Draft' : 'Proposed'}
+        />
       </header>
 
       {fragments.length > 0 && (
-        <ul className="mt-2 space-y-1 rounded-md border border-zinc-200 bg-zinc-50 p-2 text-xs">
+        <ul
+          style={{
+            marginTop: '8px',
+            listStyle: 'none',
+            padding: '8px 12px',
+            background: 'var(--color-paper-2)',
+            border: '1px solid var(--color-hairline)',
+            borderRadius: 'var(--radius-1)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '11px',
+          }}
+        >
           {fragments.map((f, i) => (
             <li key={i}>
-              <div className="text-red-700">- {f.originalText}</div>
-              <div className="text-green-700">+ {f.replacementText}</div>
+              <div style={{ color: 'var(--color-accent-ox)' }}>
+                − {f.originalText}
+              </div>
+              <div style={{ color: 'var(--color-accent-moss)' }}>
+                + {f.replacementText}
+              </div>
               {f.citationId && (
-                <div className="text-[10px] text-zinc-500">
+                <div
+                  style={{
+                    fontSize: '10px',
+                    color: 'var(--color-ink-3)',
+                    marginTop: '2px',
+                  }}
+                >
                   citation: {f.citationId}
                 </div>
               )}
@@ -115,9 +196,25 @@ export default function RevisionDiff({
       )}
 
       {uncertainties.length > 0 && (
-        <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">
-          <strong>Uncertainties:</strong>
-          <ul className="ml-4 list-disc">
+        <div
+          style={{
+            marginTop: '8px',
+            borderLeft: '2px solid var(--color-accent-ox)',
+            padding: '6px 12px',
+            fontFamily: 'var(--font-serif)',
+            fontStyle: 'italic',
+            fontSize: '12px',
+            color: 'var(--color-ink-2)',
+          }}
+        >
+          <strong style={{ fontStyle: 'normal' }}>Uncertainties:</strong>
+          <ul
+            style={{
+              margin: '4px 0 0 0',
+              paddingLeft: '20px',
+              listStyle: 'disc',
+            }}
+          >
             {uncertainties.map((u, i) => (
               <li key={i}>{u}</li>
             ))}
@@ -125,53 +222,93 @@ export default function RevisionDiff({
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div
+        style={{
+          marginTop: '12px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '8px',
+        }}
+      >
         <input
           type="text"
-          placeholder="备注 / notes (可选)"
+          placeholder="备注 · notes (可选)"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="flex-1 rounded-md border border-zinc-300 px-2 py-1 text-xs focus:border-zinc-900 focus:outline-none"
+          style={{ ...fieldStyle, flex: 1 }}
         />
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          size="sm"
           onClick={() => void call('accept', notes ? { notes } : undefined)}
           disabled={pending !== null}
-          className="rounded-md bg-emerald-700 px-3 py-1 text-xs text-white hover:bg-emerald-800 disabled:opacity-50"
         >
           {pending === 'accept' ? '...' : 'Accept'}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => void call('reject', notes ? { notes } : undefined)}
           disabled={pending !== null}
-          className="rounded-md bg-red-700 px-3 py-1 text-xs text-white hover:bg-red-800 disabled:opacity-50"
         >
           {pending === 'reject' ? '...' : 'Reject'}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setShowModifyForm((v) => !v)}
-          className="rounded-md border border-zinc-300 px-3 py-1 text-xs hover:bg-zinc-100"
         >
           {showModifyForm ? 'Cancel modify' : 'Modify…'}
-        </button>
+        </Button>
       </div>
 
       {showModifyForm && (
-        <div className="mt-3 rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs">
-          <h5 className="mb-1 font-medium">反提议 / Counter-propose</h5>
-          <label className="block">
-            <span className="text-zinc-700">Rationale</span>
+        <div
+          style={{
+            marginTop: '12px',
+            border: '1px solid var(--color-hairline)',
+            background: 'var(--color-paper-2)',
+            padding: '12px 14px',
+            fontSize: '12px',
+          }}
+        >
+          <h5
+            className="label-cap"
+            style={{
+              color: 'var(--color-ink-3)',
+              marginBottom: '6px',
+            }}
+          >
+            COUNTER-PROPOSE · 反提议
+          </h5>
+          <label style={{ display: 'block' }}>
+            <span
+              style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize: '11px',
+                color: 'var(--color-ink-2)',
+              }}
+            >
+              Rationale
+            </span>
             <input
               type="text"
               value={modifyRationale}
               onChange={(e) => setModifyRationale(e.target.value)}
-              className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-1 focus:border-zinc-900 focus:outline-none"
+              style={{ ...fieldStyle, width: '100%', marginTop: '4px' }}
             />
           </label>
           {modifyFragments.map((f, i) => (
-            <div key={i} className="mt-2 grid grid-cols-2 gap-1">
+            <div
+              key={i}
+              style={{
+                marginTop: '8px',
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '6px',
+              }}
+            >
               <input
                 type="text"
                 value={f.originalText}
@@ -182,7 +319,7 @@ export default function RevisionDiff({
                     ),
                   )
                 }
-                className="rounded-md border border-zinc-300 px-2 py-1 font-mono"
+                style={fieldStyle}
                 placeholder="originalText"
               />
               <input
@@ -197,26 +334,27 @@ export default function RevisionDiff({
                     ),
                   )
                 }
-                className="rounded-md border border-zinc-300 px-2 py-1 font-mono"
+                style={fieldStyle}
                 placeholder="replacementText"
               />
             </div>
           ))}
-          <div className="mt-2 flex gap-2">
-            <button
-              type="button"
+          <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() =>
                 setModifyFragments((p) => [
                   ...p,
                   { originalText: '', replacementText: '' },
                 ])
               }
-              className="rounded-md border border-zinc-300 px-2 py-0.5 text-[11px] hover:bg-zinc-100"
             >
               + fragment
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
               onClick={() =>
                 void call('modify', {
                   rationale: modifyRationale,
@@ -225,16 +363,25 @@ export default function RevisionDiff({
                 })
               }
               disabled={pending !== null || modifyFragments.length === 0}
-              className="rounded-md bg-zinc-900 px-3 py-1 text-xs text-white hover:bg-zinc-800 disabled:opacity-50"
             >
               {pending === 'modify' ? '...' : 'Submit counter-proposal'}
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {error && (
-        <p className="mt-2 text-xs text-red-700" role="alert">
+        <p
+          role="alert"
+          style={{
+            marginTop: '8px',
+            fontSize: '12px',
+            color: 'var(--color-accent-ox)',
+            borderLeft: '2px solid var(--color-accent-ox)',
+            paddingLeft: '10px',
+            fontStyle: 'italic',
+          }}
+        >
           {error}
         </p>
       )}

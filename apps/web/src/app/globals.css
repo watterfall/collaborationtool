@@ -172,8 +172,10 @@ h1 {
   color: var(--color-ink-3);
 }
 
-/* Editorial buttons — primary (ink fill) + ghost (pencil border).
-   No transitions on background blurs; transitions on color/border only. */
+/* Editorial buttons — primary (ink fill) + ghost (pencil border) +
+   link (underlined inline anchor). No transitions on background blurs;
+   transitions on color/border only. Sizes (sm/md/lg) override height +
+   horizontal padding only — variant owns color/font (Design.md §5.1). */
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -218,6 +220,69 @@ h1 {
   background: var(--color-paper-2);
 }
 
+/* Link button — Design.md §5.1: ink underline 0.4em offset / no border.
+   Inline-flex so a `<Button as="a">` can sit in a sentence. */
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.2;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.4em;
+  text-decoration-color: var(--color-ink);
+  transition: text-decoration-color 120ms ease-out;
+}
+.btn-link:hover {
+  text-decoration-color: var(--color-accent-ink);
+}
+
+/* Size modifiers: height 28 / 36 / 44px + padding-x 12 / 16 / 20px +
+   sans 13px. Override the default vertical padding by using line-height +
+   explicit min-height so the visual height matches Design.md §5.1. */
+.btn-size-sm {
+  min-height: 28px;
+  padding: 4px 12px;
+  font-size: 13px;
+}
+.btn-size-md {
+  min-height: 36px;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+.btn-size-lg {
+  min-height: 44px;
+  padding: 12px 20px;
+  font-size: 13px;
+}
+/* Link variant ignores min-height — it sits inline with surrounding text. */
+.btn-link.btn-size-sm,
+.btn-link.btn-size-md,
+.btn-link.btn-size-lg {
+  min-height: 0;
+  padding: 0;
+}
+
+/* Disabled state — Design.md §5.1: opacity 0.55 + cursor not-allowed,
+   colors stay editorial (no gray-out). Used by Button when `disabled`
+   prop is set; pairs with native `:disabled` for reliable a11y. */
+.is-disabled,
+.is-disabled:hover {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+  text-decoration-color: var(--color-ink);
+}
+
 /* Mono-disc — identity chip. Place initial child as text. */
 .mono-disc {
   display: inline-flex;
@@ -245,6 +310,25 @@ h1 {
 .mono-disc[data-kind='community'] {
   border-color: var(--color-accent-moss);
   color: var(--color-accent-moss);
+}
+/* Mono-disc sizes — Design.md §5.2: 24 / 28 / 32px disc, font scales
+   12 / 13 / 15px. Default `.mono-disc` already sets the md (28px) values
+   above; the size modifier overrides width / height / font-size so the
+   selector chain (`.mono-disc.mono-disc-sm`) wins both ways. */
+.mono-disc-sm {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+}
+.mono-disc-md {
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+.mono-disc-lg {
+  width: 32px;
+  height: 32px;
+  font-size: 15px;
 }
 
 /* Status pill — outlined, never filled. */
@@ -301,6 +385,298 @@ h1 {
 .struck {
   text-decoration: line-through;
   text-decoration-color: var(--color-ink-3);
+  color: var(--color-ink-3);
+}
+
+/* Dashed hairline variants — used in proposed-but-not-applied transitions
+   in the editor's revision view (HairlineRule component, Design.md §5.8). */
+.rule-dashed {
+  border: 0;
+  border-top: 1px dashed var(--color-hairline);
+  height: 0;
+  margin: 0;
+}
+.rule-thick-dashed {
+  border: 0;
+  border-top: 1.5px dashed var(--color-pencil);
+  height: 0;
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Block hover-rail (Design.md §5.6).
+ *
+ * 4 stacked 22px square buttons that float at the left of a paragraph.
+ * Default `opacity:0` — only revealed when the surrounding block is
+ * hovered (the editor wraps the rail + block in a hover container) or
+ * keyboard-focused (`block-hover-rail-visible` modifier).
+ * ------------------------------------------------------------------------ */
+.block-hover-rail {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 22px;
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+.block-hover-rail-visible,
+.block-hover-rail:focus-within,
+.block-hover-rail:hover {
+  opacity: 0.85;
+}
+
+.block-hover-rail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--color-ink-2);
+  cursor: pointer;
+  transition: color 120ms ease-out;
+}
+.block-hover-rail-btn svg {
+  display: block;
+  stroke-width: 1.4;
+}
+.block-hover-rail-btn:hover {
+  color: var(--color-accent-ink);
+}
+
+/* ---------------------------------------------------------------------------
+ * Citation popover (Design.md §5.5) — APA-shaped CrossRef card.
+ *
+ * Layout: serif 17px title quote · sans 11px caption details · mono DOI
+ * with dotted underline · two-button action row (Bind primary / Open
+ * ghost). The popover *body* is what we style here; positioning is the
+ * caller's job (editor-core / inline menu).
+ * ------------------------------------------------------------------------ */
+.citation-popover {
+  display: block;
+  width: 320px;
+  padding: 14px 16px;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-2);
+}
+.citation-popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.citation-popover-author {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-ink-2);
+  margin: 0;
+}
+.citation-popover-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--color-ink);
+  margin: 0;
+  font-feature-settings: 'onum' 1, 'kern' 1;
+}
+.citation-popover-detail {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--color-ink-3);
+  margin: 0;
+}
+.citation-popover-doi {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+}
+.citation-popover-doi-link {
+  color: var(--color-accent-ink);
+  text-decoration: underline dotted;
+  text-decoration-color: var(--color-accent-ink);
+  text-underline-offset: 3px;
+}
+.citation-popover-doi-link code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.citation-popover-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-hairline);
+}
+
+/* ---------------------------------------------------------------------------
+ * Provenance card (Design.md §5.4).
+ *
+ * Three sections separated by 1.5px hairlines (rendered via the inner
+ * <hr class="rule-thick"> elements; the card itself is plain paper).
+ * Section selectors style the inner layout — the rules live on the
+ * <hr>s so we don't double-border at the bottom of the card.
+ * ------------------------------------------------------------------------ */
+.provenance-card {
+  display: block;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  border: 1.5px solid var(--color-hairline);
+  border-radius: var(--radius-2);
+  padding: 16px 18px;
+  font-family: var(--font-sans);
+}
+.provenance-card-cap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+.provenance-card-actor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+}
+.provenance-card-actor-name {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-ink);
+}
+.provenance-card-actor-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-ink-3);
+  margin-left: auto;
+}
+.provenance-card-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+}
+.provenance-card-intent {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--color-ink);
+  margin: 0;
+}
+.provenance-card-prompt {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--color-ink-2);
+  background: var(--color-paper-2);
+  padding: 10px 12px;
+  border-radius: var(--radius-1);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.provenance-card-tools {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--color-ink-2);
+}
+.provenance-card-tools li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.provenance-card-tools code {
+  font-family: var(--font-mono);
+  color: var(--color-accent-ink);
+}
+.provenance-card-meta {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--color-ink-3);
+  margin: 0;
+}
+.provenance-card-hash {
+  font-family: var(--font-mono);
+  color: var(--color-ink-3);
+}
+.provenance-card-model {
+  color: var(--color-ink-2);
+}
+.provenance-card-cost {
+  color: var(--color-ink-3);
+}
+
+/* ---------------------------------------------------------------------------
+ * Marginalia entry inner sub-elements (Design.md §5.7).
+ *
+ * The wrapper `.margin-entry` is defined above (border-left + padding).
+ * These sub-element classes style the head / body / foot rows that
+ * MarginaliaEntry renders.
+ * ------------------------------------------------------------------------ */
+.margin-entry-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.margin-entry-monogram {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 10px;
+  color: var(--color-ink-2);
+  border: 1px solid var(--color-hairline);
+}
+.margin-entry-actor {
+  /* inherits .label-cap typography from the consumer; we only override
+     color so accent kinds tint the actor name. */
+  color: var(--color-ink-2);
+}
+.margin-entry-actor[data-kind='agent'] {
+  color: var(--color-accent-ink);
+}
+.margin-entry-actor[data-kind='human'] {
+  color: var(--color-accent-ox);
+}
+.margin-entry-actor[data-kind='community'] {
+  color: var(--color-accent-moss);
+}
+.margin-entry-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-ink-3);
+  margin-left: auto;
+}
+.margin-entry-body {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-ink);
+}
+.margin-entry-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.margin-entry-meta {
+  font-family: var(--font-sans);
+  font-size: 11px;
   color: var(--color-ink-3);
 }
 

@@ -68,15 +68,35 @@ export default function EditorClient({ documentId }: EditorClientProps) {
 
   if (error) {
     return (
-      <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+      <div
+        role="alert"
+        style={{
+          borderLeft: '2px solid var(--color-accent-ox)',
+          padding: '10px 14px',
+          fontFamily: 'var(--font-serif)',
+          fontStyle: 'italic',
+          fontSize: '14px',
+          color: 'var(--color-accent-ox)',
+        }}
+      >
         无法获取同步 token：{error}
       </div>
     );
   }
   if (!bundle) {
     return (
-      <div className="rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
-        准备中…
+      <div
+        style={{
+          borderTop: '1px solid var(--color-hairline)',
+          borderBottom: '1px solid var(--color-hairline)',
+          padding: '14px 0',
+          fontFamily: 'var(--font-serif)',
+          fontStyle: 'italic',
+          fontSize: '13px',
+          color: 'var(--color-ink-3)',
+        }}
+      >
+        准备中… · Loading
       </div>
     );
   }
@@ -90,10 +110,40 @@ export default function EditorClient({ documentId }: EditorClientProps) {
         seedContent={seedContent}
         onEditorReady={setEditor}
       />
-      <p className="mt-1 text-[11px] text-zinc-500">
-        提示：把光标放进段落或选中文字后按 <kbd className="rounded border border-zinc-300 bg-zinc-50 px-1 font-mono text-[10px]">⌘K</kbd>
+      <p
+        style={{
+          fontFamily: 'var(--font-sans)',
+          fontSize: '11px',
+          color: 'var(--color-ink-3)',
+          marginTop: '4px',
+        }}
+      >
+        提示：把光标放进段落或选中文字后按{' '}
+        <kbd
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '10px',
+            padding: '0 4px',
+            border: '1px solid var(--color-hairline)',
+            borderRadius: 'var(--radius-1)',
+            background: 'var(--color-paper-2)',
+          }}
+        >
+          ⌘K
+        </kbd>
         {' / '}
-        <kbd className="rounded border border-zinc-300 bg-zinc-50 px-1 font-mono text-[10px]">Ctrl K</kbd>{' '}
+        <kbd
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '10px',
+            padding: '0 4px',
+            border: '1px solid var(--color-hairline)',
+            borderRadius: 'var(--radius-1)',
+            background: 'var(--color-paper-2)',
+          }}
+        >
+          Ctrl K
+        </kbd>{' '}
         召出 AI 协作菜单。 / Press ⌘K (Mac) or Ctrl-K to invoke the AI agent
         menu on the current selection.
       </p>
