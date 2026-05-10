@@ -28,6 +28,13 @@
       "phase": "2.5",
       "status": "active",
       "agentKinds": ["researcher"]
+    },
+    {
+      "id": "source-extraction",
+      "path": "source-extraction/SKILL.md",
+      "phase": 3,
+      "status": "active",
+      "agentKinds": ["custom"]
     }
   ]
 }

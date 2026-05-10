@@ -46,10 +46,14 @@ export interface AnthropicRunnerInput extends RunnerCommonInput {
 }
 
 export interface MockRunnerInput extends RunnerCommonInput {
-  /** Deterministic logic per agent kind. Phase 2.5 adds reviewer +
-   * researcher shapes for the long-horizon agents (real prompt design
-   * lands when a real Anthropic key exercises runAnthropicAgent). */
-  shape: 'citation' | 'inline-editor' | 'reviewer' | 'researcher';
+  /** Deterministic logic per agent kind. Phase 2.5 added reviewer +
+   * researcher; Phase 3 W2 adds source-extractor (AI ingestion). */
+  shape:
+    | 'citation'
+    | 'inline-editor'
+    | 'reviewer'
+    | 'researcher'
+    | 'source-extractor';
 }
 
 // ---------- Mock runner ----------
@@ -147,6 +151,28 @@ export async function runMockAgent(
     uncertainties.push(
       `Mock researcher: real source-search requires Anthropic + MCP servers (crossref/arxiv/etc).`,
     );
+  } else if (input.shape === 'source-extractor') {
+    // source-extractor mock: deterministic pseudo-extraction. Splits the
+    // passage on sentence punctuation and emits one fake claim per
+    // sentence longer than 60 chars + one supporting evidence per
+    // emitted claim. Real extraction needs an LLM (Anthropic /
+    // OpenAI-compat); production swaps this branch for runAnthropicAgent
+    // automatically when input.anthropic is provided.
+    const sentences = input.passage
+      .split(/(?<=[.!?。！？])\s+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 60);
+    for (const s of sentences.slice(0, 3)) {
+      revisedFragments.push({
+        originalText: s,
+        replacementText: `[CLAIM] ${s.slice(0, 120)}`,
+      });
+    }
+    if (revisedFragments.length === 0) {
+      uncertainties.push(
+        'Mock source-extractor: passage lacks long-enough sentences for extraction',
+      );
+    }
   }
 
   const finishedAt = new Date().toISOString();

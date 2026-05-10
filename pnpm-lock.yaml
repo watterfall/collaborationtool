@@ -803,6 +803,28 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  plugins/source-extractor:
+    dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^0.40.1
+        version: 0.40.1
+      '@collaborationtool/ai-runtime':
+        specifier: workspace:*
+        version: link:../../packages/ai-runtime
+      '@collaborationtool/permissions':
+        specifier: workspace:*
+        version: link:../../packages/permissions
+      '@collaborationtool/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.18
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   tests/e2e:
     dependencies:
       '@collaborationtool/drizzle':

@@ -34,6 +34,14 @@
       "path": "plugins/researcher-agent",
       "skillId": "literature-review",
       "origin": "built-in"
+    },
+    {
+      "id": "@official/source-extractor",
+      "type": "agent",
+      "kind": "custom",
+      "path": "plugins/source-extractor",
+      "skillId": "source-extraction",
+      "origin": "built-in"
     }
   ]
 }

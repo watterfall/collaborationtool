@@ -18,7 +18,7 @@ describe('plugin registry (built-in)', () => {
     _resetPluginRegistryCache();
   });
 
-  it('loads registry.json with all 4 built-in agents', async () => {
+  it('loads registry.json with all built-in agents (P2.5+P3 set)', async () => {
     const all = await loadPluginRegistry(REPO_ROOT);
     const ids = all.map((p) => p.id).sort();
     assert.deepEqual(ids, [
@@ -26,6 +26,7 @@ describe('plugin registry (built-in)', () => {
       '@official/inline-editor-agent',
       '@official/researcher-agent',
       '@official/reviewer-agent',
+      '@official/source-extractor',
     ]);
     assert.ok(all.every((p) => p.origin === 'built-in'));
   });
