@@ -41,6 +41,7 @@
    `phase-*-plan-stub.md`（看 STATUS §1 知道当前在哪个 phase）
 
 ADR 在 `plan0/adr/0001-0015`——动到对应模块前先读相应 ADR。
+导航 / 依赖图 / 主题聚类 / 阅读顺序建议看 [`plan0/ADR-INDEX.md`](./plan0/ADR-INDEX.md)。
 
 ---
 

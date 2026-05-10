@@ -183,6 +183,8 @@ pnpm e2e:test                  # Playwright 双作者，~22s
 
 ## ADR 导航
 
+完整 index（含依赖图 + phase gate 时间线 + 主题聚类 + 阅读顺序建议）：[`plan0/ADR-INDEX.md`](./plan0/ADR-INDEX.md)。
+
 | ADR | 标题 | 状态 |
 |---|---|---|
 | 0001 | 数据模型 & CRDT/Postgres 拆分 | Accepted |
