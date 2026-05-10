@@ -123,3 +123,13 @@ export {
   type ProviderRunInput,
   type WireFormat,
 } from './providers';
+
+// Phase 3 W6: Coordinator agent handoff types.
+// plugins/coordinator-agent/ 实施 LLM-driven dispatch 逻辑 W6 后续。
+export type {
+  AgentHandoff,
+  CoordinatorDecision,
+  CoordinatorFinalReport,
+  CoordinatorJobInput,
+  HandoffResult,
+} from './coordinator';

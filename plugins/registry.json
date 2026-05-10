@@ -42,6 +42,14 @@
       "path": "plugins/source-extractor",
       "skillId": "source-extraction",
       "origin": "built-in"
+    },
+    {
+      "id": "@official/coordinator-agent",
+      "type": "agent",
+      "kind": "coordinator",
+      "path": "plugins/coordinator-agent",
+      "skillId": "coordinator",
+      "origin": "built-in"
     }
   ]
 }

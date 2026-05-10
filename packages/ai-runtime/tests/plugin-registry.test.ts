@@ -23,6 +23,7 @@ describe('plugin registry (built-in)', () => {
     const ids = all.map((p) => p.id).sort();
     assert.deepEqual(ids, [
       '@official/citation-agent',
+      '@official/coordinator-agent',
       '@official/inline-editor-agent',
       '@official/researcher-agent',
       '@official/reviewer-agent',
@@ -46,8 +47,14 @@ describe('plugin registry (built-in)', () => {
     assert.equal(p!.skillId, 'inline-editor');
   });
 
-  it('findAgentByKind returns null for unknown kind', async () => {
-    const p = await findAgentByKind(REPO_ROOT, 'coordinator');
+  it('findAgentByKind returns null for an unregistered kind', async () => {
+    // 'editor' / 'citation' / 'reviewer' / 'researcher' / 'coordinator'
+    // / 'custom' are now all registered. Use an undefined-by-typing
+    // marker to test the negative path.
+    const p = await findAgentByKind(
+      REPO_ROOT,
+      'definitely-unregistered' as Parameters<typeof findAgentByKind>[1],
+    );
     assert.equal(p, null);
   });
 

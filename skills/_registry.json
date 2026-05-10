@@ -35,6 +35,13 @@
       "phase": 3,
       "status": "active",
       "agentKinds": ["custom"]
+    },
+    {
+      "id": "coordinator",
+      "path": "coordinator/SKILL.md",
+      "phase": 3,
+      "status": "active",
+      "agentKinds": ["coordinator"]
     }
   ]
 }
