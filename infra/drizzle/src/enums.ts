@@ -158,3 +158,35 @@ export const claimLinkTypeEnum = pgEnum('claim_link_type', [
   'contradicts',
   'refines',
 ]);
+
+// ---------- Source ingestion (Phase 3 W1/W2) ----------
+
+export const sourceKindEnum = pgEnum('source_kind', [
+  'pdf',
+  'web',
+  'markdown',
+  'text',
+  'docx',
+  'epub',
+  'manual',
+]);
+
+export const sourceTrustLevelEnum = pgEnum('source_trust_level', [
+  'unverified',
+  'low',
+  'medium',
+  'high',
+]);
+
+export const extractionStatusEnum = pgEnum('extraction_status', [
+  'ai-suggested',
+  'user-accepted',
+  'user-modified',
+  'rejected',
+]);
+
+export const extractionKindEnum = pgEnum('extraction_kind', [
+  'claim',
+  'evidence',
+  'question',
+]);

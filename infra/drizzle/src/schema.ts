@@ -42,11 +42,15 @@ import {
   claimStatusEnum,
   claimTypeEnum,
   evidenceRelationEnum,
+  extractionKindEnum,
+  extractionStatusEnum,
   mcpHealthStatusEnum,
   mcpOriginEnum,
   mcpTransportEnum,
   principalKindEnum,
   revisionStatusEnum,
+  sourceKindEnum,
+  sourceTrustLevelEnum,
 } from './enums';
 import { bytea } from './types';
 
@@ -758,6 +762,102 @@ export const agentJobEvent = pgTable(
 );
 
 // ============================================================
+// 21. source — Phase 3 W1/W2 ingestion (PDF / web / markdown / text /
+//     docx / epub / manual). See ADR-0011 §1 (essay §6.1 7 对象之一).
+//     PDF.js + readability extract raw_text; AI抽取走 source_extraction.
+// ============================================================
+
+export const source = pgTable(
+  'source',
+  {
+    id: text('id').primaryKey(),
+    kind: sourceKindEnum('kind').notNull(),
+    title: text('title').notNull(),
+    url: text('url'),
+    bytesHashSha256: text('bytes_hash_sha256'),
+    bytesSize: integer('bytes_size'),
+    bytesStorageUrl: text('bytes_storage_url'),
+    rawText: text('raw_text'),
+    language: text('language'),
+    trustLevel: sourceTrustLevelEnum('trust_level').notNull().default('unverified'),
+    importedBy: text('imported_by')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    importedAt: timestamp('imported_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    accessedAt: timestamp('accessed_at', { withTimezone: true }),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    notesMarkdown: text('notes_markdown'),
+    citationId: text('citation_id').references(() => citation.id, {
+      onDelete: 'set null',
+    }),
+  },
+  (t) => ({
+    kindIdx: index('source_kind_idx').on(t.kind),
+    importedByIdx: index('source_imported_by_idx').on(t.importedBy, t.importedAt),
+    citationIdx: index('source_citation_idx').on(t.citationId),
+    hashIdx: index('source_hash_idx').on(t.bytesHashSha256),
+  }),
+);
+
+// ============================================================
+// 22. source_extraction — Phase 3 W2 AI 抽取 staging。
+//     status='ai-suggested' 是 AI 输出；user-accepted / user-modified
+//     时 promoted_* 链到 main 表的真对象（claim/evidence/thread）。
+//     rejected 留历史方便改 prompt 时回看。
+// ============================================================
+
+export const sourceExtraction = pgTable(
+  'source_extraction',
+  {
+    id: text('id').primaryKey(),
+    sourceId: text('source_id')
+      .notNull()
+      .references(() => source.id, { onDelete: 'cascade' }),
+    kind: extractionKindEnum('kind').notNull(),
+    text: text('text').notNull(),
+    excerpt: text('excerpt'),
+    excerptOffset: integer('excerpt_offset'),
+    excerptLength: integer('excerpt_length'),
+    status: extractionStatusEnum('status').notNull().default('ai-suggested'),
+    promotedClaimId: text('promoted_claim_id').references(() => claim.id, {
+      onDelete: 'set null',
+    }),
+    promotedEvidenceId: text('promoted_evidence_id').references(
+      () => evidence.id,
+      { onDelete: 'set null' },
+    ),
+    promotedThreadId: text('promoted_thread_id').references(
+      () => annotationThread.id,
+      { onDelete: 'set null' },
+    ),
+    agentPrincipalId: text('agent_principal_id').references(() => principal.id, {
+      onDelete: 'set null',
+    }),
+    extractedAt: timestamp('extracted_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+    decidedBy: text('decided_by').references(() => principal.id, {
+      onDelete: 'set null',
+    }),
+    decisionNote: text('decision_note'),
+    aiMetadata: jsonb('ai_metadata'),
+  },
+  (t) => ({
+    sourceIdx: index('source_extraction_source_idx').on(t.sourceId, t.kind),
+    statusIdx: index('source_extraction_status_idx').on(t.status),
+    promotedClaimIdx: index('source_extraction_promoted_claim_idx').on(
+      t.promotedClaimId,
+    ),
+    promotedEvidenceIdx: index('source_extraction_promoted_evidence_idx').on(
+      t.promotedEvidenceId,
+    ),
+  }),
+);
+
+// ============================================================
 // Type exports — used by application code for fully-typed queries.
 // `db.select().from(document)` returns inferred row types.
 // ============================================================
@@ -782,3 +882,5 @@ export type DbEvidence = typeof evidence.$inferSelect;
 export type DbClaimLink = typeof claimLink.$inferSelect;
 export type DbAgentJob = typeof agentJob.$inferSelect;
 export type DbAgentJobEvent = typeof agentJobEvent.$inferSelect;
+export type DbSource = typeof source.$inferSelect;
+export type DbSourceExtraction = typeof sourceExtraction.$inferSelect;
