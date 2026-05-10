@@ -1,0 +1,138 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "heading",
+      "attrs": { "level": 1 },
+      "content": [
+        { "type": "text", "text": "文献综述 / Literature Review" }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "marks": [{ "type": "italic" }],
+          "text": "副标题 · Subtitle: "
+        },
+        {
+          "type": "text",
+          "text": "（请替换为本综述的研究主题 / Replace with the topic of this review）"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "attrs": { "level": 2 },
+      "content": [
+        { "type": "text", "text": "1. 引言 · Introduction" }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "本节阐述综述目的、范围与检索策略。Briefly state the scope of the review, the question it addresses, and the search strategy used. "
+        }
+      ]
+    },
+    {
+      "type": "claim",
+      "attrs": {
+        "blockId": "blk-claim-tpl-001",
+        "claimId": "claim-tpl-supported",
+        "claimType": "main",
+        "status": "human-reviewed",
+        "confidence": "high"
+      },
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "示例主张（已支持 / supported）：CRDT 在多人协作场景下能够保证最终一致性。CRDTs guarantee eventual consistency in multi-author collaboration."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "evidence",
+      "attrs": {
+        "blockId": "blk-evd-tpl-001",
+        "evidenceId": "evd-tpl-001",
+        "supportsClaimId": "claim-tpl-supported",
+        "citationId": "10.48550/arXiv.2310.06770",
+        "relation": "supports",
+        "status": "human-reviewed"
+      },
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "示例证据：Yjs 形式化证明了 CRDT 在文档树场景下的收敛性 / Yjs offers a formal proof of convergence for tree-shaped documents."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "attrs": { "level": 2 },
+      "content": [
+        { "type": "text", "text": "2. 主要工作 · Related Work" }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "在此分类整理代表性工作。Group representative work by theme or chronology. Add citations using the citation agent (cmd+k → Cite)."
+        }
+      ]
+    },
+    {
+      "type": "claim",
+      "attrs": {
+        "blockId": "blk-claim-tpl-002",
+        "claimId": "claim-tpl-unsupported",
+        "claimType": "main",
+        "status": "ai-suggested",
+        "confidence": "medium"
+      },
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "示例主张（暂无证据 / unsupported — maintenance scan 会标出此 finding）：本领域近年的方法论已收敛。Methodology in this field has converged in recent years. （TODO: 补充证据 / add evidence）"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "attrs": { "level": 2 },
+      "content": [
+        { "type": "text", "text": "3. 总结 · Conclusion" }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "总结主要发现并指出未来工作。Summarise the main findings and outline future directions. "
+        }
+      ]
+    }
+  ]
+}

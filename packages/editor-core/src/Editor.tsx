@@ -5,6 +5,12 @@
 // StrictMode-safe (proto-a D3 follow-up P2): setup happens in useEffect
 // with a destroy() cleanup, and the EditorContent is conditionally
 // rendered only after sync is ready.
+//
+// Phase 4 W6.2: optional `seedContent` prop. If provided, we apply it
+// to the local Y.Doc fragment **once**, before TipTap mounts, but only
+// if the fragment is currently empty. The server-side endpoint
+// /api/document/<id>/template-content is the source of truth for "first
+// caller wins"; this component just trusts what it receives.
 
 import Collaboration from '@tiptap/extension-collaboration';
 import { EditorContent, useEditor } from '@tiptap/react';
@@ -12,6 +18,7 @@ import type { Editor as TipTapEditor } from '@tiptap/core';
 import { useEffect, useRef, useState } from 'react';
 
 import { PAPER_SCHEMA_EXTENSIONS } from './extensions/all';
+import { isYDocFragmentEmpty, seedYDocFromPmJson } from './seed';
 import { setupSync, type SyncBundle } from './sync/setup';
 import type { ConnectionMode } from './sync/wire';
 
@@ -21,6 +28,13 @@ export interface EditorProps {
   gatewayUrl: string;
   /** JWT issued by /api/sync-token. */
   token: string;
+  /**
+   * Optional ProseMirror JSON to seed the empty Y.Doc with — used for
+   * the new-document templates flow (P4 W6.2). Applied once before
+   * TipTap mounts; ignored if the local Y.Doc fragment is already
+   * non-empty.
+   */
+  seedContent?: unknown | null;
   /** Optional callback for parent UI (mode badge, agent panel, etc.) */
   onModeChange?: (mode: ConnectionMode) => void;
   onRejected?: (reason: string) => void;
@@ -42,6 +56,17 @@ export function Editor(props: EditorProps): React.ReactElement {
       documentId: props.documentId,
       token: props.token,
     });
+
+    if (props.seedContent && isYDocFragmentEmpty(bundle.ydoc)) {
+      try {
+        seedYDocFromPmJson(bundle.ydoc, props.seedContent);
+      } catch (err) {
+        // Don't bring down the editor — log and proceed with an empty
+        // Y.Doc. The user can paste content manually.
+        // eslint-disable-next-line no-console
+        console.warn('[editor-core] seedYDocFromPmJson failed:', err);
+      }
+    }
 
     const off = bundle.transport.on((e) => {
       if (cancelled) return;
@@ -72,6 +97,10 @@ export function Editor(props: EditorProps): React.ReactElement {
       off();
       bundle.destroy();
     };
+    // We deliberately omit `seedContent` from deps — seeding only ever
+    // runs on initial mount. Re-seeding on prop change would corrupt
+    // collaboration state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.gatewayUrl, props.documentId, props.token]);
 
   if (error) {

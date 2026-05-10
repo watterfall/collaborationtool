@@ -78,3 +78,6 @@ export {
   type PmNodeJson,
   type SubdocBoundary,
 } from './subdocument';
+
+// Phase 4 W6.2: 新建文档模板首次播种 helpers (apps/web /docs/new).
+export { seedYDocFromPmJson, isYDocFragmentEmpty } from './seed';

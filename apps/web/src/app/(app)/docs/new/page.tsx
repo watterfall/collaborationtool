@@ -11,6 +11,11 @@ import {
 import { auth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { getPrincipalIdForUser } from '@/lib/principal';
+import {
+  DOC_TEMPLATES,
+  isDocTemplateId,
+  type DocTemplateId,
+} from '@/lib/doc-template';
 
 async function createDocument(formData: FormData) {
   'use server';
@@ -27,6 +32,10 @@ async function createDocument(formData: FormData) {
     | 'mono'
     | 'parallel'
     | 'mixed';
+  const templateRaw = String(formData.get('template') ?? 'blank');
+  const templateId: DocTemplateId = isDocTemplateId(templateRaw)
+    ? templateRaw
+    : 'blank';
 
   if (!title) {
     redirect('/docs/new?error=title-required');
@@ -44,6 +53,7 @@ async function createDocument(formData: FormData) {
       bilingualMode,
       title,
       slug,
+      templateId,
     });
     // Materialise paper-author bundle for the owner so the gateway can
     // load it without an extra app-side query (ADR-0002 §2.5).
@@ -116,6 +126,32 @@ export default function NewDocumentPage({
             <option value="mixed">中英混排 / mixed</option>
           </select>
         </label>
+
+        <fieldset className="flex flex-col gap-2 rounded-md border border-zinc-200 p-3">
+          <legend className="px-1 text-sm text-zinc-700">
+            起手模板 / Starter template
+          </legend>
+          {DOC_TEMPLATES.map((tpl, idx) => (
+            <label
+              key={tpl.id}
+              className="flex cursor-pointer items-start gap-3 rounded-md border border-transparent p-2 hover:bg-zinc-50 has-[:checked]:border-zinc-900 has-[:checked]:bg-zinc-50"
+            >
+              <input
+                type="radio"
+                name="template"
+                value={tpl.id}
+                defaultChecked={idx === 0}
+                className="mt-1"
+              />
+              <span className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium text-zinc-900">
+                  {tpl.label}
+                </span>
+                <span className="text-xs text-zinc-600">{tpl.description}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
 
         <button
           type="submit"

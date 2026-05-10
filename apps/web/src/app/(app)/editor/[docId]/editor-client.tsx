@@ -14,27 +14,44 @@ interface SyncTokenResponse {
   expectedMode: 'reader' | 'proposer' | 'writer';
 }
 
+interface TemplateSeedResponse {
+  templateId: string;
+  content: unknown;
+}
+
 export default function EditorClient({ documentId }: EditorClientProps) {
   const [bundle, setBundle] = useState<SyncTokenResponse | null>(null);
+  const [seedContent, setSeedContent] = useState<unknown | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch('/api/sync-token', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ documentId }),
-        });
-        if (!res.ok) {
-          const payload = (await res.json().catch(() => ({}))) as {
+        const [tokenRes, seedRes] = await Promise.all([
+          fetch('/api/sync-token', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ documentId }),
+          }),
+          fetch(`/api/document/${documentId}/template-content`),
+        ]);
+        if (!tokenRes.ok) {
+          const payload = (await tokenRes.json().catch(() => ({}))) as {
             error?: string;
           };
-          throw new Error(payload.error ?? `HTTP ${res.status}`);
+          throw new Error(payload.error ?? `HTTP ${tokenRes.status}`);
         }
-        const data = (await res.json()) as SyncTokenResponse;
+        const data = (await tokenRes.json()) as SyncTokenResponse;
         if (!cancelled) setBundle(data);
+
+        // 204 = no template to seed (already claimed or never had one).
+        if (seedRes.status === 200) {
+          const payload = (await seedRes.json()) as TemplateSeedResponse;
+          if (!cancelled && payload.content) {
+            setSeedContent(payload.content);
+          }
+        }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : String(err));
@@ -66,6 +83,7 @@ export default function EditorClient({ documentId }: EditorClientProps) {
       documentId={documentId}
       gatewayUrl={bundle.gatewayUrl}
       token={bundle.token}
+      seedContent={seedContent}
     />
   );
 }
