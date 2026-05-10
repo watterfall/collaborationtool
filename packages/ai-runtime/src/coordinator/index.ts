@@ -19,8 +19,10 @@ export {
 } from './dispatch';
 
 // Phase 4 W3 ADR-0008: full coordinator loop orchestrator.
+// Phase 4 W7.4: ProposalBuffer + flushPendingProposals hook.
 export {
   runCoordinatorLoop,
+  ProposalBuffer,
   type AsyncHandoffEnqueuer,
   type CoordinatorStepRunner,
   type RunCoordinatorLoopInput,

@@ -30,6 +30,7 @@ import type {
   CoordinatorJobInput,
   HandoffResult,
 } from './types';
+import type { PersistProposalInput, PersistProposalResult } from '../provenance-writer';
 
 /**
  * One LLM invocation: given the goal + scratchpad, return the
@@ -70,6 +71,29 @@ export interface RunCoordinatorLoopInput {
   /** Called after each step so the host can append agent_job_event
    * rows for SSE consumers. Optional. */
   onStep?: (
+    decision: CoordinatorDecision,
+    results: HandoffResult[],
+  ) => Promise<void> | void;
+  /**
+   * Phase 4 W7.4 ADR-0008 §2 / role-architecture §D6: step-boundary
+   * proposal flush.
+   *
+   * Each step may produce 0..N proposals across sync handoffs (and
+   * sub-agents may produce their own batches). The host wires a
+   * `ProposalBuffer` (or equivalent) to accumulate proposals during
+   * the step, then drains at this boundary into a single
+   * `persistProposalBatch` call. Without this, every single proposal
+   * would open its own transaction (5 SQL × N proposals per step ×
+   * maxSteps), which the role-architecture analysis flagged as the
+   * dominant SQL-overhead source on multi-step coordinator runs.
+   *
+   * The hook is fire-and-forget from the loop's perspective: errors
+   * propagate (we don't swallow), but the loop has no opinion on what
+   * the buffer does. The hook receives the just-completed decision +
+   * its sync handoff results so the host can attribute / log the
+   * batch.
+   */
+  flushPendingProposals?: (
     decision: CoordinatorDecision,
     results: HandoffResult[],
   ) => Promise<void> | void;
@@ -153,6 +177,12 @@ export async function runCoordinatorLoop(
       }
     }
 
+    // Step boundary: flush any proposals the sub-agents accumulated
+    // during this step into one batched persist call (W7.4).
+    if (input.flushPendingProposals) {
+      await input.flushPendingProposals(decision, stepSyncResults);
+    }
+
     // Update scratchpad with this step's outcome.
     scratchpad = composeScratchpad(steps, handoffResults);
 
@@ -175,6 +205,56 @@ export async function runCoordinatorLoop(
     handoffResults,
     summary: composeFinalSummary(input.job.goal, steps, handoffResults),
   };
+}
+
+/**
+ * Phase 4 W7.4: in-process buffer for proposals collected by sub-agents
+ * during a coordinator step. The host instantiates one per coordinator
+ * job, passes `add` into `invokeAgentViaPlugin` (or wraps the plugin to
+ * defer persistence), and wires `drainAndPersist` into
+ * `runCoordinatorLoop({ flushPendingProposals })`.
+ *
+ * Generic over the persist function so unit tests can substitute a spy
+ * without pulling in PG. Production wires `persistFn = (db, inputs) =>
+ * persistProposalBatch(db, inputs)` with a captured db handle.
+ */
+export class ProposalBuffer {
+  private pending: PersistProposalInput[] = [];
+  /** Per-flush results, in flush order. Useful for tests + audit. */
+  public readonly flushHistory: Array<{
+    inputCount: number;
+    results: PersistProposalResult[];
+  }> = [];
+
+  constructor(
+    private readonly persistFn: (
+      inputs: PersistProposalInput[],
+    ) => Promise<PersistProposalResult[]>,
+  ) {}
+
+  /** Buffer a proposal for the next flush. */
+  add(input: PersistProposalInput): void {
+    this.pending.push(input);
+  }
+
+  /** Number of pending (un-flushed) proposals. */
+  size(): number {
+    return this.pending.length;
+  }
+
+  /**
+   * Flush. Drains the pending list and calls persistFn once; on
+   * success appends to flushHistory. Idempotent on empty buffers
+   * (calls persistFn with [], records nothing).
+   */
+  async drainAndPersist(): Promise<PersistProposalResult[]> {
+    if (this.pending.length === 0) return [];
+    const batch = this.pending;
+    this.pending = [];
+    const results = await this.persistFn(batch);
+    this.flushHistory.push({ inputCount: batch.length, results });
+    return results;
+  }
 }
 
 function composeScratchpad(

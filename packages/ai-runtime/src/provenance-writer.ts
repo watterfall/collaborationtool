@@ -50,33 +50,95 @@ export interface PersistProposalResult {
  * once. Always creates a new revision + provenance row.
  *
  * Wraps everything in a tx so we don't get half-written agent runs.
+ *
+ * Phase 4 W7.4: now a thin wrapper over `persistProposalBatch([input])`.
+ * Plugin authors keep using this single-input API; the coordinator
+ * dispatch loop uses `persistProposalBatch` directly to amortise
+ * transaction overhead across step-boundary flushes.
  */
 export async function persistProposal(
   db: DbExecutor,
   input: PersistProposalInput,
 ): Promise<PersistProposalResult> {
-  return await runInTransaction(db, async (tx) => {
-    // ----- prompt_template -----
-    await ensurePromptTemplate(tx, input.skill);
+  const [result] = await persistProposalBatch(db, [input]);
+  if (!result) {
+    // unreachable — batch always returns inputs.length results.
+    throw new Error('persistProposal: batch returned empty');
+  }
+  return result;
+}
 
-    // ----- provenance -----
+/**
+ * Phase 4 W7.4 ADR-0008 §2 / role-architecture §D6: persist N proposals
+ * in a single transaction.
+ *
+ * Background: each reviewer-agent run produces 10-20 contributions.
+ * Wrapping every single proposal in its own transaction (5 SQL each)
+ * blows up to 50-100 SQL per reviewer; coordinator-driven dispatch
+ * loops compound this to 250+ SQL per goal. We batch:
+ *
+ *   - prompt_template: dedup by promptTemplateId (multiple proposals
+ *     from the same skill collapse to a single INSERT)
+ *   - provenance: one INSERT … VALUES (…), (…), … — N rows
+ *   - revision: one INSERT … VALUES (…), (…), … — N rows
+ *
+ * All three statements share one transaction, so partial failure
+ * rolls everything back. Result array is aligned 1:1 with `inputs`
+ * so callers can correlate revisionId / provenanceId by index.
+ */
+export async function persistProposalBatch(
+  db: DbExecutor,
+  inputs: PersistProposalInput[],
+): Promise<PersistProposalResult[]> {
+  if (inputs.length === 0) return [];
+
+  // Pre-compute ids + row payloads OUTSIDE the tx so each retry
+  // (Drizzle may retry on serialisation failure) reuses the same uuids.
+  const prepared = inputs.map((input) => {
     const provenanceId = uuidv7() as ProvenanceId;
+    const revisionId = uuidv7() as RevisionId;
+    return { input, provenanceId, revisionId };
+  });
+
+  // Dedup prompt_template rows by id; multiple inputs sharing the same
+  // skill (e.g. 5 reviewer proposals from the same prompt) collapse to
+  // a single INSERT row.
+  const promptTemplateById = new Map<
+    string,
+    typeof schema.promptTemplate.$inferInsert
+  >();
+  for (const { input } of prepared) {
+    if (promptTemplateById.has(input.skill.promptTemplateId)) continue;
+    promptTemplateById.set(input.skill.promptTemplateId, {
+      id: input.skill.promptTemplateId,
+      skillId: input.skill.skillId,
+      version: input.skill.promptHash.slice(0, 12),
+      hash: `sha256:${input.skill.promptHash}`,
+      body: input.skill.bodyMarkdown,
+    });
+  }
+  const promptTemplateRows = Array.from(promptTemplateById.values());
+
+  const provenanceRows: Array<typeof schema.provenance.$inferInsert> = [];
+  const revisionRows: Array<typeof schema.revision.$inferInsert> = [];
+  for (const { input, provenanceId, revisionId } of prepared) {
     // Drizzle 0.45 + postgres-js: pass `null` for empty jsonb arrays so
     // postgres-js doesn't mis-serialise `[]` as a Postgres array literal.
-    // Phase 1.5: switch to `sql\`${...}::jsonb\`` if Drizzle / postgres-js
-    // fix the upstream coercion.
     const toolCallsJsonb =
       input.proposal.toolCalls.length > 0
         ? (input.proposal.toolCalls as unknown as Record<string, unknown>[])
         : null;
 
-    await tx.insert(schema.provenance).values({
+    provenanceRows.push({
       id: provenanceId,
       actorPrincipalId: input.proposal.agentContext.agentId
-        ? `agent:${input.proposal.agentContext.agentId}` as PrincipalId
+        ? (`agent:${input.proposal.agentContext.agentId}` as PrincipalId)
         : ('service:agent-runtime' as PrincipalId),
       actorKind: 'agent',
-      agentContext: input.proposal.agentContext as unknown as Record<string, unknown>,
+      agentContext: input.proposal.agentContext as unknown as Record<
+        string,
+        unknown
+      >,
       inputBlockIds: null,
       inputDocumentIds: [input.documentId],
       triggeredAt: new Date(input.proposal.startedAt),
@@ -84,9 +146,7 @@ export async function persistProposal(
       approvalChain: null,
     });
 
-    // ----- revision -----
-    const revisionId = uuidv7() as RevisionId;
-    await tx.insert(schema.revision).values({
+    revisionRows.push({
       id: revisionId,
       documentId: input.documentId,
       proposedBy: `agent:${input.proposal.agentContext.agentId}` as PrincipalId,
@@ -95,22 +155,36 @@ export async function persistProposal(
       yjsUpdateBinary: input.yjsUpdateBinary ?? new Uint8Array(),
       baseStateVector: input.baseStateVector ?? new Uint8Array(),
       rationale: input.rationale ?? input.proposal.proposalRationale,
-      // D14: structured proposal metadata so the approval UI can show
-      // before/after fragments + uncertainties without deserialising
-      // PM steps.
+      // D14 proposalMetadata kept on the revision row so approval UI
+      // can render before/after fragments without deserialising PM
+      // steps.
       proposalMetadata: {
         revisedFragments: input.proposal.revisedFragments,
         uncertainties: input.proposal.uncertainties,
       } as unknown as Record<string, unknown>,
       provenanceId,
     });
+  }
 
-    return {
-      revisionId,
-      provenanceId,
-      promptTemplateId: input.skill.promptTemplateId,
-    };
+  await runInTransaction(db, async (tx) => {
+    // ----- prompt_template (deduped by id) -----
+    if (promptTemplateRows.length > 0) {
+      await tx
+        .insert(schema.promptTemplate)
+        .values(promptTemplateRows)
+        .onConflictDoNothing({ target: schema.promptTemplate.id });
+    }
+    // ----- provenance (multi-row INSERT) -----
+    await tx.insert(schema.provenance).values(provenanceRows);
+    // ----- revision (multi-row INSERT) -----
+    await tx.insert(schema.revision).values(revisionRows);
   });
+
+  return prepared.map(({ input, provenanceId, revisionId }) => ({
+    revisionId,
+    provenanceId,
+    promptTemplateId: input.skill.promptTemplateId,
+  }));
 }
 
 /**
@@ -454,22 +528,6 @@ export async function listPendingRevisions(
 }
 
 // ---------- helpers ----------
-
-async function ensurePromptTemplate(
-  tx: DbExecutor,
-  skill: SkillMeta,
-): Promise<void> {
-  await tx
-    .insert(schema.promptTemplate)
-    .values({
-      id: skill.promptTemplateId,
-      skillId: skill.skillId,
-      version: skill.promptHash.slice(0, 12),
-      hash: `sha256:${skill.promptHash}`,
-      body: skill.bodyMarkdown,
-    })
-    .onConflictDoNothing({ target: schema.promptTemplate.id });
-}
 
 /**
  * Drizzle's `db.transaction` accepts a callback typed against the

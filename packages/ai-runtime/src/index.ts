@@ -36,6 +36,7 @@ export {
 
 export {
   persistProposal,
+  persistProposalBatch,
   acceptRevisionToContribution,
   rejectRevision,
   supersedeRevisionWithModified,
@@ -180,4 +181,5 @@ export {
   parseCoordinatorDecision,
   dispatchSyncHandoffs,
   runCoordinatorLoop,
+  ProposalBuffer,
 } from './coordinator';
