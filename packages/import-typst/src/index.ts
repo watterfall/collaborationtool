@@ -72,6 +72,10 @@ export class TypstImportError extends Error {
   }
 }
 
+// Phase 2.5: real `typst query` subprocess wrapper.
+export { runTypstQuery, probeTypstBinary } from './cli';
+export type { TypstQueryOptions, TypstQueryResult } from './cli';
+
 /** capability gate (caller-side, not enforced here): require
  * `document.create` + `block.commit`. ADR-0002 vocabulary. */
 export const REQUIRED_CAPABILITIES: Capability[] = [
