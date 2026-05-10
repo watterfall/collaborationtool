@@ -34,3 +34,16 @@ export {
   type CustomHttpProviderOptions,
   type CustomHttpRequestSpec,
 } from './custom-http';
+
+// Phase 4 W2 ADR-0013 §2.4 lookup precedence resolver.
+export {
+  resolveProvider,
+  isUserConfigured,
+  type DocumentModelOverrideSnapshot,
+  type EnvDefault,
+  type EnvResolver,
+  type ManifestPrefersProvider,
+  type ResolveProviderInput,
+  type ResolvedProvider,
+  type UserModelPrefSnapshot,
+} from './resolver';

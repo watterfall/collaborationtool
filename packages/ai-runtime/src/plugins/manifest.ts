@@ -327,6 +327,44 @@ function parseAgent(
     if (timeout !== undefined) quota.timeoutSeconds = timeout;
   }
 
+  // Phase 4 W2 ADR-0013 §2.5: prefers_provider (optional)
+  let prefersProvider: AgentManifest['prefersProvider'];
+  const prefersRaw = obj['prefers_provider'];
+  if (prefersRaw !== undefined) {
+    if (
+      prefersRaw === null ||
+      typeof prefersRaw !== 'object' ||
+      Array.isArray(prefersRaw)
+    ) {
+      throw new PluginManifestError(
+        path,
+        'prefers_provider must be a mapping when set',
+      );
+    }
+    const p = prefersRaw as Record<string, unknown>;
+    const wf = requireString(p, 'wire_format', path);
+    if (
+      wf !== 'anthropic' &&
+      wf !== 'openai-compat' &&
+      wf !== 'ollama' &&
+      wf !== 'custom-http'
+    ) {
+      throw new PluginManifestError(
+        path,
+        `prefers_provider.wire_format must be one of anthropic|openai-compat|ollama|custom-http; got '${wf}'`,
+      );
+    }
+    prefersProvider = {
+      wireFormat: wf,
+      ...(optionalString(p, 'model_id') !== undefined
+        ? { modelId: optionalString(p, 'model_id')! }
+        : {}),
+      ...(optionalString(p, 'rationale') !== undefined
+        ? { rationale: optionalString(p, 'rationale')! }
+        : {}),
+    };
+  }
+
   return {
     ...base,
     type: 'agent',
@@ -335,6 +373,7 @@ function parseAgent(
     tools,
     runtimeMode,
     quota,
+    ...(prefersProvider !== undefined ? { prefersProvider } : {}),
   };
 }
 
