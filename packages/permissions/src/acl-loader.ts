@@ -85,19 +85,34 @@ export async function materialiseRoleBundle(
     roleId: string;
     capabilities: readonly Capability[];
     expiresAt?: Date | null;
+    /** Phase 4 W5 ADR-0014: subdocument-level grant. Omit for
+     * root-scope (default; covers all subdocs). */
+    subdocumentId?: string | null;
   },
 ): Promise<void> {
+  // Phase 4 W5: surrogate id PK — encode (doc, principal[, subdoc])
+  // so re-materialisation produces the same row id (lets onConflict
+  // hit the right unique-index target).
+  const id = args.subdocumentId
+    ? `acl:${args.documentId}:${args.principalId}:${args.subdocumentId}`
+    : `acl:${args.documentId}:${args.principalId}`;
   await db
     .insert(schema.documentAcl)
     .values({
+      id,
       documentId: args.documentId,
       principalId: args.principalId,
+      subdocumentId: args.subdocumentId ?? null,
       roleId: args.roleId,
       capabilityVerbs: [...args.capabilities],
       expiresAt: args.expiresAt ?? null,
     })
     .onConflictDoUpdate({
-      target: [schema.documentAcl.documentId, schema.documentAcl.principalId],
+      target: [
+        schema.documentAcl.documentId,
+        schema.documentAcl.principalId,
+        schema.documentAcl.subdocumentId,
+      ],
       set: {
         roleId: args.roleId,
         capabilityVerbs: [...args.capabilities],

@@ -109,6 +109,9 @@ export const capabilityResourceTypeEnum = pgEnum('capability_resource_type', [
   'block',
   'thread',
   'global',
+  // Phase 4 W5 ADR-0014: subdocument-level grants (between document
+  // and block; matches author "章节" mental model).
+  'subdocument',
 ]);
 
 // ---------- MCP server registry (Phase 2 W1 ADR-0006) ----------

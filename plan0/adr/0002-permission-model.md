@@ -503,3 +503,22 @@ D wants to merge P' back to P:
 - 5 default role bundle 数量足够（Phase 1.5 加 invitation flow 时复用）
 - Principal `kind: 'shared-link'` 提前预留有效——Phase 1.5 加只读链接共享
   不需 schema migration
+
+## Phase 4 W5 ADR-0014 联动：capability_resource_type 加 'subdocument'
+
+ADR-0014 W5 启动 backend 在 `capability_resource_type` enum 加
+'subdocument' 第五档（既有 4 档：document / block / thread / global）。
+**这是 §2.1 词汇表的纵向扩展**（新 resource type）而非横向扩展（新动
+词），不破坏 36 capability vocabulary —— 既有 36 verbs 在新 resource
+type 上自然可用（如 `block.read` on resource_type='subdocument'）。
+
+`materialiseRoleBundle(args)` 加可选 `subdocumentId` 参数：null = root
+scope（向后兼容，覆盖所有 subdoc）；非 null = subdoc 专属 grant（章节
+级邀请 / 撤销）。`document_acl` PK 从 `(documentId, principalId)` 复合
+迁到 surrogate `id` + `(documentId, principalId, subdocumentId)` 唯一
+索引 `NULLS NOT DISTINCT`（PG 15+；项目 Postgres 16+ 已就位）。既有
+行通过 migration 0011 回填 `id = 'acl:<docId>:<principalId>'`，
+`subdocument_id` 默认 null。
+
+不开新 ADR：subdoc-level grant 的语义（root 继承 + subdoc 覆盖）由
+ADR-0014 §2.4 决策；本 ADR 仅作 vocabulary 联动登记。

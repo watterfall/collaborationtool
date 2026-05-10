@@ -67,3 +67,14 @@ export {
   newProvenanceId,
   newRevisionId,
 } from './util/ids';
+
+// Phase 4 W5 ADR-0014: Yjs subdocument backend pure helpers.
+export {
+  detectSubdocBoundariesByH1,
+  extractCrossRefs,
+  type CrossRef,
+  type CrossRefKind,
+  type PmDocJson,
+  type PmNodeJson,
+  type SubdocBoundary,
+} from './subdocument';

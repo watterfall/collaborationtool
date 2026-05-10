@@ -21,7 +21,6 @@ import {
   integer,
   jsonb,
   pgTable,
-  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -191,10 +190,14 @@ export const blockMetadata = pgTable(
     firstSeenContributionId: text('first_seen_contribution_id').notNull(),
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull(),
     removedAt: timestamp('removed_at', { withTimezone: true }),
+    // Phase 4 W5 ADR-0014: which subdocument this block belongs to.
+    // null = root scope (preamble or pre-split docs).
+    subdocumentId: text('subdocument_id'),
   },
   (t) => ({
     documentIdx: index('block_meta_document_idx').on(t.documentId),
     typeIdx: index('block_meta_type_idx').on(t.type),
+    subdocumentIdx: index('block_metadata_subdocument_idx').on(t.subdocumentId),
   }),
 );
 
@@ -447,12 +450,19 @@ export const capabilityGrant = pgTable(
 export const documentAcl = pgTable(
   'document_acl',
   {
+    // Phase 4 W5 ADR-0014: surrogate id PK to allow per-(doc, principal,
+    // subdoc) row. Migration 0011 backfills `acl:<docId>:<principalId>`
+    // for pre-existing rows.
+    id: text('id').primaryKey(),
     documentId: text('document_id')
       .notNull()
       .references(() => document.id, { onDelete: 'cascade' }),
     principalId: text('principal_id')
       .notNull()
       .references(() => principal.id, { onDelete: 'cascade' }),
+    // Phase 4 W5: subdocument-level grant; null = root scope (covers
+    // all subdocs by default; subdoc-specific rows override).
+    subdocumentId: text('subdocument_id'),
     roleId: text('role_id').notNull(),
     capabilityVerbs: text('capability_verbs')
       .array()
@@ -461,8 +471,11 @@ export const documentAcl = pgTable(
     expiresAt: timestamp('expires_at', { withTimezone: true }),
   },
   (t) => ({
-    pk: primaryKey({ columns: [t.documentId, t.principalId] }),
     principalIdx: index('document_acl_principal_idx').on(t.principalId),
+    subdocumentIdx: index('document_acl_subdocument_idx').on(t.subdocumentId),
+    docPrincipalSubdocUniq: uniqueIndex(
+      'document_acl_doc_principal_subdoc_uniq',
+    ).on(t.documentId, t.principalId, t.subdocumentId),
   }),
 );
 
@@ -1042,6 +1055,78 @@ export const pluginInstall = pgTable(
 );
 
 // ============================================================
+// 27. subdocument — Phase 4 W5 ADR-0014.
+//     Root-document 子单元；每 heading-1 章节默认一条。每 subdoc 在
+//     y-sweet 端是独立 doc（ysweet_doc_name 全局 unique）。
+//     Y.Doc 是 source of truth；本表作 metadata + 排序。
+// ============================================================
+
+export const subdocument = pgTable(
+  'subdocument',
+  {
+    id: text('id').primaryKey(),
+    rootDocumentId: text('root_document_id')
+      .notNull()
+      .references(() => document.id, { onDelete: 'cascade' }),
+    // 嵌套支持（ADR-0014 §3.3 long debt：Phase 5+ 才实施 subdoc-of-subdoc）
+    parentSubdocumentId: text('parent_subdocument_id'),
+    title: text('title').notNull(),
+    ord: integer('ord').notNull(),
+    ysweetDocName: text('ysweet_doc_name').notNull().unique(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+  },
+  (t) => ({
+    rootIdx: index('subdocument_root_idx').on(t.rootDocumentId, t.ord),
+  }),
+);
+
+// ============================================================
+// 28. crossref_index — Phase 4 W5 ADR-0014.
+//     root crossRefs Y.Map 的 PG 镜像。Y.Map 是权威；PG 行作 dump /
+//     search / maintenance scan 索引。subdoc transaction 落 + snapshot-
+//     worker 增量同步本表。
+// ============================================================
+
+export const crossrefIndex = pgTable(
+  'crossref_index',
+  {
+    id: text('id').primaryKey(),
+    rootDocumentId: text('root_document_id')
+      .notNull()
+      .references(() => document.id, { onDelete: 'cascade' }),
+    // 'figure' | 'citation' | 'claim' | 'evidence'（不用 enum：Phase 5
+    // 加 'dataset' / 'computational-output' 时不必 ALTER TYPE）
+    refKind: text('ref_kind').notNull(),
+    refTargetId: text('ref_target_id').notNull(),
+    sourceSubdocumentId: text('source_subdocument_id').references(
+      () => subdocument.id,
+      { onDelete: 'cascade' },
+    ),
+    sourceBlockId: text('source_block_id').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => ({
+    rootKindIdx: index('crossref_index_root_kind_idx').on(
+      t.rootDocumentId,
+      t.refKind,
+    ),
+    targetIdx: index('crossref_index_target_idx').on(t.refTargetId),
+    uniq: uniqueIndex('crossref_index_uniq').on(
+      t.rootDocumentId,
+      t.refKind,
+      t.refTargetId,
+      t.sourceSubdocumentId,
+      t.sourceBlockId,
+    ),
+  }),
+);
+
+// ============================================================
 // Type exports — used by application code for fully-typed queries.
 // `db.select().from(document)` returns inferred row types.
 // ============================================================
@@ -1072,3 +1157,5 @@ export type DbMaintenanceFinding = typeof maintenanceFinding.$inferSelect;
 export type DbUserModelPref = typeof userModelPref.$inferSelect;
 export type DbDocumentModelOverride = typeof documentModelOverride.$inferSelect;
 export type DbPluginInstall = typeof pluginInstall.$inferSelect;
+export type DbSubdocument = typeof subdocument.$inferSelect;
+export type DbCrossrefIndex = typeof crossrefIndex.$inferSelect;
