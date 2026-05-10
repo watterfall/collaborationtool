@@ -3,7 +3,7 @@
 > 唯一的"项目当前在哪"快照。每个 phase 推进 / commit landed / ADR 状态变化时更新本文件。
 > 历史 / 决策细节看 `plan0/`；本文件是执行视角。
 
-最后更新：2026-05-09（claude/review-project-goals-TpFuH，**Phase 2 全交付 + Phase 2.5 工程对接 6/7 完成**：Phase 2 W1-W7 + 6 ADR 全 Accepted（见上一行历史）。**Phase 2.5 进度**（7 项中 6 项工程对接已完成，1 项依赖真服务推迟）：(1) plugins/registry.json id→path（commit `f879e19`）；(2) plugins/reviewer-agent + researcher-agent scaffolds（commit `ea4176e`，含 reviewer-style + literature-review skills）；(3) import-typst real `typst query` subprocess + 二级回退（commit `043fd68`）；(4) import-latex real `myst` subprocess + 二级回退（commit `14f45e5`）；(5) Auto-Fix × import-typst 集成测试（commit `2ee4e23`）；(6) agent-job HTTP submission + status + SSE stream 三路由（commit `82b62e2`，含 producer-only pgboss client）；(7) Typst.ts WASM + Loro 1.0 spike 报告归档（本 commit）；剩余: real molab.org iframe e2e + 5 人协作 e2e + ANTHROPIC_API_KEY-gated reviewer 真跑（这些 require 外部服务）。**28 包 全 typecheck PASS / 88+ 测试 PASS**（含 +12 from P2.5: registry 6 + auto-fix×typst 4 + cli wrappers 2×3）。Essay 整合 §2 4 项全部纳入。user 哲学 reaffirmed：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
+最后更新：2026-05-09（claude/review-project-goals-TpFuH，**Phase 3 启动 W1-W7 backend + 2 新 ADR**：Phase 2 W1-W7 全交付 + 6 ADR Accepted（前史）；Phase 2.5 工程对接 6/7 完成（剩 3 项依赖外部服务）。**Phase 3 启动 7 commits**：(1) ADR-0012 Plugin sandbox + capability UI（W5 enabler，commit `0ce4e51`）；(2) ADR-0013 ModelProvider abstraction（BYO 模型 W7 enabler，commit `b1c9ddc`）；(3) source + source_extraction PG schema（W1/W2 backend，commit `4269489`，第 21+22 表）；(4) plugins/source-extractor scaffold + skill（W2 AI ingestion，commit `8fcb7c7`）；(5) ModelProvider abstraction in ai-runtime + Anthropic adapter（W7 第一步，commit `e93fb78`）；(6) maintenance_finding PG 表 + scan job descriptor（W4 backend，commit `f0f5841`，第 23 表）；(7) coordinator agent handoff types + plugin scaffold（W6 backend，commit `b7c4ef6`）。**30 包全 typecheck PASS / 92+ 测试 PASS**（ai-runtime 48 + editor-core 29 + 各 import / molab / auto-fix / agent-worker 测试）。**Phase 3 推迟项**：W3 Draft Composer（dogfood-driven）+ W8 spatial canvas spike（视觉前端）+ 6 plugin 真 LLM 调试（require ANTHROPIC_API_KEY）+ Bubblewrap/HTTPS proxy 实施（require Linux 部署环境）+ user_model_pref schema（W7 末）+ 真 reviewer/researcher 跑通（同 Phase 2.5）。Phase 3 §二 6 开放问题：§2.5 + §2.6 通过 ADR-0012/0013 答完；§2.1 + §2.3 通过 source / maintenance schema 部分答；§2.2 Draft Composer 显式 dogfood-trigger；§2.4 50+ 协作者 + Yjs subdoc 推 W4 后期。user 哲学 reaffirmed：Typst > LaTeX、避免过多兼容性、新技术敢上、平台性非常重要。)
 
 ---
 
@@ -24,9 +24,15 @@
 - W6: import-typst + import-latex + auto-fix 三 scaffold 包
 - W7: Evidence Map API + AI context pack export 路由
 
-**Phase 2.5（工程对接 + 真服务实测）：进行中** — 6/7 工程对接已交付（plugins/registry.json id→path / reviewer+researcher plugin scaffolds / Typst+mystmd subprocess wrappers + 二级回退 / Auto-Fix×import 集成测试 / agent-job HTTP submission+status+SSE 三路由 / Typst.ts WASM + Loro spike 报告）；3 项依赖真服务的实测在 dogfood 环境跑（molab.org real iframe / 5 人协作 e2e / ANTHROPIC_API_KEY reviewer 真跑）。spike 结论：Typst.ts WASM **推 Phase 3+ 重测**（CJK 字体 5MB bundle 目标不达）；Loro **继续 Yjs through Phase 3**（subdocument trigger 时再评估）。
+**Phase 2.5（工程对接 + 真服务实测）：6/7 工程对接已交付**（剩 3 项依赖真服务推 dogfood 环境）。spike 结论：Typst.ts WASM **推 Phase 3+ 重测**；Loro **继续 Yjs through Phase 3**（subdocument trigger 时再评估）。
 
-**Phase 3 stub**（`plan0/phase-3-plan-stub.md`）：spatial canvas / Source Reader UI / Draft Composer 替换 / Decision/Question 对象 / knowledge maintenance scan / AI 自动 ingestion / Loro 切换重评估 / 跨设备同步 / 用户挂自定义 MCP server / Plugin marketplace 起步
+**Phase 3：启动**（`plan0/phase-3-plan-stub.md` W1-W8）。本会话已交付 W1-W7 backend：
+- W1+W2: source + source_extraction PG schema + source-extractor plugin（PDF.js / readability 真 ingestion 流水线 + Source Reader UI 推 dogfood）
+- W4: maintenance_finding PG 表 + scan job descriptor（real scan logic + LLM "duplicate detection" 推 W4 末实施）
+- W5: ADR-0012 plugin sandbox 设计（Bubblewrap + capability UI；实施推 dogfood + Linux 部署环境）
+- W6: coordinator agent handoff types + plugin scaffold（LLM-driven dispatch loop 推 W6 末）
+- W7: ADR-0013 ModelProvider abstraction + Anthropic adapter（OpenAI-compat / Ollama / custom-http 推 W7 末）
+- 推迟：W3 Draft Composer（dogfood-trigger）+ W8 spatial canvas spike（前端）
 
 ---
 
@@ -45,6 +51,8 @@
 | 0009 | Diff library + revision overlay UI + rebase semantics | **Accepted (Phase 0 spike + Phase 1 D14 实证)** | proto-d-diff-library spike + D14 acceptRevision 流程已实证 prosemirror-changeset 选型；Phase 2 W2-W3 实施未额外开 commit（已经在 Phase 1 D14 落地大部分 contributor 路径） |
 | 0010 | 扩展系统边界 + Plugin API + Skill 元数据扩展 + Dogfood 路径 | **Accepted** | W3 dogfood gate 三项 criteria 全 PASS + W4-W5 follow-up inline-editor 切到 plugin 路径完成（hardcode `agents/citation.ts` + `agents/inline-editor.ts` 全删；`packages/ai-runtime/src/agents/` 目录已删） |
 | 0011 | Claim/Evidence/Counterpoint/Synthesis 一等知识对象层 | **Accepted** | W5 schema + PM 节点（claim + evidence block container）+ W7 Evidence Map / AI context pack 路由全 PASS；§7 review log 写 W7 dogfood gate criteria 三项 |
+| 0012 | Plugin sandbox + 用户安装路径 + capability 提示 UI | **Proposed** | 2026-05-09 Phase 3 W5 起草；OS 沙箱选 Bubblewrap (Linux) / sandbox-exec (macOS Phase 4) / AppContainer (Windows Phase 4)；HTTPS proxy enforce manifest network domains；plugin PG 表 schema；W5 dogfood gate 三项 criteria（真第三方 plugin 装载 / OS 沙箱真隔离 / capability deny 真生效） |
+| 0013 | ModelProvider abstraction + BYO 模型 + 配置存储 | **Proposed** | 2026-05-09 Phase 3 W7 起草；4 wireFormat（anthropic / openai-compat / ollama / custom-http），配置存储双层（user_model_pref + document_model_override），API key env 变量 self-host 友好；plugin manifest 加 prefers_provider；Anthropic adapter 已实施（commit `e93fb78`），其余 3 adapter W7 后续；W7 dogfood gate 三项 criteria |
 
 ---
 
