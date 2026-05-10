@@ -1,0 +1,84 @@
+# Phase 4 W9 dogfood gate G2 — 4 endpoint round-trip (ADR-0013 W2).
+#
+# PASS criteria:
+#   - dogfood-providers.spec.ts contract assertions PASS on every PR.
+#   - When the matrix entry's secret is configured (ANTHROPIC_API_KEY /
+#     OPENAI_API_KEY / OLLAMA_BASE_URL / CUSTOM_HTTP_ENDPOINT), the
+#     real round-trip step runs; otherwise the entry skips with a
+#     clear log line.
+#
+# External requirements: API keys per provider (matrix entry), set via
+# GitHub Actions repository secrets. Without secrets the contract step
+# still PASSes; only the real round-trip is gated.
+#
+# Runs on push to claude/phase4-closeout + manual dispatch.
+
+name: dogfood G2 — 4 endpoint round-trip
+
+on:
+  push:
+    branches:
+      - claude/phase4-closeout
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright
+        run: pnpm --filter @collaborationtool/e2e exec playwright install --with-deps chromium
+      - name: Run G2 contract assertions
+        run: pnpm e2e:dogfood:providers
+
+  real-round-trip:
+    runs-on: ubuntu-latest
+    needs: contract
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [anthropic, openai, ollama, custom-http]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright
+        run: pnpm --filter @collaborationtool/e2e exec playwright install --with-deps chromium
+
+      - name: Skip if Anthropic key missing
+        if: matrix.provider == 'anthropic' && env.ANTHROPIC_API_KEY == ''
+        run: echo "ANTHROPIC_API_KEY unset; skipping real round-trip"
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Run G2 real round-trip
+        env:
+          DOGFOOD_PROVIDER_MATRIX: ${{ matrix.provider }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OLLAMA_BASE_URL: ${{ secrets.OLLAMA_BASE_URL }}
+          CUSTOM_HTTP_ENDPOINT: ${{ secrets.CUSTOM_HTTP_ENDPOINT }}
+        run: pnpm e2e:dogfood:providers

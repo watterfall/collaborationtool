@@ -1,0 +1,71 @@
+# Phase 4 W9 dogfood gate G3 — end-to-end real multi-agent goal
+# (ADR-0008 W3).
+#
+# PASS criteria:
+#   - dogfood-multi-agent.spec.ts shape assertions PASS on every PR.
+#   - With ANTHROPIC_API_KEY secret + DOGFOOD_REAL_LLM=1 set, the real
+#     round-trip lands ≥ 3 child agent_jobs with parent_job_id linkage
+#     + final commit ≥ 3 revisions (W10 ADR-0008 promote gate).
+#
+# External requirements:
+#   - ANTHROPIC_API_KEY secret (GitHub Actions repository secret).
+#   - docker-compose stack (PG + redis + crossref-mock); the workflow
+#     boots it via `pnpm db:up`.
+#
+# Without the secret, the workflow runs the shape-only branch.
+
+name: dogfood G3 — multi-agent goal
+
+on:
+  push:
+    branches:
+      - claude/phase4-closeout
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  multi-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: collab
+          POSTGRES_PASSWORD: collab
+          POSTGRES_DB: collaborationtool
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright
+        run: pnpm --filter @collaborationtool/e2e exec playwright install --with-deps chromium
+
+      - name: Migrate + seed PG
+        env:
+          DATABASE_URL: postgres://collab:collab@localhost:5432/collaborationtool
+        run: |
+          pnpm db:migrate
+          pnpm db:seed
+
+      - name: Run G3 dogfood spec
+        env:
+          DATABASE_URL: postgres://collab:collab@localhost:5432/collaborationtool
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DOGFOOD_REAL_LLM: ${{ secrets.ANTHROPIC_API_KEY != '' && '1' || '' }}
+        run: pnpm e2e:dogfood:multi-agent

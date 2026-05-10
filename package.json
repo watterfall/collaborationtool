@@ -22,6 +22,7 @@
     "db:logs": "docker compose -f infra/docker/docker-compose.yml logs -f postgres",
     "db:migrate": "pnpm --filter @collaborationtool/drizzle migrate",
     "db:seed": "pnpm --filter @collaborationtool/drizzle seed",
+    "db:seed:maintenance": "pnpm --filter @collaborationtool/drizzle seed:maintenance",
     "db:test": "pnpm --filter @collaborationtool/drizzle test",
     "db:typecheck": "pnpm --filter @collaborationtool/drizzle typecheck",
     "perms:test": "pnpm --filter @collaborationtool/permissions test",
@@ -55,7 +56,12 @@
     "mcp-crossref:test": "pnpm --filter @collaborationtool/mcp-server-crossref test",
     "mcp-crossref:typecheck": "pnpm --filter @collaborationtool/mcp-server-crossref typecheck",
     "e2e:test": "pnpm --filter @collaborationtool/e2e test",
-    "e2e:typecheck": "pnpm --filter @collaborationtool/e2e typecheck"
+    "e2e:typecheck": "pnpm --filter @collaborationtool/e2e typecheck",
+    "e2e:dogfood:bwrap": "pnpm --filter @collaborationtool/e2e exec playwright test specs/dogfood-bwrap.spec.ts --reporter=list",
+    "e2e:dogfood:providers": "pnpm --filter @collaborationtool/e2e exec playwright test specs/dogfood-providers.spec.ts --reporter=list",
+    "e2e:dogfood:multi-agent": "pnpm --filter @collaborationtool/e2e exec playwright test specs/dogfood-multi-agent.spec.ts --reporter=list",
+    "e2e:dogfood:maintenance": "pnpm --filter @collaborationtool/e2e exec playwright test specs/dogfood-maintenance.spec.ts --reporter=list",
+    "e2e:dogfood:stress": "pnpm --filter @collaborationtool/e2e exec playwright test specs/dogfood-stress.spec.ts --reporter=list"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

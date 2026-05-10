@@ -1,0 +1,77 @@
+# Phase 4 W9 dogfood gate G4 — pgboss + 6 finding fixture + dashboard
+# (ADR-0011 §7).
+#
+# PASS criteria:
+#   - `pnpm db:seed:maintenance` lands 6 fixtures (one per
+#     ScanFindingKind) idempotently into PG.
+#   - dogfood-maintenance.spec.ts asserts the 6 fixtures are present
+#     in PG with the correct shape (claim/source/citation/evidence
+#     mappings) + the `/maintenance` route serves a non-404 response.
+#
+# External requirements: PG (provided as a service container in this
+# workflow). NO external API keys needed — this gate is fully sandbox-
+# runnable.
+
+name: dogfood G4 — maintenance scan
+
+on:
+  push:
+    branches:
+      - claude/phase4-closeout
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: collab
+          POSTGRES_PASSWORD: collab
+          POSTGRES_DB: collaborationtool
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright
+        run: pnpm --filter @collaborationtool/e2e exec playwright install --with-deps chromium
+
+      - name: Migrate + seed PG (regular)
+        env:
+          DATABASE_URL: postgres://collab:collab@localhost:5432/collaborationtool
+        run: |
+          pnpm db:migrate
+          pnpm db:seed
+
+      - name: Seed maintenance fixtures
+        env:
+          DATABASE_URL: postgres://collab:collab@localhost:5432/collaborationtool
+        run: pnpm db:seed:maintenance
+
+      - name: Run agent-worker maintenance scan unit tests
+        env:
+          DATABASE_URL: postgres://collab:collab@localhost:5432/collaborationtool
+        run: pnpm --filter @collaborationtool/agent-worker test
+
+      - name: Run G4 dogfood spec
+        env:
+          DATABASE_URL: postgres://collab:collab@localhost:5432/collaborationtool
+        run: pnpm e2e:dogfood:maintenance

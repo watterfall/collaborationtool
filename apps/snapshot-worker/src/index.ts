@@ -80,3 +80,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 export { runOnce, snapshotOne, findCandidates } from './snapshot';
 export { loadEnv } from './env';
 export { createYSweetFetcher } from './sources/y-sweet';
+// Phase 4 W9 ADR-0014 §5 — cross-ref Y.Map → PG dual-write owner.
+export {
+  isValidCrossRefEntry,
+  reconcile as reconcileCrossRefIndex,
+  startCrossRefSync,
+  type CrossRefEntry,
+  type CrossRefSyncHandle,
+  type CrossRefSyncOptions,
+} from './cross-ref-sync';

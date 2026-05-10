@@ -1,0 +1,59 @@
+# Phase 4 W9 dogfood gate G1 — bwrap real spawn (ADR-0012 W1).
+#
+# PASS criteria:
+#   - bwrap apt package installs cleanly on ubuntu-latest.
+#   - `bwrap --version` exits 0 with a bubblewrap version string.
+#   - tests/e2e/specs/dogfood-bwrap.spec.ts asserts the install.ts argv
+#     contract + capability deny gate.
+#
+# External requirements: Linux host (ubuntu-latest provides one). No
+# secrets needed; the spec self-skips the `bwrap --version` step on
+# non-Linux hosts.
+#
+# Runs on push to claude/phase4-closeout (and manual dispatch).
+
+name: dogfood G1 — bwrap real spawn
+
+on:
+  push:
+    branches:
+      - claude/phase4-closeout
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  bwrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install bubblewrap
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap
+          bwrap --version
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright
+        run: pnpm --filter @collaborationtool/e2e exec playwright install --with-deps chromium
+
+      - name: Run G1 dogfood spec
+        run: pnpm e2e:dogfood:bwrap

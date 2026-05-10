@@ -1,0 +1,81 @@
+# Phase 4 W9 dogfood gate G5 — N-client stress + cross-doc reference
+# (ADR-0014 W5/W6, deferred dogfood).
+#
+# PASS criteria — sandbox tier:
+#   - dogfood-stress.spec.ts contract probes PASS (cross-ref-sync.ts
+#     module surface + proto-a stress harness presence).
+#   - apps/snapshot-worker/__tests__/cross-ref-sync.test.ts (12 tests)
+#     covers the Y.Map ↔ PG mirror dual-write + idempotent reconcile.
+#   - Matrix entry runs proto-a:stress at 10 / 25 / 50 client counts.
+# PASS criteria — full tier (deferred to ADR-0014 promote):
+#   - 50 client × 50 ops over real sync-gateway with multi-subdoc routing.
+#   - Subdocument-level ACL deny path.
+# Both gated on Phase 4 W5/W6 dogfood (sync-gateway multi-subdoc routing).
+#
+# No external secrets needed.
+
+name: dogfood G5 — stress + cross-doc reference
+
+on:
+  push:
+    branches:
+      - claude/phase4-closeout
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  cross-ref-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Run snapshot-worker cross-ref-sync tests
+        run: pnpm snapshot:test
+
+  stress-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        client_count: [10, 25, 50]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright
+        run: pnpm --filter @collaborationtool/e2e exec playwright install --with-deps chromium
+
+      - name: Run G5 contract probes
+        env:
+          DOGFOOD_STRESS_CLIENTS: ${{ matrix.client_count }}
+        run: pnpm e2e:dogfood:stress
+
+      - name: Note — 50-client tier deferred
+        if: matrix.client_count == 50
+        run: |
+          echo "::notice::50-client tier requires sync-gateway multi-subdoc"
+          echo "::notice::routing (Phase 4 W5/W6 dogfood). This matrix entry"
+          echo "::notice::PASSes shape; full convergence run waits for promote."
