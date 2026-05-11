@@ -29,9 +29,9 @@
 
 当几个选项发生冲突时，按这个顺序判断：
 
-1. **Local-first 优于云优先**。数据所有权在用户，不在服务器。CRDT 同步，离线可用。即使我们的服务关停，用户的论文仍然能编辑、能渲染、能导出。
+1. **Local-first + 私密 by default 优于云优先**。数据所有权在用户，不在服务器。CRDT 同步，离线可用。即使我们的服务关停，用户的论文仍然能编辑、能渲染、能导出。**Night-Bridge-Day 三层架构**（ADR-0020）都遵守此原则——Night 探索默认私密未被 surveil（"夜科学需要未被监视的空间"），Bridge 转化默认协作者可见，Day 验证可选择性公开。
 2. **Markup-as-source，WYSIWYM 呈现**。底层是结构化文本（MyST/Typst/类似），用户看到的是富文本+实时预览。"代码视图"对高级用户开放，但不是默认。
-3. **AI 是协作者不是侧边栏**。AI 应该能做"帮我把这段改成更适合期刊的语气""检查所有引用的 DOI 是否有效""根据这段论证生成一个反方意见"——这些是**协作动作**，不是聊天。AI 关掉应用还能用。
+3. **AI 是 intelligent interlocutor 不是侧边栏**。AI 应该能做"帮我把这段改成更适合期刊的语气""检查所有引用的 DOI 是否有效""根据这段论证生成一个反方意见"——这些是**协作动作**，不是聊天。AI 关掉应用还能用。AI 的四种作用（Yanai-Lercher 2024 "It takes two to think"）：**暴露推理缺陷 / 建议新方向 / 指出遗漏证据 / 提供 morale**。ADR-0020 把 AI 定位为 4 角色之一（Connector：跨 cluster 翻译 + cross-layer matching），不是 sidebar 助手。
 4. **中英双语都是一等公民**。CJK 排版（标点挤压、思源/方正字体 fallback、中英混排断行、繁简切换）和拉丁排版（hyphenation、ligatures、可变字体、small caps、connected scripts）同等精细。UI 文案、文档、错误提示、API、内置 prompt 都中英完整，不存在"中文凑合一下"或"英文凑合一下"。学术内容跨语种引用要无缝（中文论文引英文 paper，英文 paper 引中文报告，都要正确处理）。
 5. **可组合优于大一统**。每个能力（编辑器、渲染器、引用、AI、协作同步）都应能独立替换。不要发明私有格式锁住用户。
 6. **延迟即设计**。协作 keystroke 同步 < 100ms，公式渲染 < 50ms，PDF 导出 < 5s。慢一点的功能要给出明确反馈。
@@ -44,6 +44,23 @@
 10. **可演化性 > 当下完备**。Phase 1 只做两人写一篇论文，但架构必须扛得住 Phase 3 的 50 人共写综述 + 5 个 AI agent 做引用核查 + 开放社区评审。如果 Phase 1 的核心数据模型 / 同步协议 / 权限模型扛不住 Phase 3，就是设计失败——即便 Phase 1 看起来很优雅。"先简单后扩展"在分布式系统和数据模型上经常是骗局。
 
 11. **provenance 即一等数据**。每一段文字、每一次修改、每一个引用、每一次 AI 介入都有可追溯的来源（谁/什么 agent/什么模型版本/什么 prompt/什么时间）。这不是 audit log，是产品核心——它支撑信任、归因、复现、群体智慧。Git-style 但更细粒度。
+
+12. **三类产出等价**（ADR-0020 Iteration 4）。**Night-Bridge-Day 是三个等价的知识产出层**，不是单向流水线：
+    - **Night**（生成/发散）—— 草图、隐喻、反例、思想实验、矛盾、问题
+    - **Bridge**（转化/桥接）—— 概念验证、设计虚构、技术预印本、类比论证、hypothesis 形式化
+    - **Day**（验证/收敛）—— 论文、代码、数据、政策、法律、诊疗方案
+
+    三层在 **attribution / archive / citation / metric** 上完全等价——平台不让"论文"成为唯一可 cite 产出。jili 5 个 night-science 文档本身就是 Night/Bridge artifact 范例。**好问题胜过好答案**（Night_Science_Complete.md 原则 1）—— 这是反"日科学单一目标导向"的核心立场。从"夜科学是日科学前置"→"三产出等价"，从文明的等级制到文明的分工制。
+
+13. **6 种交互流是双向 metabolic loop，不是单向流水线**（ADR-0020）。三层之间的信息流是双向的，包含 6 种 first-class 交互模式，每条 cross-layer reference 必须带 `interaction_mode` 标签：
+    - **假设输出**（Night → Bridge → Day）—— 想法精化为可证伪假设
+    - **反常输入**（Day → Bridge → Night）—— 失败 / 矛盾自动 surface 给探索者
+    - **约束传递**（Day → Bridge → Night）—— 物理定律 / 已知数据约束假设空间
+    - **隐喻桥接**（Night → Bridge → Day）—— 隐喻逐步精化为形式模型（5 创意模式 A）
+    - **问题回流**（Day → Bridge → Night）—— 解决旧问题产生新问题（5 创意模式 C）
+    - **方法迁移**（双向）—— 算法 ↔ 直觉；跨域 method transfer（5 创意模式 D）
+
+    Coordinator agent 是这个双向循环的 metabolic orchestrator，不是单向 task scheduler。**反 always-on 模式**：检测 intense engagement → suggest incubation break（DMN/incubation 神经科学约束）；研究者需要"离开问题"才能产生 insight。
 
 ---
 

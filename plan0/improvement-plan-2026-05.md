@@ -308,3 +308,159 @@
 
 Design.md 自身是设计 SoT，无需新 ADR（遵守 §三新 ADR moratorium）。设计修订改本文件 §16 修订表。如未来重大改版（v2 dark / 大幅 type ramp 改）再起 ADR-0017。
 - 待新建：ADR-0016 草稿（Wave B kickoff 前 1 周）
+
+---
+
+## 十二、Night-Bridge-Day Pivot（Iteration 4，2026-05-12 增订）
+
+### 12.1 起因 — 5 次方向反思的演进
+
+`/Users/jili/.claude/plans/night-science-day-science-snoopy-widget.md` 记录了从 turn 1 到 turn 16 的 4 次方向迭代：
+
+| Iter | 框架 | 否决 / 通过 |
+|---|---|---|
+| 1 | "协作论文平台 + AI 增强" | 否决（commodity 红海） |
+| 2 | "Night Science Pivot — 补 thought_fragment schema 到 day-science 框架" | 否决（仍从论文反推） |
+| 3 | "Scientific Discovery System — question-centric + Frame A/C/D" | 部分通过，但**缺 Bridge 层** |
+| **4** | **"Night-Bridge-Day Triadic Architecture — 三层等价产出系统"** | **通过 → ADR-0020 Proposed** |
+
+Iteration 4 整合了 jili 在 `/Users/jili/project/nightscience/` 累积的 2021 行自有 night-science 文档（5 创意模式 + 93 同构概念 + 6 交互模式 + 四层架构 + 7 大原则），其框架比 Yanai-Lercher 三篇文献系统化得多。
+
+### 12.2 核心 shift —— **三产出等价，不是 night/bridge 服务 day**
+
+```
+Night（生成/发散）   →  Bridge（转化/桥接）  →  Day（验证/收敛）
+草图/隐喻/反例/         概念验证/设计虚构/      论文/代码/政策/
+思想实验/矛盾/问题     技术预印本/类比论证       法律/诊疗方案
+```
+
+**Invariant**：三层产出**等价**——同样的 attribution、archive、citation、metric exposure。**不是** "Night/Bridge 服务 Day"。
+
+**关键 take（来自 Iteration 4 plan §G.10）**：
+> jili 不是优化日科学，是建**平行/等价/互补**的三产出系统。从"夜科学是日科学前置"→"三产出等价"——从文明的等级制到文明的分工制。
+
+### 12.3 5 维度新增（vs Iteration 1-3）
+
+1. **Bridge 层 first-class**（Iteration 3 缺）—— 新增 `packages/bridge-layer/`，含 concept-prototype / design-fiction / hypothesis-formalization / analogy-mapping
+2. **5 创意触发模式作 schema tags**（不是 workflow）—— `mode:metaphor` / `:contradiction` / `:reframe` / `:cross-domain` / `:thought-experiment`
+3. **6 种交互流双向 contract** —— hypothesis-output / anomaly-input / constraint-transfer / metaphor-bridge / question-return / method-transfer
+4. **4 角色分化** —— Explorer / Bridge-builder / Validator / Connector（各 default surface）
+5. **contribution-graph attribution**（反 priority race，per Council Merton modification）—— 三层产出各自跨多 contributor 平等 attribution
+
+### 12.4 与 §四 砍 / 推清单的关系
+
+**复活的（以 Night/Bridge 为名）**：
+- Spatial canvas（原砍）→ 复活作 `apps/web/src/app/triadic/` 中的 thought-DAG view（Phase 6 W1+）
+- ADR-0014 subdocument-level ACL（Proposed 状态）→ 重新定位为三层 artifact 的 cross-layer visibility tiers
+
+**仍砍的**：
+- 章节 fork-merge UI 完整实现（与 Night artifact lineage 重叠）
+- Loro 切换评估（Yjs 已 sufficient for 三层协作）
+- 跨设备 storage adapter（client-first 已覆盖）
+- Plugin marketplace（core 4 角色 plugin 已 sufficient）
+
+### 12.5 与 §五 ADR 影响表的扩充
+
+新增 ADR-0020 行 + 既有 ADR review log 追加：
+
+| ADR | Iteration 4 影响 |
+|---|---|
+| **ADR-0020（新，Proposed）** | "Night-Bridge-Day Triadic Architecture" 战略 ADR，Phase 5 W3+ 横跨 Phase 5/6 |
+| ADR-0001 | Phase 5 W3+ 加 Night/Bridge data models（PM tree 之外新增 discovery-graph + bridge-layer） |
+| ADR-0002 | 4 角色映射 5 role bundle + 新 capability vocabulary（`night.artifact.*` / `bridge.artifact.*`） |
+| ADR-0008 | Coordinator 从 "goal-driven multi-step" 改为 "双向 6 交互流 metabolic orchestrator" |
+| ADR-0010 | 5 创意模式作 plugin tag taxonomy（不是 hardcoded enum） |
+| ADR-0011 | Claim/Evidence 保留作 Day 层 atomic units；Night/Bridge 层有各自 atomic unit 集 |
+| ADR-0014 | subdoc-level 不变；新增 cross-layer reference |
+| ADR-0015 | Day 层不变；Night/Bridge artifacts 加 ORCID-signed contribution-graph |
+| ADR-0016 | Day 层 review 机制不变；Night/Bridge 层有更轻量 review/endorsement |
+| ADR-0017/0018/0019 | 仍预留 client-first pivot 子 ADR（per memory `client_first_pivot_2026_05.md`） |
+
+### 12.6 ADR moratorium 例外声明
+
+§三 ADR moratorium 明确：
+> "ADR-0012/0013/0014 dogfood gate 跑通并 promote 到 Accepted 之前，不再起草新 ADR"
+
+**ADR-0020 是例外**——理由：
+- ADR-0020 是**战略性 ADR**，不是 feature ADR
+- moratorium 针对 feature ADR（避免承诺爆炸）
+- 战略性 ADR 是 moratorium 的**前提**（没有方向就没有 feature ADR 的 prior art 基础）
+- 后续 feature ADR（ADR-0021 discovery-graph schema / ADR-0022 bridge-layer schema / ADR-0023 triadic UI surface / ADR-0024 谜题分类 reflection）按 ADR-0020 框架展开，仍受 moratorium 约束（W12 dogfood gate 后才能起）
+
+### 12.7 与 client-first pivot 合并叙事
+
+Iteration 2 用户已选 Q2=A "合并叙事"。Iteration 4 保留：
+
+```
+                    Night-Bridge-Day Triadic Architecture
+                                  ▲
+              ┌───────────────────┼───────────────────┐
+              │ 手段（client-first）              │ 目的（Triadic 三层等价）
+              │ local-first storage              │ Night / Bridge / Day artifacts
+              │ 私密 by default                  │ 5 创意模式 / 6 交互流
+              │ selective publish                │ 4 角色分化
+              │ Yjs CRDT 协作                    │ contribution-graph attribution
+              └───────────────────┬───────────────────┘
+                                  ▼
+                            选择性导出
+                                  ▼
+                       Day 层 manuscript（论文）
+```
+
+### 12.8 Wave D-1 ~ D-5 路线（Phase 5 W3-W12，按 ADR-0020 §2.7）
+
+| Wave | Week | 内容 |
+|---|---|---|
+| Pre-D | W3 | ADR-0020 Proposed + 本章节 + STATUS §1 修订 + system-prompt 第一性原理增补 |
+| **D-1** | W4-W5 | `packages/discovery-graph/` schema scaffold + 6 Night atomic units 单测 |
+| **D-2** | W6-W7 | `packages/bridge-layer/` schema scaffold + 4 Bridge atomic units 单测 |
+| **D-3** | W8 | 6 交互流 reference edges + provenance writer 扩展 |
+| **D-4** | W9-W10 | `apps/web/src/app/triadic/` UI skeleton（三层 surface 等价 prominent） |
+| **D-5** | W11-W12 | jili 自 dogfood 30 天 + retrospective + ADR-0020 Proposed → Accepted |
+
+### 12.9 9 个 dogfood gate（Phase 5 W12 验收）
+
+加到 §七 既有 9 gate 之外的 Iteration 4 特定 gate：
+
+- ☐ G-T1：jili 30 天内产生 ≥ 50 Night artifact（含 ≥ 10 metaphor / ≥ 10 contradiction / ≥ 10 question）
+- ☐ G-T2：jili 30 天内产生 ≥ 10 Bridge artifact（含 ≥ 3 concept-prototype / ≥ 3 design-fiction）
+- ☐ G-T3：jili 30 天内产生 ≥ 3 Day artifact（promotion from Bridge）
+- ☐ G-T4：6 交互流至少触发 4 种（不要求全 6 种，避免 forced symmetry）
+- ☐ G-T5：jili 在 30 天内切换 ≥ 2 角色（验证 4 角色分化真有用）
+- ☐ G-T6：contribution-graph 含 ≥ 2 contributor 的 artifact ≥ 10 个（验证非个人独享）
+- ☐ G-T7：Phase 4 已 landed 的 Wave B5/B6/C2/C4（claim/review/specimen）无 regression
+- ☐ G-T8：Phase 5 Wave A quota-enforcer (P0) 未被 pivot 推后
+- ☐ G-T9：5 创意模式 tag 在 50 Night artifact 中分布 ≥ 4 个模式（不能全集中在 1 个）
+
+### 12.10 风险与未决问题
+
+| # | 风险 | 缓解 |
+|---|---|---|
+| R-T1 | 复杂度（3 层 × 5 模式 × 6 交互 × 4 角色 = 360 概念交叉）| 5 Wave 渐进；onboarding 走 4 角色路径，每角色只暴露 1/3 概念 |
+| R-T2 | jili 5 个 night-science 文件未通读全文（87KB Night.md / 75KB Cases_Expanded 未读）| W6 dogfood gate 前通读，必要时修订 ADR-0020 review log |
+| R-T3 | citation 改变不被现有学术系统识别 | 保留传统论文 export 为 "机构对接 adapter" |
+| R-T4 | Bridge 层概念新颖被误解为过渡层 | UI 用 `/translate` surface 显式承载；examples gallery 突出 Bridge artifact |
+| R-T5 | AI 自动 tag mode vs 手动—— ADR-0020 Open Q11 | W6 dogfood gate 后决定 |
+| R-T6 | 4 角色分化形成 silo | Connector 角色 + 6 交互流自动 surface cross-role matching |
+
+**未决问题**：
+- Q-T1：4 角色 onboarding 强制选择 vs 软性默认全角色？
+- Q-T2：等价产出在 UI 如何体现"等价"？（同等 prominent / 同等 search rank / 同等 metric？）
+- Q-T3：5 创意模式 tag 数量上限？防滥用阈值？
+
+### 12.11 立即动作（W3 起，per §九 风格）
+
+1. ✅ ADR-0020 Proposed 已 ship（`plan0/adr/0020-night-bridge-day-triadic-architecture.md`）
+2. ✅ 本章节（§十二）已 ship
+3. ⏳ STATUS.md §1 当前阶段 + 叙事行修订（同会话）
+4. ⏳ paper-platform-system-prompt.md 第一性原理 #12 #13 加 + #1 #3 修订（同会话）
+5. ⏳ CLAUDE.md §3 仓库地图加 `packages/discovery-graph/` `packages/bridge-layer/` 位置（下次会话）
+6. ⏳ Wave D-1 schema scaffold（Phase 5 W4 kickoff）
+7. ⏳ jili 通读 5 个 night-science 大文件（W6 dogfood gate 前）
+
+### 12.12 Stop conditions
+
+- ⚠️ Phase 5 Wave A quota-enforcer (P0) 因 Iteration 4 被 delayed > 2 周 → 立即冻结 Wave D
+- ⚠️ jili dogfood 30 天后 Night artifact < 10 → 回滚 Triadic，回退到 Iteration 3 question-centric
+- ⚠️ Bridge 层 dogfood < 2 artifact/week 持续 4 周 → 回退到 Iteration 3
+- ⚠️ Phase 4 已 landed Wave B5/B6/C2/C4 regression → pivot 实施破坏沉没成本，紧急 rollback
