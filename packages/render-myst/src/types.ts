@@ -130,4 +130,18 @@ export type MystInline =
 export type MystMark =
   | { type: 'bold' }
   | { type: 'italic' }
-  | { type: 'annotation-anchor'; anchorId: string };
+  | { type: 'annotation-anchor'; anchorId: string }
+  // Phase 5 Wave B B2 (ADR-0016 §2.2): per-claim review verdict
+  // summary mark. Buckets carry the latest snapshot at render time;
+  // downstream tools (export, public view) read `dominant` for accent
+  // colour and `latestReviewerOrcidId` for hover/preview attribution.
+  | {
+      type: 'claim-review-anchor';
+      claimId: string;
+      verdictBuckets: {
+        endorses: number;
+        challenges: number;
+        refines: number;
+      };
+      latestReviewerOrcidId: string | null;
+    };

@@ -36,6 +36,11 @@ describe('paperSchema', () => {
     assert.ok(schema.marks['annotationAnchor']);
   });
 
+  it('contains the claimReviewAnchor mark (Phase 5 Wave B B2 / ADR-0016)', () => {
+    const schema = paperSchema();
+    assert.ok(schema.marks['claimReviewAnchor']);
+  });
+
   it('atom nodes are atomic per ADR-0001 §2.2', () => {
     const schema = paperSchema();
     const atomNames = [

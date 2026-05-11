@@ -19,6 +19,7 @@ import { AnnotationAnchor } from './annotation-anchor';
 import { CitationPasteHandler } from './citation-paste-handler';
 import { CitationRef } from './citation-ref';
 import { Claim } from './claim';
+import { ClaimReviewAnchor } from './claim-review-anchor';
 import { ComputationalCell } from './computational-cell';
 import { DatasetRef } from './dataset-ref';
 import { Equation } from './equation';
@@ -45,6 +46,10 @@ export const PAPER_SCHEMA_EXTENSIONS = [
 
   // Marks
   AnnotationAnchor,
+  // Phase 5 Wave B B2 (ADR-0016 §2.2): per-claim review verdict
+  // summary mark. Decorates `claim` block container; never spans
+  // across claims.
+  ClaimReviewAnchor,
 
   // Block containers (have paragraph+ children)
   Claim,
@@ -78,6 +83,7 @@ export {
   CitationPasteHandler,
   CitationRef,
   Claim,
+  ClaimReviewAnchor,
   ComputationalCell,
   DatasetRef,
   Equation,

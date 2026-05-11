@@ -14,6 +14,7 @@ export {
   CitationPasteHandler,
   CitationRef,
   Claim,
+  ClaimReviewAnchor,
   ComputationalCell,
   DatasetRef,
   Equation,
@@ -54,6 +55,12 @@ export type {
   ClaimConfidence,
 } from './extensions/claim';
 export type { EvidenceRelation } from './extensions/evidence';
+export {
+  dominantVerdict,
+  anchorAccentClass,
+  type DominantVerdict,
+  type VerdictBuckets,
+} from './extensions/claim-review-anchor';
 export {
   buildCommitPayload,
   deserializeSteps,

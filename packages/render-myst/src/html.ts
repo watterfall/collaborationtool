@@ -58,6 +58,13 @@ code, pre { font-family: ${fontTokensToCss(fonts.mono)}; }
 .math-display { display: block; text-align: center; margin: 1rem 0; }
 .math-inline { padding: 0 .15em; }
 mark.annotation-anchor { background: #fff7d6; }
+/* Phase 5 Wave B (ADR-0016) — claim-review-anchor accent triad. */
+.claim-review-anchor { border-bottom: 2px solid transparent; padding-bottom: 1px; }
+.claim-review-anchor.accent-moss { border-bottom-color: var(--color-accent-moss, #6b8e23); }
+.claim-review-anchor.accent-ox { border-bottom-color: var(--color-accent-ox, #8b0000); }
+.claim-review-anchor.accent-ink { border-bottom-color: var(--color-accent-ink, #1a365d); }
+.claim-review-anchor.accent-mixed { border-bottom-style: dashed; border-bottom-color: var(--color-ink, #1c1917); }
+.claim-review-anchor.accent-empty { border-bottom: none; }
 figure { margin: 1.5rem 0; text-align: center; }
 figcaption { font-size: 0.9rem; color: #71717a; }
 </style>
@@ -146,7 +153,9 @@ function applyTextPrePass(value: string, opts: HtmlRenderOptions): string {
 
 function wrapMarks(html: string, marks: MystText['marks']): string {
   if (!marks || marks.length === 0) return escapeHtml(html);
-  // Apply marks outside-in: bold > italic > annotation-anchor.
+  // Apply marks outside-in: bold > italic > annotation-anchor >
+  // claim-review-anchor. claim-review wraps last (outermost) so its
+  // accent color reads over any inline formatting.
   let inner = escapeHtml(html);
   if (hasMark(marks, 'italic')) inner = `<em>${inner}</em>`;
   if (hasMark(marks, 'bold')) inner = `<strong>${inner}</strong>`;
@@ -157,7 +166,42 @@ function wrapMarks(html: string, marks: MystText['marks']): string {
   if (anchor) {
     inner = `<mark class="annotation-anchor" data-anchor-id="${escapeAttr(anchor.anchorId)}">${inner}</mark>`;
   }
+  const review = marks.find(
+    (m): m is Extract<MystMark, { type: 'claim-review-anchor' }> =>
+      m.type === 'claim-review-anchor',
+  );
+  if (review) {
+    const dominant = pickDominantVerdict(review.verdictBuckets);
+    const bucketsAttr = `endorses=${review.verdictBuckets.endorses};challenges=${review.verdictBuckets.challenges};refines=${review.verdictBuckets.refines}`;
+    const orcidAttr = review.latestReviewerOrcidId
+      ? ` data-latest-reviewer-orcid="${escapeAttr(review.latestReviewerOrcidId)}"`
+      : '';
+    inner =
+      `<span class="claim-review-anchor accent-${dominant}" ` +
+      `data-claim-id="${escapeAttr(review.claimId)}" ` +
+      `data-verdict-buckets="${escapeAttr(bucketsAttr)}"` +
+      `${orcidAttr}>${inner}</span>`;
+  }
   return inner;
+}
+
+/** Pure helper — pick dominant verdict for CSS. Mirrors editor-core's
+ * dominantVerdict() so the export HTML and the editor mount paint the
+ * same color even when their data sources differ. */
+function pickDominantVerdict(b: {
+  endorses: number;
+  challenges: number;
+  refines: number;
+}): 'moss' | 'ox' | 'ink' | 'mixed' | 'empty' {
+  const total = b.endorses + b.challenges + b.refines;
+  if (total === 0) return 'empty';
+  const max = Math.max(b.endorses, b.challenges, b.refines);
+  const winners = [
+    b.endorses === max ? 'moss' : null,
+    b.challenges === max ? 'ox' : null,
+    b.refines === max ? 'ink' : null,
+  ].filter((v): v is 'moss' | 'ox' | 'ink' => v !== null);
+  return winners.length === 1 ? winners[0]! : 'mixed';
 }
 
 function hasMark(marks: MystMark[] | undefined, type: string): boolean {

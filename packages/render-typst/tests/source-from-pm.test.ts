@@ -131,6 +131,61 @@ describe('pmToTypstSource', () => {
     assert.match(out, /use \\\*literal\\\* markdown/);
   });
 
+  it('claim-review-anchor (Phase 5 Wave B / ADR-0016): stroke-under by dominant verdict', () => {
+    const make = (
+      buckets: { endorses: number; challenges: number; refines: number },
+    ) => ({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: 'reviewed',
+              marks: [
+                {
+                  type: 'claimReviewAnchor',
+                  attrs: {
+                    claimId: 'claim_a',
+                    verdictBuckets: buckets,
+                    latestReviewerOrcidId: null,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const endorses = pmToTypstSource(make({ endorses: 3, challenges: 0, refines: 0 }), {
+      primaryLanguage: 'en',
+      title: 'd',
+    });
+    const challenges = pmToTypstSource(make({ endorses: 0, challenges: 2, refines: 0 }), {
+      primaryLanguage: 'en',
+      title: 'd',
+    });
+    const refines = pmToTypstSource(make({ endorses: 0, challenges: 0, refines: 1 }), {
+      primaryLanguage: 'en',
+      title: 'd',
+    });
+    const mixed = pmToTypstSource(make({ endorses: 1, challenges: 1, refines: 0 }), {
+      primaryLanguage: 'en',
+      title: 'd',
+    });
+    const empty = pmToTypstSource(make({ endorses: 0, challenges: 0, refines: 0 }), {
+      primaryLanguage: 'en',
+      title: 'd',
+    });
+    assert.match(endorses, /#underline\(stroke: rgb\("#6b8e23"\)\)\[reviewed\]/);
+    assert.match(challenges, /#underline\(stroke: rgb\("#8b0000"\)\)\[reviewed\]/);
+    assert.match(refines, /#underline\(stroke: rgb\("#1a365d"\)\)\[reviewed\]/);
+    // Mixed / empty: text emitted unmodified (no underline call).
+    assert.equal(/#underline/.test(mixed), false);
+    assert.equal(/#underline/.test(empty), false);
+  });
+
   it('marks: bold, italic, annotation-anchor', () => {
     const pmDoc = {
       type: 'doc',

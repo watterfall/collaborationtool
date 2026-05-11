@@ -192,6 +192,30 @@ function collectMarks(marks: PmMark[] | undefined): MystMark[] {
         anchorId: String(m.attrs?.['anchorId'] ?? ''),
       });
     }
+    // Phase 5 Wave B B2 (ADR-0016 §2.2): claim-review-anchor mark.
+    else if (
+      m.type === 'claimReviewAnchor' ||
+      m.type === 'claim-review-anchor'
+    ) {
+      const rawBuckets = m.attrs?.['verdictBuckets'];
+      const buckets =
+        rawBuckets && typeof rawBuckets === 'object'
+          ? (rawBuckets as Record<string, unknown>)
+          : {};
+      out.push({
+        type: 'claim-review-anchor',
+        claimId: String(m.attrs?.['claimId'] ?? ''),
+        verdictBuckets: {
+          endorses: Number(buckets['endorses']) || 0,
+          challenges: Number(buckets['challenges']) || 0,
+          refines: Number(buckets['refines']) || 0,
+        },
+        latestReviewerOrcidId:
+          typeof m.attrs?.['latestReviewerOrcidId'] === 'string'
+            ? (m.attrs['latestReviewerOrcidId'] as string)
+            : null,
+      });
+    }
   }
   return out;
 }

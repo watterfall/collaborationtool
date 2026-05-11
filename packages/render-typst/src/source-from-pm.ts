@@ -149,6 +149,45 @@ function renderInlineNode(node: PmNode, opts: TypstSourceOptions): string {
       if (anchor) {
         out = `#highlight[${out}]`;
       }
+      // Phase 5 Wave B B2 (ADR-0016 §2.2) — claim-review-anchor.
+      // Typst emit: stroke-under in the verdict accent color. The
+      // verdict buckets are export-time snapshot; the live review DAG
+      // sits in PG, not the PDF. Markup degrades gracefully for empty
+      // / mixed buckets (no stroke).
+      const review = marks.find(
+        (m) =>
+          m.type === 'claimReviewAnchor' || m.type === 'claim-review-anchor',
+      );
+      if (review) {
+        const raw = (review.attrs?.['verdictBuckets'] ?? {}) as Record<
+          string,
+          unknown
+        >;
+        const endorses = Number(raw['endorses']) || 0;
+        const challenges = Number(raw['challenges']) || 0;
+        const refines = Number(raw['refines']) || 0;
+        const max = Math.max(endorses, challenges, refines);
+        const wins =
+          [
+            endorses === max ? 'moss' : null,
+            challenges === max ? 'ox' : null,
+            refines === max ? 'ink' : null,
+          ].filter((v): v is 'moss' | 'ox' | 'ink' => v !== null);
+        const dominant =
+          endorses + challenges + refines === 0
+            ? null
+            : wins.length === 1
+              ? wins[0]!
+              : null;
+        if (dominant === 'moss') {
+          out = `#underline(stroke: rgb("#6b8e23"))[${out}]`;
+        } else if (dominant === 'ox') {
+          out = `#underline(stroke: rgb("#8b0000"))[${out}]`;
+        } else if (dominant === 'ink') {
+          out = `#underline(stroke: rgb("#1a365d"))[${out}]`;
+        }
+        // empty / mixed: leave unmodified — accent only when a clear winner.
+      }
       return out;
     }
     case 'inlineEquation':
