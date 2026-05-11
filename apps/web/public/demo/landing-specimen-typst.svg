@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Phase 5 Wave C C4 — Typst PDF specimen mockup for the landing page.
+
+  Renders a paper-tone page with bilingual title + abstract + a
+  representative paragraph showing CJK and Latin set independently
+  (different font sizes / tracking / quote glyphs). Not a real PDF —
+  an SVG that conveys typography quality without requiring Typst
+  compilation at request time.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 600"
+     role="img" aria-labelledby="title desc"
+     preserveAspectRatio="xMidYMid meet">
+  <title id="title">Typst PDF specimen: bilingual paper</title>
+  <desc id="desc">
+    Mockup of the Typst-compiled PDF: paper background, hairline page
+    rule, bilingual title and abstract, side-by-side CJK Songti and
+    Latin Garamond typography.
+  </desc>
+
+  <!-- page paper -->
+  <rect x="0" y="0" width="480" height="600" fill="#fafaf7" />
+  <rect x="0" y="0" width="480" height="600" fill="none"
+        stroke="#d6d3d1" stroke-width="0.5" />
+
+  <!-- folio header rule -->
+  <line x1="48" y1="48" x2="432" y2="48"
+        stroke="#1c1917" stroke-width="0.4" />
+  <text x="48" y="42" font-family="Garamond, 'IBM Plex Serif', serif"
+        font-size="9" fill="#57534e">
+    Acta Collaborationis · Vol. 01
+  </text>
+  <text x="432" y="42" font-family="Garamond, 'IBM Plex Serif', serif"
+        font-size="9" fill="#57534e" text-anchor="end">
+    2026
+  </text>
+
+  <!-- title -->
+  <text x="240" y="100" font-family="'Songti SC', 'Source Han Serif SC', serif"
+        font-size="18" fill="#1c1917" text-anchor="middle"
+        font-weight="500">
+    Claim-on-Claim Review
+  </text>
+  <text x="240" y="124" font-family="Garamond, 'IBM Plex Serif', serif"
+        font-size="13" fill="#1c1917" text-anchor="middle"
+        font-style="italic">
+    a 5-year anchor for desci collaboration
+  </text>
+
+  <!-- byline -->
+  <text x="240" y="148" font-family="'Songti SC', serif"
+        font-size="9" fill="#57534e" text-anchor="middle">
+    示例作者 · Author One
+  </text>
+
+  <!-- abstract heading -->
+  <line x1="80" y1="180" x2="400" y2="180"
+        stroke="#1c1917" stroke-width="0.3" />
+  <text x="240" y="200" font-family="Garamond, serif"
+        font-size="10" fill="#57534e" text-anchor="middle"
+        letter-spacing="0.1em">
+    ABSTRACT · 摘要
+  </text>
+
+  <!-- abstract body — bilingual, two columns of differentiated typography -->
+  <text x="50" y="232" font-family="Garamond, 'IBM Plex Serif', serif"
+        font-size="9.5" fill="#1c1917">
+    <tspan x="50" dy="0">Curvenote, MyST, Quarto, and Notion all sit on the</tspan>
+    <tspan x="50" dy="14">same flat axis: a document is a tree of paragraphs,</tspan>
+    <tspan x="50" dy="14">optionally annotated. The Collaboration Tool's</tspan>
+    <tspan x="50" dy="14">Phase 5 release introduces Claim-on-Claim Review —</tspan>
+    <tspan x="50" dy="14">every research claim becomes a first-class object that</tspan>
+    <tspan x="50" dy="14">carries its own ORCID-signed review lineage.</tspan>
+  </text>
+
+  <text x="50" y="338" font-family="'Songti SC', 'Source Han Serif SC', serif"
+        font-size="10.5" fill="#1c1917">
+    <tspan x="50" dy="0">Curvenote / MyST / Quarto / Notion 都建在同一条</tspan>
+    <tspan x="50" dy="16">扁平轴上：文档是段落树，评审是注释。Phase 5</tspan>
+    <tspan x="50" dy="16">引入 Claim-on-Claim Review：每条研究 claim 都是</tspan>
+    <tspan x="50" dy="16">一等对象，自带 ORCID-签名的评审血统。</tspan>
+  </text>
+
+  <!-- section 1 -->
+  <line x1="50" y1="430" x2="430" y2="430"
+        stroke="#1c1917" stroke-width="0.3" />
+  <text x="50" y="450" font-family="Garamond, serif"
+        font-size="11" fill="#1c1917" font-weight="500">
+    1. Background · 背景
+  </text>
+
+  <text x="50" y="474" font-family="Garamond, serif"
+        font-size="9.5" fill="#1c1917">
+    <tspan x="50" dy="0">Open peer review platforms increase reviewer</tspan>
+    <tspan x="50" dy="14">accountability when they bind reviewer identity to a</tspan>
+    <tspan x="50" dy="14">portable cryptographic attestation rather than a</tspan>
+    <tspan x="50" dy="14">platform-internal user id.</tspan>
+  </text>
+
+  <!-- folio footer -->
+  <line x1="48" y1="556" x2="432" y2="556"
+        stroke="#1c1917" stroke-width="0.4" />
+  <text x="48" y="572" font-family="Garamond, serif"
+        font-size="9" fill="#57534e">
+    Collaboration Tool · Phase 5 specimen
+  </text>
+  <text x="432" y="572" font-family="Garamond, serif"
+        font-size="9" fill="#57534e" text-anchor="end">
+    p. 1
+  </text>
+</svg>

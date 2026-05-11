@@ -21,6 +21,8 @@ const REPO_URL = 'https://github.com/watterfall/collaborationtool';
 export function Landing({ t }: { t: LocaleDict }) {
   const hero = t.landing.hero;
   const pillars = t.landing.pillars;
+  const diff = t.landing.differentiation;
+  const specimens = t.landing.specimens;
   const arch = t.landing.architecture;
   const navL = t.landing.nav;
   const footer = t.landing.footer;
@@ -109,6 +111,108 @@ export function Landing({ t }: { t: LocaleDict }) {
             title={pillars.bilingual.title}
             desc={pillars.bilingual.desc}
             diagram={pillars.bilingual.diagram}
+          />
+        </div>
+      </section>
+
+      {/* Differentiation — 4 hairline-separated rows comparing the
+          adjacent tools. ADR-0016 says the 5-year anchor is claim-level
+          ORCID-signed review DAGs; this section names the contrast
+          directly so a researcher landing here knows what they're
+          getting that they wouldn't elsewhere. */}
+      <section className="flex flex-col gap-6">
+        <header className="flex flex-col gap-2">
+          <p className="label-cap">{diff.heading}</p>
+          <h2
+            className="font-serif text-3xl font-medium"
+            style={{
+              color: 'var(--color-ink)',
+              letterSpacing: '-0.005em',
+            }}
+            data-prose="bilingual"
+          >
+            {diff.sub}
+          </h2>
+        </header>
+        <ul className="flex flex-col">
+          {diff.rows.map((row, i) => (
+            <li
+              key={row.competitor}
+              className="grid gap-x-6 gap-y-2 py-4 md:grid-cols-[120px_1fr]"
+              style={
+                i > 0
+                  ? { borderTop: '1px solid var(--color-hairline)' }
+                  : undefined
+              }
+            >
+              <p
+                className="font-sans text-sm"
+                style={{ color: 'var(--color-ink-2)' }}
+              >
+                vs {row.competitor}
+              </p>
+              <div className="flex flex-col gap-1">
+                <p
+                  className="font-serif text-[15px] italic leading-[1.7]"
+                  style={{ color: 'var(--color-ink-3)' }}
+                  data-prose="bilingual"
+                >
+                  {row.theyDo}
+                </p>
+                <p
+                  className="font-serif text-[15px] leading-[1.7]"
+                  style={{ color: 'var(--color-ink)' }}
+                  data-prose="bilingual"
+                >
+                  {row.weDo}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <p
+          className="font-sans text-xs"
+          style={{ color: 'var(--color-ink-3)' }}
+          data-prose="bilingual"
+        >
+          {diff.footnote}
+        </p>
+      </section>
+
+      {/* Specimens — 3 image figures showing real outputs. Local SVGs
+          shipped from /public/demo/ so the landing renders even with
+          JS off. Each figure is a hairline-bordered <figure> + serif
+          caption. Image links open the source SVG in a new tab so
+          designers can copy / inspect. */}
+      <section className="flex flex-col gap-6">
+        <header className="flex flex-col gap-2">
+          <p className="label-cap">{specimens.heading}</p>
+          <p
+            className="font-serif text-base italic leading-[1.6]"
+            style={{ color: 'var(--color-ink-2)' }}
+            data-prose="bilingual"
+          >
+            {specimens.sub}
+          </p>
+        </header>
+        <div className="flex flex-col gap-8">
+          <SpecimenFigure
+            src="/demo/landing-specimen-typst.svg"
+            alt={specimens.typstAlt}
+            caption={specimens.typstCaption}
+            aspectRatio="480 / 600"
+          />
+          <SpecimenFigure
+            src="/demo/landing-specimen-timeline.svg"
+            alt={specimens.timelineAlt}
+            caption={specimens.timelineCaption}
+            aspectRatio="480 / 360"
+          />
+          <SpecimenFigure
+            src="/demo/desci-review-pilot-fig1.svg"
+            alt={specimens.dagAlt}
+            caption={specimens.dagCaption}
+            aspectRatio="720 / 360"
           />
         </div>
       </section>
@@ -204,6 +308,45 @@ export function Landing({ t }: { t: LocaleDict }) {
         <p>{footer.built}</p>
       </footer>
     </main>
+  );
+}
+
+function SpecimenFigure({
+  src,
+  alt,
+  caption,
+  aspectRatio,
+}: {
+  src: string;
+  alt: string;
+  caption: string;
+  aspectRatio: string;
+}) {
+  return (
+    <figure className="flex flex-col gap-2">
+      <a href={src} target="_blank" rel="noopener noreferrer">
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          style={{
+            width: '100%',
+            height: 'auto',
+            aspectRatio,
+            border: '1px solid var(--color-hairline)',
+            background: 'var(--color-paper)',
+          }}
+        />
+      </a>
+      <figcaption
+        className="font-serif text-sm italic leading-[1.55]"
+        style={{ color: 'var(--color-ink-2)' }}
+        data-prose="bilingual"
+      >
+        {caption}
+      </figcaption>
+    </figure>
   );
 }
 

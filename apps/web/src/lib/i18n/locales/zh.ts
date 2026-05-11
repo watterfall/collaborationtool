@@ -74,6 +74,43 @@ export const zh = {
         diagram: 'zh · en · 公式 · 代码  →  统一 pre-pass  →  4 种导出',
       },
     },
+    differentiation: {
+      heading: '5 年差异化锚点',
+      sub: '不是又一个协作 SaaS —— claim 级 ORCID-签名评审 DAG 是别人没做的。',
+      rows: [
+        {
+          competitor: 'Curvenote',
+          theyDo: '团队协作的 Jupyter / MyST 编辑器；评审是 GitHub PR review 风格的 thread。',
+          weDo: '评审挂在单条 claim 上，ORCID-签名独立可验证，不依赖本平台在线。',
+        },
+        {
+          competitor: 'MyST',
+          theyDo: '可扩展的 Markdown 方言 + 多目标渲染（HTML/JATS/PDF），单作者本地。',
+          weDo: '继承 MyST 可扩展 markup，外加 Yjs CRDT 协作 + AI 协作者 + claim 一等知识对象。',
+        },
+        {
+          competitor: 'Quarto',
+          theyDo: '可重复发表（R/Python/Julia notebook → PDF/HTML/Book）。',
+          weDo: '可重复 + 可协作 + 可评审 三合一；Quarto 的输出端我们都支持（Typst/JATS/MyST 共用 pre-pass）。',
+        },
+        {
+          competitor: 'Notion',
+          theyDo: '通用知识协作；段落树 + AI 侧边栏。',
+          weDo: '论文一等公民：claim/evidence/citation 节点 + provenance 追溯，AI 是协作动作不是聊天侧边栏。',
+        },
+      ],
+      footnote: '完整对比与 ADR-0016 dogfood gate 见 README 与 plan0/。',
+    },
+    specimens: {
+      heading: '看真东西',
+      sub: '三段示例 —— Typst PDF 排版、Agent dispatch 时间线、ORCID-签名评审 DAG。',
+      typstAlt: 'Typst 编译的双语论文 PDF 样张（CJK 与拉丁字号 / 字距独立调）',
+      typstCaption: 'Typst PDF 样张 · 双语排版同等精细',
+      timelineAlt: 'AgentTimeline 父子任务树（coordinator → reviewer + researcher，含 cancel + quota 标识）',
+      timelineCaption: 'AgentTimeline · 任意 step 可中途 cancel · 默认 50 invoke/天 quota',
+      dagAlt: 'claim:c3 的 review DAG —— 1 ORCID 同意（moss）+ 1 ORCID 挑战带反例证据（ox）',
+      dagCaption: 'Claim-on-Claim Review DAG · JWS 可独立验证',
+    },
     architecture: {
       heading: '架构一图',
       sub: '本地优先的核心 + 三层扩展点 + 自托管。',

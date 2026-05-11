@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Phase 5 Wave C C4 — AgentTimeline screenshot mockup.
+
+  Renders a paper-tone panel showing a 2-level dispatch tree:
+    coordinator (running) → reviewer (done) + researcher (cancelling)
+
+  Demonstrates Phase 5 Wave A deliverables:
+    - parent_job_id tree
+    - StatusPill (proposed/applied/blocked)
+    - MonoDisc agent monogram
+    - quota badge (Wave A A1)
+    - cancel button (Wave A A2)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360"
+     role="img" aria-labelledby="title desc"
+     preserveAspectRatio="xMidYMid meet">
+  <title id="title">AgentTimeline dispatch tree mockup</title>
+  <desc id="desc">
+    Mockup of the AgentTimeline view: a coordinator job at the top
+    with two child jobs — a completed reviewer dispatch and a
+    cancelling researcher dispatch with a visible Cancel button.
+  </desc>
+
+  <rect x="0" y="0" width="480" height="360" fill="#fafaf7" />
+  <rect x="0" y="0" width="480" height="360" fill="none"
+        stroke="#d6d3d1" stroke-width="0.5" />
+
+  <!-- header -->
+  <text x="24" y="36" font-family="'IBM Plex Serif', Garamond, serif"
+        font-size="14" font-weight="500" fill="#1c1917">
+    Agent 时间线 · Agent timeline
+  </text>
+  <text x="24" y="56" font-family="'IBM Plex Sans', system-ui, sans-serif"
+        font-size="10" fill="#57534e">
+    2 sub-jobs · total $0.03 · quota 12 / 50
+  </text>
+
+  <!-- horizontal rule -->
+  <line x1="24" y1="74" x2="456" y2="74"
+        stroke="#1c1917" stroke-width="0.5" />
+
+  <!-- root: coordinator -->
+  <g transform="translate(24 96)">
+    <!-- MonoDisc agent C -->
+    <circle cx="14" cy="14" r="14" fill="none"
+            stroke="#1a365d" stroke-width="1.5" />
+    <text x="14" y="18" font-family="'IBM Plex Mono', monospace"
+          font-size="11" fill="#1a365d" text-anchor="middle">C</text>
+
+    <text x="40" y="14" font-family="'IBM Plex Serif', serif"
+          font-size="12" fill="#1c1917">coordinator</text>
+    <text x="120" y="14" font-family="'IBM Plex Mono', monospace"
+          font-size="10" fill="#57534e">0188e7a3</text>
+
+    <!-- StatusPill running (proposed → accent-ink) -->
+    <rect x="186" y="2" width="84" height="22" rx="999"
+          fill="none" stroke="#1a365d" stroke-width="1.2" />
+    <text x="228" y="17" font-family="'IBM Plex Sans', system-ui"
+          font-size="10" fill="#1a365d" text-anchor="middle">
+      运行中 · Running
+    </text>
+
+    <text x="40" y="32" font-family="'IBM Plex Serif', serif"
+          font-size="11" fill="#57534e">
+      dispatching reviewer + researcher (step 2/5)
+    </text>
+  </g>
+
+  <!-- vertical rule to children -->
+  <line x1="38" y1="148" x2="38" y2="285"
+        stroke="#d6d3d1" stroke-width="0.5" />
+
+  <!-- child 1: reviewer (done) -->
+  <g transform="translate(52 162)">
+    <line x1="-14" y1="14" x2="0" y2="14"
+          stroke="#d6d3d1" stroke-width="0.5" />
+    <circle cx="14" cy="14" r="14" fill="none"
+            stroke="#1c1917" stroke-width="1.5" />
+    <text x="14" y="18" font-family="'IBM Plex Mono', monospace"
+          font-size="11" fill="#1c1917" text-anchor="middle">R</text>
+
+    <text x="40" y="14" font-family="'IBM Plex Serif', serif"
+          font-size="12" fill="#1c1917">reviewer</text>
+    <text x="120" y="14" font-family="'IBM Plex Mono', monospace"
+          font-size="10" fill="#57534e">01890af1</text>
+
+    <!-- StatusPill done (applied → accent-moss) -->
+    <rect x="186" y="2" width="84" height="22" rx="999"
+          fill="none" stroke="#6b8e23" stroke-width="1.2" />
+    <text x="228" y="17" font-family="'IBM Plex Sans', system-ui"
+          font-size="10" fill="#6b8e23" text-anchor="middle">
+      已完成 · Done
+    </text>
+
+    <text x="40" y="32" font-family="'IBM Plex Serif', serif"
+          font-size="11" fill="#57534e">
+      产 3 proposed revisions · 2.1k prompt + 0.5k completion tokens
+    </text>
+  </g>
+
+  <!-- child 2: researcher (cancelling) -->
+  <g transform="translate(52 248)">
+    <line x1="-14" y1="14" x2="0" y2="14"
+          stroke="#d6d3d1" stroke-width="0.5" />
+    <circle cx="14" cy="14" r="14" fill="none"
+            stroke="#1c1917" stroke-width="1.5" />
+    <text x="14" y="18" font-family="'IBM Plex Mono', monospace"
+          font-size="11" fill="#1c1917" text-anchor="middle">S</text>
+
+    <text x="40" y="14" font-family="'IBM Plex Serif', serif"
+          font-size="12" fill="#1c1917">researcher</text>
+    <text x="120" y="14" font-family="'IBM Plex Mono', monospace"
+          font-size="10" fill="#57534e">01890bf7</text>
+
+    <!-- StatusPill cancelling (proposed → accent-ink dashed for in-flight) -->
+    <rect x="186" y="2" width="96" height="22" rx="999"
+          fill="none" stroke="#1a365d" stroke-width="1.2"
+          stroke-dasharray="4 3" />
+    <text x="234" y="17" font-family="'IBM Plex Sans', system-ui"
+          font-size="10" fill="#1a365d" text-anchor="middle">
+      取消中 · Cancelling
+    </text>
+
+    <text x="40" y="32" font-family="'IBM Plex Serif', serif"
+          font-size="11" fill="#57534e">
+      worker 在 MCP tool-call 边界 graceful 收尾...
+    </text>
+
+    <!-- Cancel button — already pressed (ghost variant disabled style) -->
+    <rect x="300" y="2" width="80" height="22" rx="999"
+          fill="none" stroke="#d6d3d1" stroke-width="1.2" />
+    <text x="340" y="17" font-family="'IBM Plex Sans', system-ui"
+          font-size="10" fill="#a8a29e" text-anchor="middle">
+      取消 · Cancel
+    </text>
+  </g>
+
+  <!-- footer caption -->
+  <text x="24" y="338" font-family="'IBM Plex Sans', system-ui"
+        font-size="9" fill="#a8a29e">
+    Phase 5 Wave A · ADR-0008 §122/§93 — quota enforcer + cancel API + dispatch tree
+  </text>
+</svg>

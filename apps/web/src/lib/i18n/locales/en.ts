@@ -75,6 +75,43 @@ export const en: LocaleDict = {
         diagram: 'zh · en · math · code  →  one pre-pass  →  4 export formats',
       },
     },
+    differentiation: {
+      heading: 'A 5-year anchor',
+      sub: 'Not another collaboration SaaS — claim-level ORCID-signed review DAGs are the thing nobody else does.',
+      rows: [
+        {
+          competitor: 'Curvenote',
+          theyDo: 'Team-mode Jupyter / MyST editor; reviews are GitHub-PR-style threads.',
+          weDo: 'Reviews attach to individual claims; ORCID-signed JWS verifies independently of this platform.',
+        },
+        {
+          competitor: 'MyST',
+          theyDo: 'Extensible Markdown dialect + multi-target rendering (HTML/JATS/PDF), single-author local.',
+          weDo: 'Inherits the MyST markup; adds Yjs CRDT collaboration, AI collaborators, and first-class claim/evidence objects.',
+        },
+        {
+          competitor: 'Quarto',
+          theyDo: 'Reproducible publishing (R/Python/Julia notebook → PDF/HTML/Book).',
+          weDo: 'Reproducible + collaborative + reviewable in one pipeline; covers every Quarto output (Typst/JATS/MyST share a pre-pass).',
+        },
+        {
+          competitor: 'Notion',
+          theyDo: 'Generic knowledge collab; paragraph tree + AI sidebar.',
+          weDo: 'Paper as a first-class citizen: claim/evidence/citation nodes + provenance trail. AI works through actions, not a chat sidebar.',
+        },
+      ],
+      footnote: 'See README + plan0/ for the full comparison and the ADR-0016 dogfood gate.',
+    },
+    specimens: {
+      heading: 'See the actual thing',
+      sub: 'Three specimens — Typst-compiled PDF typography, AgentTimeline dispatch tree, ORCID-signed review DAG.',
+      typstAlt: 'Typst-compiled bilingual paper PDF (CJK + Latin sized and tracked independently)',
+      typstCaption: 'Typst PDF specimen · bilingual typography tuned per script',
+      timelineAlt: 'AgentTimeline parent-child tree (coordinator → reviewer + researcher, with cancel + quota badges)',
+      timelineCaption: 'AgentTimeline · any step is cancellable mid-flight · default 50-invoke/day quota',
+      dagAlt: 'Review DAG for claim:c3 — one ORCID endorse (moss) + one ORCID challenge with counter-evidence (ox)',
+      dagCaption: 'Claim-on-Claim Review DAG · JWS independently verifiable',
+    },
     architecture: {
       heading: 'Architecture at a glance',
       sub: 'A local-first core, three layers of extension points, self-hostable.',
