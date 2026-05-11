@@ -60,3 +60,11 @@ infra/drizzle/migrations/meta/
 infra/docker/.data/
 tests/e2e/test-results/
 tests/e2e/playwright-report/
+
+### Harness / agent ephemeral state ###
+# Claude Code harness scratch (scheduled task locks, sandboxed task outputs)
+.claude/
+# claude-mem auto-generated stub (rewritten each session)
+AGENTS.md
+# Raw codex exec run logs (large; .md artifacts in .codex-review/ stay tracked)
+.codex-review/*.log
