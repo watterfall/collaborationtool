@@ -259,3 +259,51 @@ Hosted SaaS workflow runner with TypeScript-native step functions。
 - `packages/ai-runtime/src/agent-runner.ts`（Phase 1 single-shot runner，Phase 2 复用为 worker 内核）
 - pg-boss: https://github.com/timgit/pg-boss
 - MDN EventSource: https://developer.mozilla.org/docs/Web/API/EventSource
+
+---
+
+## 7. Implementation review log
+
+### Phase 5 Wave A A1 — quota enforcer 落地（2026-05-11）
+
+补 §122 / §150 quota 承诺（Phase 4.5 evidence tier = `mock` → `real`，CLAUDE.md §5.7 红线达成 quota 维度）。
+
+**新加 schema**（migration `0013_agent_quota.sql`）：
+
+- `agent.quota_per_day integer NOT NULL DEFAULT 50`：mirrors §122 promise；现有行 backfill via DEFAULT
+- `agent_invocation_log (id, triggering_principal_id, kind, created_at)`：append-only counter；rolling 24h window 由 quota-enforcer.ts 计算。索引 `(triggering_principal_id, kind, created_at DESC)` 满足 hot-path COUNT 查询
+
+**新加代码**：
+
+- `packages/ai-runtime/src/quota-enforcer.ts`：纯逻辑 `checkAndConsumeQuota` + `enforceQuotaOrThrow` + `QuotaExceededError` + `createDbQuotaCounter(db)` PG 适配器；语义关键点：
+  - 拒绝路径 **不消耗** counter（quota reset 时间保鲜）
+  - quota 按 `(principalId, kind)` 分区，partition skew = 0
+  - `quotaPerDay = 0` 是合法 kill-switch；`< 0` 走 `Error` 抛出（防止配置注入回避）
+  - `resetAt` = 窗口内最早一条 invocation + 24h（实现可选实现 `earliestIn`，默认 null）
+- `apps/web/src/app/api/agent/invoke/route.ts` 前置：principal + kind 拿到后立即校验，超 quota 返 `429` + `Retry-After` 头 + observability `agent.invoke.quota_blocked` 事件
+- `apps/agent-worker/src/index.ts` `handleOne` 防御式再校验：超 quota → `markError(jobId, 'quota-exceeded')` + `agent_job_event{kind:'error', errorClass:'quota-exceeded'}` + 立即 return（不走 `invokeAgentViaPlugin`）
+
+**为什么 worker 也校验**：HTTP 路由是默认入口，但 pgboss 队列可以由内部 caller（coordinator handoff / 未来 cron）填入；defense-in-depth 防止任何绕过 invoke 路由的入队对 quota 视而不见。
+
+**为什么不一次写 Redis**：§150 把 Redis 标"Phase 1.5 加"，但项目实际 Redis 部署被推到 Phase 6+；PG counter 在当前 Phase 5 用量下 amply 够用（单机 pgboss + agent_job 表已经承担过同等量级写）。Redis swap 留 `QuotaCounter` 接口稳定，未来一行替换。
+
+**为什么 invoke 路由用 `DEFAULT_QUOTA_PER_DAY` 而非 `agent.quota_per_day`**：sync invoke（citation / inline-editor）暂无对应 `agent` 行；Phase 5 Wave B 落 agent 注册路径后再切。worker dispatch 路径同样目前未读 `agent.quota_per_day`（保留为 Wave A 收尾或 Wave B 工作）。
+
+**测试覆盖**（11 单元测试，纯 in-memory counter）：
+- DEFAULT_QUOTA_PER_DAY === 50
+- 第 1 次允许 + counter +1
+- 1..50 全允许
+- 51 拒绝 + currentCount = 50 + counter 不变
+- 24h window 切分（23h ago 计 / 25h ago 不计）
+- (principal, kind) 分区
+- 单 agent override `quotaPerDay = 5`
+- killswitch `quotaPerDay = 0` → 立即拒绝
+- 负数 quotaPerDay → throw
+- resetAt = 最早 in-window invocation + 24h
+- QuotaExceededError 结构化字段（principalId / kind / currentCount / limit / resetAt / name）
+
+**剩余 caveat**（Evidence Tier 仍 `mixed`）：
+- A2 cancel route：`POST /api/agent/job/<jobId>/cancel` + worker `callTool` 前 poll `agent_job.status='cancelling'`（1-2 天）
+- A3 AgentExecutionContext 扩 `actualIterations/promptTokens/completionTokens/retries[]`
+- A4 AgentTimeline.tsx 渲染 `agent_job_event` + parent/child 树
+- reviewer / researcher path stub → 真 LLM round-trip（W9 G3 跑通后 `real`）

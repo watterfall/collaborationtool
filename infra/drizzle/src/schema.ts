@@ -114,6 +114,10 @@ export const agent = pgTable(
       .default(sql`'{}'::text[]`),
     defaultMaxTokens: integer('default_max_tokens').notNull(),
     defaultTimeoutMs: integer('default_timeout_ms').notNull(),
+    // Phase 5 Wave A A1 (migration 0013): per-agent quota cap. Backs
+    // ADR-0008 §122 promise. quota-enforcer.ts counts invocations in
+    // the rolling 24h window and rejects new triggers above this.
+    quotaPerDay: integer('quota_per_day').notNull().default(50),
     principalId: text('principal_id')
       .notNull()
       .unique()
@@ -1127,6 +1131,35 @@ export const crossrefIndex = pgTable(
 );
 
 // ============================================================
+// 21.5 agent_invocation_log — Phase 5 Wave A A1 (migration 0013).
+//     Append-only counter for ADR-0008 §122 quota enforcement.
+//     One row per (sync invoke || async dispatch) attempt that
+//     passed the rolling-window quota check. quota-enforcer.ts
+//     COUNTs rows within the 24h window before consuming.
+// ============================================================
+
+export const agentInvocationLog = pgTable(
+  'agent_invocation_log',
+  {
+    id: text('id').primaryKey(),
+    triggeringPrincipalId: text('triggering_principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => ({
+    principalKindTimeIdx: index('agent_invocation_log_principal_kind_time_idx').on(
+      t.triggeringPrincipalId,
+      t.kind,
+      t.createdAt,
+    ),
+  }),
+);
+
+// ============================================================
 // Type exports — used by application code for fully-typed queries.
 // `db.select().from(document)` returns inferred row types.
 // ============================================================
@@ -1151,6 +1184,7 @@ export type DbEvidence = typeof evidence.$inferSelect;
 export type DbClaimLink = typeof claimLink.$inferSelect;
 export type DbAgentJob = typeof agentJob.$inferSelect;
 export type DbAgentJobEvent = typeof agentJobEvent.$inferSelect;
+export type DbAgentInvocationLog = typeof agentInvocationLog.$inferSelect;
 export type DbSource = typeof source.$inferSelect;
 export type DbSourceExtraction = typeof sourceExtraction.$inferSelect;
 export type DbMaintenanceFinding = typeof maintenanceFinding.$inferSelect;

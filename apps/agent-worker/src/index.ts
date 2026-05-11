@@ -18,7 +18,13 @@
 import PgBoss from 'pg-boss';
 
 import { openDatabase } from '@collaborationtool/drizzle';
-import { invokeAgentViaPlugin } from '@collaborationtool/ai-runtime';
+import {
+  invokeAgentViaPlugin,
+  // Phase 5 Wave A A1 — ADR-0008 §122 quota enforcer.
+  DEFAULT_QUOTA_PER_DAY,
+  checkAndConsumeQuota,
+  createDbQuotaCounter,
+} from '@collaborationtool/ai-runtime';
 
 import {
   appendEvent,
@@ -102,6 +108,37 @@ async function handleOne(
     fraction: 0.05,
     message: `dispatching ${input.kind} agent`,
   });
+
+  // Phase 5 Wave A A1 — ADR-0008 §122 quota enforcement (defense in
+  // depth). The HTTP submission route already checks quota, but a
+  // worker handler that invokes plugins must re-check: pgboss can
+  // also enqueue from internal callers (coordinator handoff, future
+  // cron) that bypass `/api/agent/invoke`. Reject path marks the
+  // job 'error' + emits agent_job_event{kind:'quota_blocked'} so
+  // SSE consumers and timeline views can surface it.
+  const quotaResult = await checkAndConsumeQuota({
+    counter: createDbQuotaCounter(db),
+    principalId: input.triggeringPrincipalId,
+    kind: input.kind,
+    quotaPerDay: DEFAULT_QUOTA_PER_DAY,
+    now: new Date(),
+  });
+  if (!quotaResult.allowed) {
+    await markError(
+      db,
+      jobId,
+      'quota-exceeded',
+      `quota exceeded for ${input.triggeringPrincipalId}/${input.kind}: ${quotaResult.currentCount}/${quotaResult.limit}`,
+    );
+    await appendEvent(db, jobId, {
+      kind: 'error',
+      errorClass: 'quota-exceeded',
+      errorMessage: `quota exceeded: ${quotaResult.currentCount}/${quotaResult.limit}${
+        quotaResult.resetAt ? ` — reset at ${quotaResult.resetAt.toISOString()}` : ''
+      }`,
+    });
+    return;
+  }
 
   try {
     // Phase 4 W4: maintenance-scan handler is SQL-pure; no LLM/MCP

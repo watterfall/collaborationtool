@@ -188,3 +188,17 @@ export {
   runCoordinatorLoop,
   ProposalBuffer,
 } from './coordinator';
+
+// Phase 5 Wave A A1 (ADR-0008 §122): quota enforcer + PG-backed
+// counter. Used by /api/agent/invoke (sync) + apps/agent-worker
+// (async) to honor `quotaPerDay` in the rolling 24h window.
+export {
+  DEFAULT_QUOTA_PER_DAY,
+  QuotaExceededError,
+  checkAndConsumeQuota,
+  enforceQuotaOrThrow,
+  createDbQuotaCounter,
+  type CheckQuotaInput,
+  type QuotaCounter,
+  type QuotaResult,
+} from './quota-enforcer';

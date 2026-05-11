@@ -29,6 +29,10 @@ import {
   findAgentByKind,
   invokeAgentViaPlugin,
   resolvePluginAbsolutePath,
+  // Phase 5 Wave A A1 — ADR-0008 §122 quota enforcer.
+  DEFAULT_QUOTA_PER_DAY,
+  checkAndConsumeQuota,
+  createDbQuotaCounter,
 } from '@collaborationtool/ai-runtime';
 import { loadPrincipalContext } from '@collaborationtool/permissions';
 
@@ -96,6 +100,47 @@ export async function POST(request: Request): Promise<NextResponse> {
   const ctx = await loadPrincipalContext(db, principalId, body.documentId);
   if (!ctx) {
     return NextResponse.json({ error: 'no-access' }, { status: 403 });
+  }
+
+  // Phase 5 Wave A A1 — ADR-0008 §122 quota enforcement (rolling 24h
+  // window, default 50/day per (principal, kind); per-agent override
+  // lives on `agent.quota_per_day` and is consulted by the worker
+  // path). Sync invoke routes use the default until a manifest-level
+  // override exists. Rejection returns 429 + Retry-After header.
+  const quotaResult = await checkAndConsumeQuota({
+    counter: createDbQuotaCounter(db),
+    principalId,
+    kind,
+    quotaPerDay: DEFAULT_QUOTA_PER_DAY,
+    now: new Date(),
+  });
+  if (!quotaResult.allowed) {
+    const retryAfterSec = quotaResult.resetAt
+      ? Math.max(1, Math.ceil((quotaResult.resetAt.getTime() - Date.now()) / 1000))
+      : 60 * 60;
+    captureEvent({
+      event: 'agent.invoke.quota_blocked',
+      distinctId: anonDistinctId(principalId),
+      properties: {
+        kind,
+        currentCount: quotaResult.currentCount,
+        limit: quotaResult.limit,
+        retryAfterSec,
+      },
+    });
+    return NextResponse.json(
+      {
+        error: 'quota-exceeded',
+        kind,
+        currentCount: quotaResult.currentCount,
+        limit: quotaResult.limit,
+        resetAt: quotaResult.resetAt?.toISOString() ?? null,
+      },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(retryAfterSec) },
+      },
+    );
   }
 
   // The actorPrincipalId on the proposal should reflect the agent's
