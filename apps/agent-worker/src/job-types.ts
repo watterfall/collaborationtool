@@ -79,12 +79,26 @@ export type JobEventPayload =
       outputThreadIds: string[];
       cost: { inputTokens: number; outputTokens: number; usdMilli: number };
     }
-  | { kind: 'error'; errorClass: string; errorMessage: string };
+  | { kind: 'error'; errorClass: string; errorMessage: string }
+  // Phase 5 Wave A A2 — worker observed `cancelling` flip + unwound at
+  // a tool-call boundary. Distinct from `error` so clients can render
+  // "stopped by you" rather than "agent failed".
+  | { kind: 'cancelled'; reason: string };
 
-/** Job lifecycle states (mirror of `agent_job_status` PG enum). */
+/** Job lifecycle states.
+ *
+ * Phase 5 Wave A A2 adds `cancelling` as an intermediate stop-requested
+ * state. The HTTP cancel route flips queued|running → cancelling; the
+ * worker polls at tool-call boundaries and graceful-shutdowns to
+ * `cancelled`. `cancelling` is the user's wish; `cancelled` is the
+ * worker confirming it.
+ *
+ * `agent_job.status` is a plain text column (not a PG enum) so adding
+ * the value needs no migration. */
 export type AgentJobStatus =
   | 'queued'
   | 'running'
+  | 'cancelling'
   | 'done'
   | 'error'
   | 'cancelled';

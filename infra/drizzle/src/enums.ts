@@ -41,9 +41,14 @@ export const agentRuntimeEnum = pgEnum('agent_runtime', [
 ]);
 
 // Phase 2 W2 ADR-0008: agent_job lifecycle.
+// Phase 5 Wave A A2 (migration 0013): adds 'cancelling' for the
+// user-requested-stop intermediate state. Cancel route flips
+// queued|running → cancelling; worker polls at tool-call
+// boundaries and confirms with cancelled (terminal).
 export const agentJobStatusEnum = pgEnum('agent_job_status', [
   'queued',
   'running',
+  'cancelling',
   'done',
   'error',
   'cancelled',

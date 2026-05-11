@@ -307,3 +307,48 @@ Hosted SaaS workflow runner with TypeScript-native step functions。
 - A3 AgentExecutionContext 扩 `actualIterations/promptTokens/completionTokens/retries[]`
 - A4 AgentTimeline.tsx 渲染 `agent_job_event` + parent/child 树
 - reviewer / researcher path stub → 真 LLM round-trip（W9 G3 跑通后 `real`）
+
+### Phase 5 Wave A A2 — cancel API + worker poll（2026-05-11）
+
+补 §93 / §156 承诺。CLAUDE.md §5.7 红线"agent 必须有 quota + timeout + **可中断**"中"可中断"维度达成。
+
+**schema**（migration `0013_agent_quota.sql` §3 追）：
+
+- `ALTER TYPE "agent_job_status" ADD VALUE IF NOT EXISTS 'cancelling'`（PG 12+ 幂等；docker-compose 16）
+- Drizzle `agentJobStatusEnum` 同步增第 3 档（5→6 档）
+- `AgentJobStatus` TS union + `JobEventPayload` union 加 `{kind:'cancelled', reason}`（区别于 `error`：客户端能渲染"被你停了"而非"agent 失败了"）
+
+**状态机**（`apps/web/src/lib/agent-job-cancel.ts` 纯 validator）：
+
+```
+queued | running   → cancelling   (applyCancelling=true,  HTTP 200)
+cancelling         → cancelling   (applyCancelling=false, HTTP 200 — idempotent)
+done | error | cancelled → REJECT (HTTP 409 terminal-state)
+not-owner          → REJECT (HTTP 403 unauthorized)
+not-found          → REJECT (HTTP 404 not-found)
+```
+
+**Ownership > terminal**：stranger 看 done 也返 403，不泄漏 job 当前状态。这是 ACL 信息门最小化。
+
+**worker poll 3 边界**（`apps/agent-worker/src/index.ts` `respectCancellation(db, jobId, boundary)`）：
+
+1. **pre-running**（`markRunning` 前）：queued→running 之间用户 cancel 不浪费 quota 检查
+2. **pre-dispatch**（quota check 后 / maintenance-scan 分支前）：紧贴"任何昂贵工作"前
+3. **maintenance pre-write**（`scanForFindings` 后 / `writeFindings` 前）：长扫描中途 cancel 不留半写 findings
+
+命中 cancelling 即：`markCancelled` (status='cancelled', finishedAt=now, progressFraction 保留) + `appendEvent({kind:'cancelled', reason: 'worker stopped at boundary: <name>'})` + return。
+
+**为什么 reviewer/researcher 真 invoke path 没接 poll**：当前 W4-W7 stub 直接 markDone；待 reviewer 真 LLM 跑通（Wave B/D）时，在 MCP `callTool` 前后接 `respectCancellation` 同样能用。当前 3 边界已覆盖所有有副作用的 path。
+
+**测试覆盖**（`apps/web/tests/agent-cancel.test.ts` 14 测）：
+- CANCELLABLE / ALREADY_CANCELLING / TERMINAL 三集合完备性
+- 6 status 全分类
+- happy: queued→cancelling apply / running→cancelling apply / cancelling→cancelling 幂等
+- reject: not-found / unauthorized / done / error / cancelled
+- ownership 先于 terminal（stranger 看 done 也 403）
+- not-found 先于 ownership（无 job 即 404）
+
+**剩余 caveat**：
+- A3 ExecutionContext schema 扩 `actualIterations / promptTokens / completionTokens / retries[]`
+- A4 AgentTimeline.tsx 渲染 agent_job_event 树
+- reviewer/researcher 真 invokeAgentViaPlugin path 接 cancel poll（W4-W7 stub 真化时一起做）

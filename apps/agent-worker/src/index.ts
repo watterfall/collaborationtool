@@ -28,6 +28,8 @@ import {
 
 import {
   appendEvent,
+  isCancelling,
+  markCancelled,
   markDone,
   markError,
   markRunning,
@@ -102,6 +104,13 @@ async function handleOne(
   input: AnyJobInput,
   config: WorkerConfig,
 ): Promise<void> {
+  // Phase 5 Wave A A2 — ADR-0008 §156 cancel poll. The HTTP cancel
+  // route may have flipped status='cancelling' between enqueue and
+  // pickup; if so, stop before doing any real work or burning quota.
+  if (await respectCancellation(db, jobId, 'queued→running')) {
+    return;
+  }
+
   await markRunning(db, jobId);
   await appendEvent(db, jobId, {
     kind: 'progress',
@@ -141,6 +150,14 @@ async function handleOne(
   }
 
   try {
+    // Phase 5 Wave A A2 — second poll, just before dispatch. Tightens
+    // the cancel window from "before quota" to "right before any
+    // expensive work". A user who clicked cancel during the few ms it
+    // took to consume quota still gets stopped here.
+    if (await respectCancellation(db, jobId, 'pre-dispatch')) {
+      return;
+    }
+
     // Phase 4 W4: maintenance-scan handler is SQL-pure; no LLM/MCP
     // needed. We branch here before the Anthropic instantiation path
     // so a Postgres-only deployment can run scans without ANTHROPIC_API_KEY.
@@ -202,6 +219,34 @@ async function handleOne(
   }
 }
 
+/** Phase 5 Wave A A2 — ADR-0008 §156 cancel-poll boundary helper.
+ *
+ * Worker calls this at every tool-call boundary (currently: before
+ * `markRunning`, before `runMaintenanceScan` dispatch, and between
+ * `scanForFindings` + `writeFindings`). When `agent_job.status ===
+ * 'cancelling'` we mark the job 'cancelled', emit a 'cancelled' SSE
+ * event with `boundary` as the reason, and return true so the caller
+ * unwinds. Returning false means "keep going".
+ *
+ * Keeping this in one function:
+ *   - guarantees the SSE event payload shape stays consistent
+ *   - keeps the read+update sequence uniform (no half-stops)
+ *   - documents the canonical poll site for future tool-call boundaries
+ */
+async function respectCancellation(
+  db: ReturnType<typeof openDatabase>['db'],
+  jobId: string,
+  boundary: string,
+): Promise<boolean> {
+  if (!(await isCancelling(db, jobId))) return false;
+  await markCancelled(db, jobId);
+  await appendEvent(db, jobId, {
+    kind: 'cancelled',
+    reason: `worker stopped at boundary: ${boundary}`,
+  });
+  return true;
+}
+
 /** Phase 4 W4: maintenance-scan handler. SQL-pure; runs the 3
  * statically-computable finding generators (unsupported-claim /
  * outdated-source / unverified-ai-block) and writes results into
@@ -233,6 +278,15 @@ async function runMaintenanceScan(
     findingKinds: requestedKinds,
     ...(doiResolver ? { doiResolver } : {}),
   });
+
+  // Phase 5 Wave A A2 — ADR-0008 §156 cancel poll between scan and
+  // write. scanForFindings is the SQL-pure read pass; writeFindings is
+  // the side-effect. Stopping here means the user's cancel during a
+  // long scan leaves no half-written findings.
+  if (await respectCancellation(db, jobId, 'maintenance-scan pre-write')) {
+    return;
+  }
+
   await updateProgress(
     db,
     jobId,

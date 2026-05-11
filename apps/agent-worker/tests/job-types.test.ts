@@ -98,14 +98,18 @@ describe('JobEventPayload', () => {
 });
 
 describe('AgentJobStatus enum values', () => {
-  it('matches PG enum literals (queued/running/done/error/cancelled)', () => {
+  it('matches PG status literals (queued/running/cancelling/done/error/cancelled)', () => {
+    // Phase 5 Wave A A2 adds 'cancelling' as the user-requested-stop
+    // intermediate state (cancel route flips queued|running →
+    // cancelling; worker polls and confirms with cancelled).
     const values: AgentJobStatus[] = [
       'queued',
       'running',
+      'cancelling',
       'done',
       'error',
       'cancelled',
     ];
-    assert.equal(values.length, 5);
+    assert.equal(values.length, 6);
   });
 });

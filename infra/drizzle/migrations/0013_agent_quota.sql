@@ -43,3 +43,14 @@ CREATE TABLE IF NOT EXISTS "agent_invocation_log" (
 -- Hot path index: count(*) WHERE principal=? AND kind=? AND created_at >= ?
 CREATE INDEX IF NOT EXISTS "agent_invocation_log_principal_kind_time_idx"
   ON "agent_invocation_log" ("triggering_principal_id", "kind", "created_at" DESC);
+
+-- ============================================================
+-- §3 agent_job_status += 'cancelling' (ADR-0008 §93 / §156)
+--    Phase 5 Wave A A2 — user-requested-stop intermediate state.
+--    Cancel route flips queued|running → cancelling; worker polls at
+--    tool-call boundaries and graceful-shutdowns to 'cancelled'.
+-- ============================================================
+
+-- PG 12+ supports ADD VALUE IF NOT EXISTS — docker-compose pins
+-- postgres:16, so safe.
+ALTER TYPE "agent_job_status" ADD VALUE IF NOT EXISTS 'cancelling';

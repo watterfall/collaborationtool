@@ -83,6 +83,77 @@ export async function markDone(
     .where(eq(schema.agentJob.id, input.jobId));
 }
 
+/** Phase 5 Wave A A2 — flip a job to 'cancelling' to signal a stop
+ * request. The worker polls `isCancelling` at tool-call boundaries
+ * and graceful-shutdowns to `cancelled`. Status guards (queued |
+ * running only) live in apps/web/src/lib/agent-job-cancel.ts:
+ * validateCancel(); this function is the un-checked write side. */
+export async function markCancelling(
+  db: DbExecutor,
+  jobId: string,
+): Promise<void> {
+  await db
+    .update(schema.agentJob)
+    .set({ status: 'cancelling' })
+    .where(eq(schema.agentJob.id, jobId));
+}
+
+/** Phase 5 Wave A A2 — terminal 'cancelled' state after the worker
+ * sees `cancelling` and unwound its loop. Stamps finished_at; leaves
+ * progress fraction intact so the timeline can show "stopped at 60%". */
+export async function markCancelled(
+  db: DbExecutor,
+  jobId: string,
+): Promise<void> {
+  await db
+    .update(schema.agentJob)
+    .set({ status: 'cancelled', finishedAt: new Date() })
+    .where(eq(schema.agentJob.id, jobId));
+}
+
+/** Phase 5 Wave A A2 — cancel-poll helper. Worker calls this at each
+ * tool-call boundary (per ADR-0008 §156); true means "stop now". */
+export async function isCancelling(
+  db: DbExecutor,
+  jobId: string,
+): Promise<boolean> {
+  const rows = await db
+    .select({ status: schema.agentJob.status })
+    .from(schema.agentJob)
+    .where(eq(schema.agentJob.id, jobId))
+    .limit(1);
+  return rows[0]?.status === 'cancelling';
+}
+
+/** Phase 5 Wave A A2 — light row read used by the cancel HTTP route
+ * to check ownership + current status before invoking validateCancel.
+ * Returns null when the row doesn't exist. */
+export async function readJobOwnership(
+  db: DbExecutor,
+  jobId: string,
+): Promise<{
+  id: string;
+  status: AgentJobStatus;
+  triggeringPrincipalId: string;
+} | null> {
+  const rows = await db
+    .select({
+      id: schema.agentJob.id,
+      status: schema.agentJob.status,
+      triggeringPrincipalId: schema.agentJob.triggeringPrincipalId,
+    })
+    .from(schema.agentJob)
+    .where(eq(schema.agentJob.id, jobId))
+    .limit(1);
+  const r = rows[0];
+  if (!r) return null;
+  return {
+    id: r.id,
+    status: r.status as AgentJobStatus,
+    triggeringPrincipalId: r.triggeringPrincipalId,
+  };
+}
+
 /** Move a job to 'error' and capture the failure shape. */
 export async function markError(
   db: DbExecutor,
