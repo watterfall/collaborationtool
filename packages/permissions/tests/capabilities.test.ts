@@ -1,5 +1,6 @@
-// Capability vocabulary integrity. ADR-0002 §2.1 says 36 verbs; this
-// test guards against accidental drift (extras, dupes, typos).
+// Capability vocabulary integrity. ADR-0002 §2.1 originally said 36
+// verbs; Phase 5 Wave B (ADR-0016) added 3 claim-review verbs → 39.
+// This test guards against accidental drift (extras, dupes, typos).
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
@@ -13,17 +14,18 @@ import {
   CAPABILITY_META_CAPABILITIES,
   CAPABILITY_SET,
   CITATION_CAPABILITIES,
+  CLAIM_REVIEW_CAPABILITIES,
   DOCUMENT_CAPABILITIES,
   PROVENANCE_CAPABILITIES,
   isCapability,
 } from '../src/capabilities';
 
 describe('capabilities vocabulary', () => {
-  it('has exactly 36 entries (ADR-0002 §2.1)', () => {
-    assert.equal(CAPABILITIES.length, 36);
+  it('has exactly 39 entries (ADR-0002 §2.1 + ADR-0016 +3)', () => {
+    assert.equal(CAPABILITIES.length, 39);
   });
 
-  it('domain group sizes match ADR-0002 §2.1', () => {
+  it('domain group sizes match ADR-0002 §2.1 + ADR-0016', () => {
     assert.equal(DOCUMENT_CAPABILITIES.length, 10);
     assert.equal(BLOCK_CAPABILITIES.length, 8);
     assert.equal(ANNOTATION_CAPABILITIES.length, 5);
@@ -31,6 +33,7 @@ describe('capabilities vocabulary', () => {
     assert.equal(AGENT_CAPABILITIES.length, 5);
     assert.equal(PROVENANCE_CAPABILITIES.length, 2);
     assert.equal(CAPABILITY_META_CAPABILITIES.length, 2);
+    assert.equal(CLAIM_REVIEW_CAPABILITIES.length, 3);
   });
 
   it('every entry is unique', () => {

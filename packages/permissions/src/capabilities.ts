@@ -86,6 +86,18 @@ export const CAPABILITY_META_CAPABILITIES = [
   'capability.revoke',
 ] as const;
 
+// ---------- Claim-review layer (3) — ADR-0016 ----------
+// Phase 5 Wave B: Claim-on-Claim Review (annotation on claim 的 ORCID-
+// signed provenance lineage). No `claim.review:edit` because
+// ORCID-signed reviews are immutable; withdraw + resubmit is the only
+// correction path.
+
+export const CLAIM_REVIEW_CAPABILITIES = [
+  'claim.review:create',
+  'claim.review:read',
+  'claim.review:withdraw',
+] as const;
+
 // ---------- Aggregate ----------
 
 export const CAPABILITIES = [
@@ -96,6 +108,7 @@ export const CAPABILITIES = [
   ...AGENT_CAPABILITIES,
   ...PROVENANCE_CAPABILITIES,
   ...CAPABILITY_META_CAPABILITIES,
+  ...CLAIM_REVIEW_CAPABILITIES,
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
@@ -118,6 +131,7 @@ export const CAPABILITY_DOMAIN: Readonly<Record<Capability, string>> = (() => {
   for (const v of AGENT_CAPABILITIES) m.set(v, 'agent');
   for (const v of PROVENANCE_CAPABILITIES) m.set(v, 'provenance');
   for (const v of CAPABILITY_META_CAPABILITIES) m.set(v, 'capability-meta');
+  for (const v of CLAIM_REVIEW_CAPABILITIES) m.set(v, 'claim-review');
   return Object.freeze(Object.fromEntries(m)) as Readonly<
     Record<Capability, string>
   >;

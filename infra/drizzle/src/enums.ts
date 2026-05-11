@@ -167,6 +167,17 @@ export const claimLinkTypeEnum = pgEnum('claim_link_type', [
   'refines',
 ]);
 
+// Phase 5 Wave B ADR-0016 (migration 0014): claim-level reviewer
+// verdict. Named distinctly from evidence_relation even though it
+// shares the 'challenges' literal — the actor model is different
+// (reviewer judging vs evidence supporting). 3 values; Phase 6+
+// sub-semantics live in claim_review.verdict_meta jsonb.
+export const claimReviewVerdictEnum = pgEnum('claim_review_verdict', [
+  'endorses',
+  'challenges',
+  'refines',
+]);
+
 // ---------- Source ingestion (Phase 3 W1/W2) ----------
 
 export const sourceKindEnum = pgEnum('source_kind', [

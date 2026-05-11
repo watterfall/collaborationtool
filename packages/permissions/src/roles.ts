@@ -70,11 +70,23 @@ const PAPER_AUTHOR_BUNDLE: readonly Capability[] = [
   'provenance.read:agent-detail',
   'capability.grant',
   'capability.revoke',
+  // Phase 5 Wave B (ADR-0016): paper authors read all reviews on their
+  // claims; they can also withdraw stale AI verdicts from their own
+  // claims. `create` stays reviewer-only — authors evaluate their own
+  // claims by promoting them via existing block.commit / claim status
+  // transitions, not by self-verdict.
+  'claim.review:read',
+  'claim.review:withdraw',
 ];
 
 // Phase 1 paper-reviewer: read-only access to body + propose / review,
 // plus full annotation participation. NO `block.commit` — all changes
 // must go through propose → owner accept.
+//
+// Phase 5 Wave B (ADR-0016): reviewers can submit / read / withdraw
+// their own claim-level verdicts. `withdraw` works only on the
+// reviewer's own rows — service layer checks
+// claim_review.reviewer_principal_id === caller.
 const PAPER_REVIEWER_BUNDLE: readonly Capability[] = [
   'document.read',
   'document.export',
@@ -91,9 +103,15 @@ const PAPER_REVIEWER_BUNDLE: readonly Capability[] = [
   'agent.invoke:citation',
   'provenance.read',
   'provenance.read:agent-detail',
+  'claim.review:create',
+  'claim.review:read',
+  'claim.review:withdraw',
 ];
 
 // Phase 1 commenter: discussion-only.
+// Phase 5 Wave B (ADR-0016): commenters can read claim verdicts (the
+// claim itself is readable → public lineage view should be readable
+// too) but cannot submit verdicts (those need reviewer ORCID identity).
 const COMMENTER_BUNDLE: readonly Capability[] = [
   'document.read',
   'block.read',
@@ -102,6 +120,7 @@ const COMMENTER_BUNDLE: readonly Capability[] = [
   'annotation.reply',
   'citation.read',
   'provenance.read',
+  'claim.review:read',
 ];
 
 // Phase 1 inline-editor-agent: agent that proposes inline rewrites.

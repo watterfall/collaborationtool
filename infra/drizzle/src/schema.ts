@@ -38,6 +38,7 @@ import {
   citationKindEnum,
   claimConfidenceEnum,
   claimLinkTypeEnum,
+  claimReviewVerdictEnum,
   claimStatusEnum,
   claimTypeEnum,
   evidenceRelationEnum,
@@ -1160,6 +1161,61 @@ export const agentInvocationLog = pgTable(
 );
 
 // ============================================================
+// 22. claim_review — Phase 5 Wave B B1 (migration 0014) ADR-0016.
+//     Claim-on-Claim Review: per-claim ORCID-signed verdict lineage.
+//     5-year differentiation anchor. evidence_refs is text[] (soft FK
+//     to evidence.id; PG arrays lack FK constraints; service layer
+//     validates).
+// ============================================================
+
+export const claimReview = pgTable(
+  'claim_review',
+  {
+    id: text('id').primaryKey(),
+    claimId: text('claim_id')
+      .notNull()
+      .references(() => claim.id, { onDelete: 'restrict' }),
+    reviewerPrincipalId: text('reviewer_principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    reviewerOrcidId: text('reviewer_orcid_id'),
+    isAiVerdict: boolean('is_ai_verdict').notNull().default(false),
+    verdict: claimReviewVerdictEnum('verdict').notNull(),
+    bodyMarkdown: text('body_markdown').notNull(),
+    evidenceRefs: text('evidence_refs')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    signedPayloadJws: text('signed_payload_jws'),
+    orcidSignedAt: timestamp('orcid_signed_at', { withTimezone: true }),
+    signatureVerifiedAt: timestamp('signature_verified_at', { withTimezone: true }),
+    signatureAlgorithm: text('signature_algorithm'),
+    provenanceId: text('provenance_id')
+      .notNull()
+      .references(() => provenance.id, { onDelete: 'restrict' }),
+    submittedAt: timestamp('submitted_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
+    withdrawnReason: text('withdrawn_reason'),
+    // Phase 6+ sub-verdict semantics; empty for Phase 5.
+    verdictMeta: jsonb('verdict_meta'),
+  },
+  (t) => ({
+    claimVerdictIdx: index('claim_review_claim_verdict_idx').on(
+      t.claimId,
+      t.verdict,
+    ),
+    reviewerIdx: index('claim_review_reviewer_idx').on(
+      t.reviewerPrincipalId,
+      t.submittedAt,
+    ),
+    orcidIdx: index('claim_review_orcid_idx').on(t.reviewerOrcidId),
+    provenanceIdx: index('claim_review_provenance_idx').on(t.provenanceId),
+  }),
+);
+
+// ============================================================
 // Type exports — used by application code for fully-typed queries.
 // `db.select().from(document)` returns inferred row types.
 // ============================================================
@@ -1182,6 +1238,7 @@ export type DbMcpServer = typeof mcpServer.$inferSelect;
 export type DbClaim = typeof claim.$inferSelect;
 export type DbEvidence = typeof evidence.$inferSelect;
 export type DbClaimLink = typeof claimLink.$inferSelect;
+export type DbClaimReview = typeof claimReview.$inferSelect;
 export type DbAgentJob = typeof agentJob.$inferSelect;
 export type DbAgentJobEvent = typeof agentJobEvent.$inferSelect;
 export type DbAgentInvocationLog = typeof agentInvocationLog.$inferSelect;
