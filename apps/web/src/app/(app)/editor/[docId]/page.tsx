@@ -4,7 +4,11 @@ import { redirect } from 'next/navigation';
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { schema } from '@collaborationtool/drizzle';
-import { loadPrincipalContext } from '@collaborationtool/permissions';
+import {
+  DEFAULT_ROLE_BUNDLES,
+  loadPrincipalContext,
+  materialiseRoleBundle,
+} from '@collaborationtool/permissions';
 
 import { auth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
@@ -51,7 +55,24 @@ export default async function EditorPage({
 
   const doc = docRows[0]!;
 
-  const ctx = await loadPrincipalContext(db, principalId, doc.id);
+  // Owner short-circuit (codex review 2026-05-11 follow-up / demo-doc
+  // fix): the document.ownerPrincipalId IS the source of truth for
+  // ownership (per ADR-0002 §6 + `PAPER_AUTHOR_BUNDLE` comment "via
+  // document.owner_principal_id, not via per-document ACL row"). Older
+  // seed paths (`infra/drizzle/src/seed.ts`) only insert the document
+  // row and skip `materialiseRoleBundle`, so the owner gets a 403 on
+  // their own doc. Self-heal: when the request comes from the owner
+  // and no ACL row exists, materialise paper-author on first access.
+  let ctx = await loadPrincipalContext(db, principalId, doc.id);
+  if (!ctx && principalId === doc.ownerPrincipalId) {
+    await materialiseRoleBundle(db, {
+      documentId: doc.id,
+      principalId,
+      roleId: 'paper-author',
+      capabilities: DEFAULT_ROLE_BUNDLES['paper-author'],
+    });
+    ctx = await loadPrincipalContext(db, principalId, doc.id);
+  }
   if (!ctx || !ctx.documentCapabilities.has('document.read')) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
