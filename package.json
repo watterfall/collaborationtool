@@ -52,6 +52,8 @@
     "render-typst:typecheck": "pnpm --filter @collaborationtool/render-typst typecheck",
     "ai-runtime:test": "pnpm --filter @collaborationtool/ai-runtime test",
     "ai-runtime:typecheck": "pnpm --filter @collaborationtool/ai-runtime typecheck",
+    "discovery-graph:test": "pnpm --filter @collaborationtool/discovery-graph test",
+    "discovery-graph:typecheck": "pnpm --filter @collaborationtool/discovery-graph typecheck",
     "plugin-citation:typecheck": "pnpm --filter @collaborationtool/plugin-citation-agent typecheck",
     "mcp-crossref:test": "pnpm --filter @collaborationtool/mcp-server-crossref test",
     "mcp-crossref:typecheck": "pnpm --filter @collaborationtool/mcp-server-crossref typecheck",
