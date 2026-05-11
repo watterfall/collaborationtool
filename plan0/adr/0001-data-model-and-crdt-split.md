@@ -739,6 +739,35 @@ $ grep -rn '[^/\\\'`]\.yDoc[ .(,;)]' apps packages --include='*.ts' --include='*
   评估 doc-store 在 plugin 进程间的传递语义——这种场景下 Loro / Automerge
   的 portable binary format 可能比 Yjs subdoc map 更合适，触发条件由那时决定。
 
+### 8.5 Phase 5 ADR-0020 Triadic 影响（2026-05-12）
+
+ADR-0020 Night-Bridge-Day Triadic Architecture（Status: Proposed）在 PM tree
+之外引入两个 first-class data model：
+
+- `packages/discovery-graph/`（Wave D-1 `2faefe2`）：6 Night atomic units
+  + ContributionGraph + ModeTag taxonomy + Role taxonomy
+- `packages/bridge-layer/`（Wave D-2 `ad076f1`）：4 Bridge atomic units
+- 6 InteractionMode + CrossLayerReference（Wave D-3 `5c82f83`）：跨层 lineage
+
+**对 §2 ER 模型的影响**：
+
+- 当前 ER 只覆盖 Day-layer 实体（Document / Block / Revision / Commit /
+  Claim / Evidence）。Night + Bridge 层 artifact 是 ADR-0020 W11+ 才考虑落 PG，
+  Wave D-1~D-4 全程 **type-only**（无 PG migration、无 schema 改动）。
+- Wave D-3 用 `provenance.agentContext->'triadic'` jsonb 侧通道承载
+  CrossLayerReference + InteractionMode，**沿用本 ADR §2 jsonb-for-extension
+  pattern**，零 ER 扰动。
+- 若 Wave D-5 dogfood gate 通过且 ADR-0020 → Accepted，Phase 6 follow-up
+  ADR-0021 才考虑把 Night/Bridge artifact 抽到独立 PG 表；当前不预判 schema。
+
+**对 §5.D CRDT 切换成本评估的影响**：本 ADR 估时仍 valid——Night/Bridge
+artifact 在 type-only 阶段不挂 Yjs，CRDT 边界仍仅 PM tree。Phase 6 若把
+Night/Bridge 抽到独立 Yjs subdoc，再评估增量切换成本。
+
+**§6 Phase 1 schema 承诺不破坏**：ADR-0020 不重命名 / 不删既有列；新增
+工作量全部在新 package（discovery-graph + bridge-layer）+ 新 ER 表（如有，
+留 ADR-0021）。Phase 1 "扛 Phase 3/4 场景" 现也扛 Phase 5 三层架构。
+
 ---
 
 ## 9. References

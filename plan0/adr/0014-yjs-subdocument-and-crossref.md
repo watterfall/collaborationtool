@@ -268,3 +268,35 @@ dogfood gate 仍未跑（等 sync-gateway 多 subdoc 路由 + snapshot-worker
 预期内容：(a) gate 三项 pass/fail；(b) y-sweet 多 doc 实测开销（IOPS /
 storage）；(c) §5 open questions 答案；(d) crossref_index dual-write
 是否成立 vs Y.Map 单主。
+
+### Phase 5 ADR-0020 Triadic — cross-layer reference 与 subdoc 并存（2026-05-12）
+
+ADR-0020 §2.3 引入 `CrossLayerReference`（Night ↔ Bridge ↔ Day 跨层 lineage
+edge）+ 6 InteractionMode tag，Wave D-3 `5c82f83` 落 `packages/discovery-graph/src/cross-layer-reference.ts`。
+
+**与本 ADR §2.2 crossref_index 的关系**：
+
+- 本 ADR 的 `crossref_index`（subdoc-level cross-reference）和 ADR-0020 的
+  CrossLayerReference 是 **两种不同 reference**：
+  - `crossref_index` = subdoc-internal cross-document reference（citation /
+    figure / claim / evidence cross-doc lookup），单层 Day-only
+  - `CrossLayerReference` = Night ↔ Bridge ↔ Day 跨**层**的 lineage edge
+- 两者不互替换；Phase 6 follow-up ADR-0021 / 0023 落地 Night/Bridge artifact
+  PG 表时，CrossLayerReference 表的 FK 与 crossref_index 表正交。
+- Wave D-3 当前用 `provenance.agentContext->'triadic'` jsonb 侧通道存 CrossLayerReference[]，
+  不动 crossref_index 表 schema。
+
+**对 §5 subdoc-level ACL 的影响**：
+
+- ADR-0020 §1.3 提到 "cross-layer visibility tiers" 复活了 improvement-plan
+  §四原砍清单的 subdoc-level ACL（以 night/bridge 为名复活）。当前 5 role
+  bundle + capability_resource_type 'subdocument' 第五档已就位（W5 Phase 4
+  落地）；Night/Bridge artifact 也可走相同 visibility tier 路径（private /
+  collaborator / org / public），不需新 PG 表。
+- Wave D-1 (`2faefe2`) 落地 `VisibilityTier` enum 在 discovery-graph
+  `_shared.ts`，**和本 ADR §5 subdoc-level ACL 共享语义模型**，Phase 6 follow-up
+  实施时 unify。
+
+**Phase 5 不动本 ADR**：subdoc dogfood gate 仍未跑（50 客户端 + multi-subdoc
+routing 仍 `mock`）。ADR-0020 Triadic 不延后 subdoc dogfood，但也不抢占
+sync-gateway 改造工时；二者并行推进。

@@ -245,3 +245,36 @@ suggestion + human 出 signed review。is_ai_review 列让两者各自有 UI 显
 （gate 三项跑通后填：(a) gate 三项 pass/fail；(b) ORCID JWKS 实测开销
 + cache 策略验证；(c) §5 5 个 open questions 答案；(d) AI vs human
 review UX 反馈）
+
+### 7.3 Phase 5 ADR-0020 Triadic — ContributionGraph 反 priority race（2026-05-12）
+
+ADR-0020 §2.5 引入 ContributionGraph attribution 模型（**反 priority race**，
+per Council 修订 + Merton multiple discovery）：
+
+> "每个 artifact 有 `contribution_graph`（不是 single `author` 字段）：
+> 谁第一个提出（first_proposer）—— **不是** ranking 因素；谁贡献了哪个
+> sub-component（contributors[]）；何时贡献；contribution kind。" —— ADR-0020 §2.5
+
+Wave D-1 (`2faefe2`) 落地 `packages/discovery-graph/src/contribution-graph.ts`：
+14 个 ContributionKind（question / metaphor / contradiction / experiment /
+analysis / synthesis / refinement / review / first-proposer / ...）+
+`distinctContributors` / `countByKind` / `summariseByContributor` 等
+roll-up helpers + 8 单测覆盖 JSON round-trip + immutability。
+
+**对本 ADR §2.4 review attribution 的关系**：
+
+- 本 ADR 的 ORCID-signed review 是 **Day 层 atomic unit 的 endorsement**。
+  ContributionGraph 是 **artifact-level metadata** —— 互补，不替换。
+- ORCID iD 签名 + JWS detached signature 是 review 内容的 cryptographic
+  proof（"是我说的"）；ContributionGraph 是"谁贡献了什么 contribution kind"
+  的非签名 metadata。一个 ORCID 用户可以在多 artifact 的 ContributionGraph
+  里出现，不需要每条 contribution 都 ORCID-sign（否则 onboarding 成本太高）。
+- ContributionGraph 中 `principalId` 是 PrincipalId 不是 ORCID iD —— 链
+  接 ORCID iD 通过 `principal` 表 `orcid_id` 列（既有；ADR-0015 §2.2）。
+
+**对 §2.7 review UX 的影响**：Wave D-5 dogfood gate 后若 jili 反馈
+"contribution-graph 比 single author 更准确反映集体智能"，Phase 6 follow-up
+ADR 考虑把 ContributionGraph 接入论文 export shape + citation 格式建议
+（ADR-0020 §2.5 示例：`"Question proposed 2026-05-12 by jili@orcid;
+metaphor by alice@orcid; refined hypothesis by jili+alice."`）。当前
+Day-layer review attribution 不动。

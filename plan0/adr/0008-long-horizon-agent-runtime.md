@@ -399,3 +399,42 @@ interface RetryRecord {
 **14 测**（`apps/web/tests/agent-timeline.test.ts`）：root-only / 2-level dispatch / 3-level chain / startedAt 排序（null 排尾）/ orphan 两路径 / event bigserial 排序 / classifyJobStatus 6 status + unknown + cancelling 行为 / totalCost rollup / countDescendants 不含 root。
 
 **Wave A 收尾**：A1-A4 commit 全交付；剩 reviewer/researcher 真 LLM round-trip 跑通（Wave B/D）+ A3 字段由真 invoke path 填充。
+
+### Phase 5 ADR-0020 Triadic 影响 — Coordinator 双向 6 交互流（2026-05-12）
+
+ADR-0020 §2.3 把 Coordinator 的工作模型从 "goal-driven multi-step
+dispatcher"（本 ADR §2.2）扩到 **6 双向 InteractionMode 的 metabolic
+orchestrator**：
+
+| 模式 | Coordinator 行为 |
+|---|---|
+| hypothesis-output | Night → Bridge → Day 串接（已部分由 reviewer/coordinator 覆盖） |
+| anomaly-input | Day → Night 反向 surface（新；maintenance scan finding 给 Explorer 推送 contradiction）|
+| constraint-transfer | Day → Night（已知物理 / 经验数据约束新假设空间）|
+| metaphor-bridge | Night → Bridge → Day（隐喻精化为 hypothesis-formalization）|
+| question-return | Day → Night（resolution 衍生新 question）|
+| method-transfer | 双向（跨域算法 / 直觉迁移）|
+
+**Wave D-3 (`5c82f83`) 落地**：
+
+- `withTriadicContext()` / `readTriadicContext()` / `TRIADIC_CONTEXT_KEY='triadic'`
+  在 `packages/ai-runtime/src/provenance-writer.ts`。jsonb 侧通道（不动
+  PG 表）让任何 AgentProposal 可携带 InteractionMode + CrossLayerReference[]，
+  Coordinator dispatch 时记录"这次 dispatch 跨了哪个交互流"。
+- 空 crossLayerReferences 写时拒（anti-pollution）；Phase 1-4 老行无
+  `triadic` key 读为 undefined（向后兼容）。
+
+**对 §2.2 multi-step dispatch loop 的影响**：
+
+- `runCoordinatorLoop` 当前仍按 ADR-0008 W3 实现（单向 sync + async 混合 +
+  `[final]` 终止）；**Wave D 阶段不改 dispatch core**。
+- Phase 6 follow-up ADR 才考虑：(a) coordinator decision 加 interaction-mode
+  字段（决定本步走哪种交互流）+ (b) Wave D-4 `/triadic/network` surface 真接 PG
+  count（`countReferencesByMode`）。
+
+**对 §2.4 quota / cancel / 可中断的影响**：无。Triadic context 是 metadata
+扩展，不引入新可中断点 / quota 维度（每次 invoke 仍按 (principal, kind)
+分区计 quota）。
+
+**Evidence Tier**：本节 Triadic 部分 `contract`（jsonb 侧通道 + 8 单测）；
+真 Coordinator 6-mode dispatch 在 Wave D-5 / Phase 6 升 `mixed` → `real`。

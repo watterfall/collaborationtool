@@ -381,3 +381,63 @@ verdict + AI verdict 共存；UI 标记区分；`unverified-claim` finding
 - `plan0/improvement-plan-2026-05.md §三 Wave B`（B1-B6 任务表 + dogfood gate）
 - ORCID OAuth 2.0 OIDC: https://info.orcid.org/documentation/integration-guide/
 - JWS RFC 7515: https://datatracker.ietf.org/doc/html/rfc7515
+
+---
+
+## 7. Phase 5 implementation review log
+
+### 7.1 Wave B B1-B6 全交付（2026-05-12）
+
+Wave B 6 笔 + kickoff 共 7 commits on `claude/phase5-wave-b-claim-review`
+→ fast-forward 到 main：
+
+- `dc0f4bd` B1：claim_review schema + 3 capability vocab + role bundles
+- `f14666c` B2：PM mark `claim-review-anchor` + render emitters（MyST + Typst）
+- `5697ea3` B3：claim-review API endpoints + service layer（5 endpoints）
+- `4fee614` B4：maintenance scan 第 7 类 finding `unverified-claim`
+- `4910613` B5：Reviewer Inbox dashboard `/(app)/reviewer-inbox`
+- `18ec5eb` B6：public claim lineage view `/(app)/claim/[id]/lineage`
+
+**§2.1-§2.9 全部落地**：claim_review 表 + 3 verdict enum + ORCID-sign 两步
+POST + 3 capability vocab + maintenance-scan unverified-claim finding +
+Reviewer Inbox + 公共 lineage DAG + dogfood gate spec。
+
+**测试基线**：apps/web 255 → 327 PASS（+27 claim-review-service + 17
+reviewer-inbox + 14 测覆盖 lineage page client-side filter）；editor-core
+78 → 93 PASS（+15 claim-review-anchor mark）；render-myst 29 → 40 PASS
+（+11 anchor accent class rule）；render-typst 17 → 18 PASS（+1 dominant
+verdict underline）；agent-worker 26 → 31 PASS（+5 unverified-claim
+scanner）；ai-runtime 113 → 129 PASS（Wave A 联动）。
+
+### 7.2 Wave B dogfood gate（待跑）
+
+§2.9 5 criteria 仍未跑完（需真 paper + 5 ORCID reviewer + JWKS 真验证 +
+公共匿名 view 切换 + withdraw 正确性）。Phase 5 Wave C C1/C3 dogfood
+（jili 亲自用平台写 plan0/ + 邀请学者）跑通后 review log 7.3 段填入：
+(a) 5 criteria pass/fail；(b) ORCID JWKS 实测开销；(c) AI vs human verdict
+比例；(d) withdraw 操作真实场景反馈。
+
+跑通后 Status: **Proposed → Accepted**（或 Accepted with caveat）。
+
+### 7.3 Phase 5 ADR-0020 Triadic 影响（2026-05-12）
+
+ADR-0020 §1.3 把本 ADR 定位为 **Day 层 only 机制**：
+
+> "Claim-on-Claim Review 仍然是 Day 层机制；Night/Bridge 层有自己的
+> review/endorsement 机制（更轻量，per "好问题胜过好答案"原则）。"
+
+**对本 ADR 的影响 — 零改动**：
+
+- claim_review 表 / verdict enum / ORCID-sign 流程 / 3 capability 全部维持
+  Day 层 only 语义。Night artifact 的 review 不走本 ADR 路径。
+- Night/Bridge artifact 的"endorsement"在 ADR-0020 §2.5 ContributionGraph
+  attribution 模型里（14 ContributionKind 含 `review`），是 artifact metadata
+  级别的 review，不签 ORCID，无 verdict enum，无 maintenance scan unverified
+  finding。
+- Phase 6 follow-up ADR 若决定 Night/Bridge 也需要 ORCID-signed peer review
+  机制（如 metaphor 的同行验证），届时考虑 generalise 本 ADR 而非另起；
+  当前 Wave D-5 dogfood gate 没采集足够证据决定。
+
+**叙事**：本 ADR 是"日科学的同行评审"的具体实现；Wave D-5 后将与"夜科学
+的非正式 endorsement"（ContributionGraph）并存为三层等价产出的 governance
+两翼。

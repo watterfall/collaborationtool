@@ -436,3 +436,33 @@ ADR-0010 状态从 Proposed (W3 PASS) → **Accepted**。
 caveat：dispatcher 完整路径 + plugin marketplace 推 Phase 3。Phase 2
 plugin 系统证明工程模型正确（plugin path 与 hardcode 等价 + 第三方
 任意 path 加载 + 公开 API 完整），未阻塞下游工作。
+
+### Phase 5 ADR-0020 Triadic — 5 创意模式 plugin tag taxonomy（2026-05-12）
+
+ADR-0020 §2.2 把 5 创意触发模式（metaphor / contradiction / reframe /
+cross-domain / thought-experiment）声明为 **schema-level tag taxonomy**，
+**不是 hardcoded enum**：
+
+> "Tags 不强制 workflow（避免过度结构化，per Feyerabend）；启用搜索 /
+> 推荐 / 分析。" —— ADR-0020 §2.2
+
+**与本 ADR §2 plugin 边界的契合**：
+
+- 5 模式在 Wave D-1 (`2faefe2`) 落 `packages/discovery-graph/src/mode-tag.ts`
+  作 `ModeTag` enum + `MAX_TAGS_PER_ARTIFACT = 3` + `validateModeTags`
+  反 R-T5 滥用（dup-reject / invalid-reject / 自定义 maxTags override）。
+- **第 6 / 7 个模式（如"反事实"）应通过 plugin 添加，不通过 schema
+  migration**：Phase 6 follow-up ADR-0021 落实 spec（plugin manifest
+  可声明 `additionalModeTags?: string[]` + capability `mode-tag.taxonomy:extend`
+  让 plugin sandbox 可注入新 tag；ADR-0012 sandbox 路径复用；plugin
+  uninstall 时新 tag 标 `deprecated` 但不删 —— 已用此 tag 的 artifact 保留语义）。
+
+**Wave D 阶段不实施 plugin tag extension**：Wave D-1~D-4 全部用 hardcoded
+5 模式。plugin tag extension 是 ADR-0021 follow-up（Phase 6 W2+）的内容，
+当前不预留 API；避免 R-T5 等问题在 dogfood 前过早 surface。
+
+**对 plugin contract 的零侵入**：Triadic 引入的所有 type（NightArtifact /
+BridgeArtifact / CrossLayerReference / InteractionMode）都在新 type-only
+package（discovery-graph / bridge-layer），plugin 是否 import 完全自愿；
+既有 6 plugin（citation / inline-editor / reviewer / researcher /
+source-extractor / coordinator）零改动 + 既有 6 SKILL.md 零改动。

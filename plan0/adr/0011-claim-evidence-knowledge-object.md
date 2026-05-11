@@ -402,3 +402,69 @@ fork-merge UI 同时落。
 正交；本期采用 vault 所有权（`vault_principal_id` = caller principal_id）
 作授权预设，不引新 capability。Cross-org / 团队共享 vault dashboard
 推 dogfood-trigger（Phase 4 末 + ADR-0002 review log）。
+
+### Phase 5 Wave B B4 — finding_kind 加 'unverified-claim'（2026-05-12）
+
+Wave B `4fee614` 落 SQL-pure 第 7 类 finding `unverified-claim`：claim
+INNER JOIN principal 取 created_by.kind='agent' 且无人类 endorsing review
++ created_at < cutoff（默认 30 天）。Drizzle enum 6→7 档；migration 0015
+`ALTER TYPE finding_kind ADD VALUE IF NOT EXISTS 'unverified-claim'`
+（PG 12+ 幂等）。
+
+**与本 ADR §2.5 6 finding kind 的关系**：第 7 类是 ADR-0016 Wave B 的
+**反 AI-only-claim 闸**，本质上是"AI 创建但无人类背书"的健康警示，
+与 §2.5 不冲突 — 仅扩张 finding_kind enum，不改既有 6 类的语义。
+
+ADR-0016 §2.6 原说"provenance.actor_kind 全是 agent"用
+`principal.created_by.kind='agent'` 作 proxy（claim 与 provenance 之间
+无直接 FK；准确路径需 walk contribution rows by affected_block_ids，B4
+范围内不做，留 Wave D 评估）。Phase 5 W12 dogfood gate retrospective 时
+评估准确路径是否仍需补。
+
+agent-worker **26→31 测全 PASS**。
+
+### Phase 5 ADR-0020 Triadic — Day 层 reframe（2026-05-12）
+
+ADR-0020 §1.3 把本 ADR 定位明确化：
+
+> "Claim/Evidence 保留作 **Day 层** atomic units；Night 层有 thought /
+> question / metaphor / sketch / contradiction / thought-experiment；Bridge
+> 层有 concept-prototype / design-fiction / hypothesis-formalization /
+> analogy-mapping。三层不互斥。"
+
+**对本 ADR 的影响 — 零 schema 改动**：
+
+- 本 ADR 既有 claim / evidence / counterpoint / synthesis / claim_link /
+  6 finding kind / Reviewer Inbox / lineage view（Wave B 全交付）**保持
+  不变**。
+- Wave D-4 `3aa4f57` `/triadic/manuscript` 页面 **显式声明** Day 层不被
+  替换或降级，只是叙事层面 reframe 为"三类等价产出之一"。链接到现有
+  `/docs` / `/maintenance` / `/reviewer-inbox`（本 ADR 落地路径）。
+- claim/evidence 现仍是 Day 层的 atomic unit。Phase 6+ 若有
+  "promote Bridge concept-prototype → Day claim" 的 surface（ADR-0023
+  ContractedToBeDeprecated），那时再加 §7 review log 段记录 promotion 协议。
+
+**对 §2.7 export shape 的影响**：
+
+- W7 落地的 AI context-pack export（`/api/document/<id>/context-pack`）
+  当前仅含 Day-layer artifact（claim + evidence + reviews + provenance）。
+- Wave D-5 dogfood gate 后若 ADR-0020 → Accepted，Phase 6 follow-up ADR
+  考虑扩展 export shape 含 Night/Bridge 的 lineage edges（CrossLayerReference
+  按 InteractionMode 分组），帮 AI 理解 "this claim 的 metaphor 起源 +
+  formalization 历程"。当前不动。
+
+### Phase 5 closeout — ADR-0011 全期回顾（2026-05-12）
+
+Phase 4 W4 6 finding kind + W7 AI context pack export + Phase 5 Wave B
+第 7 finding kind + Wave B5 Reviewer Inbox + Wave B6 公共 lineage view
+全部交付。本 ADR Status 维持 **Accepted**；Evidence Tier `mixed`（W7
+Evidence Map + claim/evidence schema `real`，5/7 finding scan SQL `real`，
+reviewer/researcher 路径仍 `mock` 依 ADR-0008）。
+
+**Phase 5 之后剩余项**：
+
+- ADR-0016 dogfood gate 5 criteria 跑通后 Wave B closeout
+- Wave D-5 dogfood gate 评估"AI vs human claim creation 比例"是否需要新
+  finding kind / promotion 协议
+- Phase 6 决定 export shape 是否含 Triadic lineage（视 ADR-0020 → Accepted
+  情况）
