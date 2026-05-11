@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import type { PropsWithChildren } from 'react';
+import type { ReactNode } from 'react';
 
 import { dictFor, getLocale } from '@/lib/i18n/get-locale';
 import { FOUC_SCRIPT, getTheme } from '@/lib/theme/get-theme';
@@ -18,7 +18,9 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function RootLayout({ children }: PropsWithChildren) {
+export default async function RootLayout({
+  children,
+}: Readonly<{ children: ReactNode }>) {
   // Server-resolve locale + theme so the <html> tag has the right
   // lang and dark class on first paint. The FOUC inline script then
   // re-checks the cookie + system preference before paint to handle
@@ -63,7 +65,13 @@ export default async function RootLayout({ children }: PropsWithChildren) {
         >
           {t.a11y.skipToMain}
         </a>
-        {children}
+        {/* React 19 + Next.js 15 typing workaround: passing ReactNode directly
+         * to intrinsic JSX (<body>{children}</body>) hits a recursive
+         * ReactPortal/ReactElement comparison bug in tsc that surfaces as
+         * `'ReactNode' is not assignable to type 'React.ReactNode'`.
+         * Wrapping in a Fragment forces TS to resolve the JSX intrinsic typing
+         * path differently and bypasses the false positive. Phase 4.5 follow-up. */}
+        <>{children}</>
       </body>
     </html>
   );

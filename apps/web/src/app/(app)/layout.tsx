@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import type { PropsWithChildren } from 'react';
+import type { ReactNode } from 'react';
 
 import { auth } from '@/lib/auth';
 import { getOrcidIdForUser } from '@/lib/orcid-lookup';
@@ -9,7 +9,9 @@ import SignOutButton from '@/components/sign-out-button';
 import { getDict } from '@/lib/i18n/get-locale';
 import { HeaderControls } from '@/components/chrome/HeaderControls';
 
-export default async function AppLayout({ children }: PropsWithChildren) {
+export default async function AppLayout({
+  children,
+}: Readonly<{ children: ReactNode }>) {
   const h = await headers();
   const session = await auth.api.getSession({ headers: h });
   if (!session) redirect('/login');
@@ -107,7 +109,9 @@ export default async function AppLayout({ children }: PropsWithChildren) {
         </div>
       </header>
       <main id="main" className="flex-1">
-        {children}
+        {/* React 19 + Next.js 15 typing workaround — see comment in
+         * `apps/web/src/app/layout.tsx`. */}
+        <>{children}</>
       </main>
     </div>
   );
