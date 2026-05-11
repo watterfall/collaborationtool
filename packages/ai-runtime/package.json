@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.1",
+    "@collaborationtool/discovery-graph": "workspace:*",
     "@collaborationtool/drizzle": "workspace:*",
     "@collaborationtool/mcp-server-crossref-mock": "workspace:*",
     "@collaborationtool/permissions": "workspace:*",

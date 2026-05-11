@@ -527,6 +527,87 @@ export async function listPendingRevisions(
     }));
 }
 
+// ---------- Wave D-3: Triadic context extension ----------
+//
+// Carries InteractionMode + CrossLayerReference info through to the
+// existing provenance.agentContext jsonb column WITHOUT a DB migration.
+// The base AgentExecutionContext shape stays untouched; this extension
+// is a sibling jsonb field merged in at write time, queryable by the
+// triadic UI as `provenance.agentContext->'triadic'`.
+//
+// Callers (plugins / coordinator) build a Triadic-aware AgentProposal
+// by passing the result of `withTriadicContext()` as the proposal's
+// agentContext. The provenance writer's existing batch code path then
+// persists it untouched (since it serialises agentContext as opaque
+// Record<string, unknown>).
+
+import type {
+  InteractionMode,
+  CrossLayerReference,
+} from '@collaborationtool/discovery-graph';
+import type { AgentExecutionContext } from '@collaborationtool/schema';
+
+export interface TriadicContextExtension {
+  // The 6-mode tag describing what kind of cross-layer flow this
+  // proposal participates in.
+  interactionMode: InteractionMode;
+  // The cross-layer edge(s) this proposal records. Multiple allowed
+  // because a single agent proposal may consume from one layer and
+  // emit to another (e.g. read a Bridge concept-prototype, emit a Day
+  // claim).
+  crossLayerReferences: readonly CrossLayerReference[];
+  // Optional free-form note for human readers of the timeline view.
+  note?: string;
+}
+
+// Sentinel key under which the triadic block lives inside the
+// agentContext jsonb. Single source of truth — search for this key
+// when querying PG.
+export const TRIADIC_CONTEXT_KEY = 'triadic' as const;
+
+export type AgentExecutionContextWithTriadic = AgentExecutionContext & {
+  readonly [TRIADIC_CONTEXT_KEY]?: TriadicContextExtension;
+};
+
+/**
+ * Merge a TriadicContextExtension into an existing AgentExecutionContext.
+ * Returns a new object — does not mutate the input. The base context
+ * fields (agentId / modelId / promptTemplateId / ...) are preserved
+ * unchanged; only the `triadic` key is added or overwritten.
+ *
+ * Throws if `crossLayerReferences` is empty AND interactionMode is set —
+ * an interaction-mode tag without any edge is meaningless and would
+ * pollute the timeline view.
+ */
+export function withTriadicContext(
+  base: AgentExecutionContext,
+  triadic: TriadicContextExtension,
+): AgentExecutionContextWithTriadic {
+  if (triadic.crossLayerReferences.length === 0) {
+    throw new Error(
+      'withTriadicContext: crossLayerReferences must be non-empty (an interaction-mode tag without any edge is meaningless)',
+    );
+  }
+  return { ...base, [TRIADIC_CONTEXT_KEY]: triadic };
+}
+
+/**
+ * Read back the TriadicContextExtension from an opaque agentContext
+ * jsonb blob (as returned by PG). Returns undefined when the proposal
+ * predates Wave D-3 or did not opt in.
+ *
+ * Loose typing on input: PG returns Record<string, unknown>, so we
+ * don't assume the AgentExecutionContext type signature.
+ */
+export function readTriadicContext(
+  agentContext: Record<string, unknown> | null | undefined,
+): TriadicContextExtension | undefined {
+  if (!agentContext) return undefined;
+  const blob = (agentContext as Record<string, unknown>)[TRIADIC_CONTEXT_KEY];
+  if (!blob || typeof blob !== 'object') return undefined;
+  return blob as TriadicContextExtension;
+}
+
 // ---------- helpers ----------
 
 /**

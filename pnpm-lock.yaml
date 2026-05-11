@@ -444,6 +444,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.40.1
         version: 0.40.1
+      '@collaborationtool/discovery-graph':
+        specifier: workspace:*
+        version: link:../discovery-graph
       '@collaborationtool/drizzle':
         specifier: workspace:*
         version: link:../../infra/drizzle
