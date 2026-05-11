@@ -311,6 +311,12 @@ importers:
       '@collaborationtool/ai-runtime':
         specifier: workspace:*
         version: link:../../packages/ai-runtime
+      '@collaborationtool/bridge-layer':
+        specifier: workspace:*
+        version: link:../../packages/bridge-layer
+      '@collaborationtool/discovery-graph':
+        specifier: workspace:*
+        version: link:../../packages/discovery-graph
       '@collaborationtool/drizzle':
         specifier: workspace:*
         version: link:../../infra/drizzle

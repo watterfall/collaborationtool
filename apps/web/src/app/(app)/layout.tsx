@@ -72,6 +72,13 @@ export default async function AppLayout({
               {t.common.nav.settings}
             </Link>
             <Link
+              href="/triadic"
+              className="underline-offset-4 hover:underline"
+              style={{ color: 'var(--color-ink-2)' }}
+            >
+              {t.common.nav.triadic}
+            </Link>
+            <Link
               href="/orgs/new"
               className="underline-offset-4 hover:underline"
               style={{ color: 'var(--color-ink-2)' }}

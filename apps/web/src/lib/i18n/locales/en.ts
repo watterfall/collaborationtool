@@ -34,6 +34,7 @@ export const en: LocaleDict = {
       maintenance: 'Maintenance',
       settings: 'Settings',
       newOrg: 'New org',
+      triadic: 'Triadic',
       brand: 'Collaboration Tool',
     },
   },

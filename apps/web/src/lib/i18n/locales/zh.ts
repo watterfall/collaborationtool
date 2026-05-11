@@ -34,6 +34,7 @@ export const zh = {
       maintenance: '维护',
       settings: '设置',
       newOrg: '新组织',
+      triadic: '三层',
       brand: '协作论文平台',
     },
   },
