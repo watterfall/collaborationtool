@@ -349,6 +349,53 @@ not-found          → REJECT (HTTP 404 not-found)
 - not-found 先于 ownership（无 job 即 404）
 
 **剩余 caveat**：
-- A3 ExecutionContext schema 扩 `actualIterations / promptTokens / completionTokens / retries[]`
-- A4 AgentTimeline.tsx 渲染 agent_job_event 树
 - reviewer/researcher 真 invokeAgentViaPlugin path 接 cancel poll（W4-W7 stub 真化时一起做）
+
+### Phase 5 Wave A A3 — AgentExecutionContext schema 扩（2026-05-11）
+
+补 improvement-plan §五 Wave A A3 承诺。`Provenance.agentContext` 是 jsonb 列（无 PG schema migration），4 个新字段全部 optional 不破现有 callers。
+
+**新字段**（`packages/schema/src/provenance.ts`）：
+
+- `actualIterations?: number` — coordinator loop 实际迭代数（1=single-shot，>1=multi-step）
+- `promptTokens?: number` — 该 provenance row 计费的 input tokens
+- `completionTokens?: number` — 计费的 completion tokens
+- `retries?: RetryRecord[]` — 单条 tool-call 内的 exponential-backoff 重试记录（§2.5 cap 3 次）
+
+**新接口 `RetryRecord`**：
+
+```ts
+interface RetryRecord {
+  attempt: number;                    // 1-based
+  errorClass: string;                 // 'rate-limit' | '5xx' | 'tool-call-malformed' | ...
+  errorMessage?: string;
+  delayedMs: number;                  // backoff applied before this retry
+  occurredAt: IsoDateTime;
+}
+```
+
+**为什么不加 PG 列**：`Provenance.agentContext` 已经是 jsonb。jsonb schemaless，加字段零 DDL 开销，反序列化为 TS interface 全程类型校验。如 Phase 6+ 需要把这些字段索引（e.g. "top 10 agents by promptTokens last week"），单独抽 SQL 列。
+
+**Producer 填充**：当前 8 个 callers（agent-runner mock + 3 ModelProvider adapter ollama/openai-compat/custom-http + 2 prototype + provenance-writer + types.ts）全部走旧 minimal shape；Wave B/D 真 reviewer/researcher LLM round-trip 时由 Anthropic SDK `response.usage` 块填充。Phase 5 W4-W7 stub 真化前不需要补回填。
+
+**5 contract tests**（`packages/ai-runtime/tests/agent-execution-context-contract.test.ts`）：minimal Phase 1-4 shape + populated A3 shape + JSON 序列化 roundtrip 无损 + RetryRecord minimal/empty-array。
+
+### Phase 5 Wave A A4 — AgentTimeline 父子树视图（2026-05-11）
+
+补 improvement-plan §五 A4 承诺。AgentTimeline 让用户看见"coordinator dispatched 5 sub-jobs"的整个树，是 Wave A dogfood gate 可见验收物。
+
+**Pure tree builder** (`apps/web/src/lib/agent-timeline.ts`)：
+
+- `buildTimelineTree({jobs, events, rootJobId})` → `{root, orphans}` BFS 装配，jobsById Map + childrenByParent Map + visited Set 防 cycle
+- Orphan 检测两路径：(a) parentJobId 指向 missing job (b) parentJobId=null 但非 root
+- Children 按 `startedAt` ASC 排序（null → Infinity 排尾，新加未跑的 job 不挤前面）
+- Events 按 `id` ASC（bigserial = emit order）
+- Rollup helper：`totalCostUsdMilli` / `countDescendants` / `classifyJobStatus`（cancelling→in-progress 因 worker 未确认，unknown→error 默认）
+
+**GET /api/agent/job/[jobId]/tree**：根 row 存在性校验 → BFS expand frontier 直到 `MAX_DESCENDANT_FAN_OUT=1024`（防 runaway coordinator OOM）→ inArray 拉所有 events → buildTimelineTree → 200 / 404 / 401。
+
+**AgentTimeline.tsx**：'use client' + fetch tree + 4s poll（terminal status 自动停 poll）+ 节点 expand 看 event 载荷 + cancel button（queued|running 才显示，POST /cancel 后局部 refresh）+ MonoDisc / StatusPill / HairlineRule + 中英 bilingual label + accent ox 错误条 + Design.md tokens（reject grep 全 0）。
+
+**14 测**（`apps/web/tests/agent-timeline.test.ts`）：root-only / 2-level dispatch / 3-level chain / startedAt 排序（null 排尾）/ orphan 两路径 / event bigserial 排序 / classifyJobStatus 6 status + unknown + cancelling 行为 / totalCost rollup / countDescendants 不含 root。
+
+**Wave A 收尾**：A1-A4 commit 全交付；剩 reviewer/researcher 真 LLM round-trip 跑通（Wave B/D）+ A3 字段由真 invoke path 填充。
