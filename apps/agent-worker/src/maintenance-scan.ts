@@ -38,7 +38,11 @@ export type ScanFindingKind =
   | 'duplicated-claim'
   | 'contradicted-conclusion'
   | 'unverified-ai-block'
-  | 'broken-citation';
+  | 'broken-citation'
+  // Phase 5 Wave B B4 (ADR-0016 §2.6): claim with no human-ORCID
+  // endorsement > 30d + created by agent principal. Signals the
+  // author to recruit a human reviewer.
+  | 'unverified-claim';
 
 export type ScanScope =
   | { kind: 'document'; documentId: string }
@@ -54,6 +58,10 @@ export interface ScanInput {
   outdatedSourceDays?: number;
   /** When an AI-suggested claim/evidence has been pending this long, flag it. */
   unverifiedAiAgingDays?: number;
+  /** Phase 5 Wave B B4 — claim with no human ORCID endorsement after
+   * this many days, AND created by an agent principal, gets flagged
+   * as unverified-claim. Default 30 days (ADR-0016 §2.6). */
+  unverifiedClaimAgingDays?: number;
   /** Cap on broken-citation network calls per scan (default 100).
    * Older citations are deferred to the next scan. */
   brokenCitationBatchLimit?: number;
@@ -138,6 +146,9 @@ export async function scanForFindings(
     findings.push(
       ...(await scanBrokenCitations(db, input, input.doiResolver)),
     );
+  }
+  if (kinds.includes('unverified-claim')) {
+    findings.push(...(await scanUnverifiedClaims(db, input)));
   }
   return findings;
 }
@@ -566,6 +577,108 @@ async function scanBrokenCitations(
     }
   }
   return findings;
+}
+
+// Phase 5 Wave B B4 (ADR-0016 §2.6) — unverified-claim scan.
+//
+// Surfaces claims that have been alive > N days (default 30) AND were
+// created by an agent principal AND have NO endorsing human verdict
+// (claim_review.verdict='endorses' AND is_ai_verdict=false AND
+// withdrawn_at IS NULL).
+//
+// Approximation note (ADR-0016 §2.6 says "provenance.actor_kind 全是
+// agent"): we use `principal.kind = 'agent'` on `claim.created_by` as
+// a proxy. The proper check is harder because claim has no direct FK
+// to provenance — getting there means walking contribution rows
+// matching affected_block_ids, which is non-trivial in SQL. The proxy
+// covers the dogfood case (AI-created claim never reviewed) without
+// over-flagging mixed-actor claims.
+async function scanUnverifiedClaims(
+  db: DbExecutor,
+  input: ScanInput,
+): Promise<PendingFinding[]> {
+  const days = input.unverifiedClaimAgingDays ?? 30;
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  const vaultPrincipalId =
+    input.scope.kind === 'vault'
+      ? input.scope.vaultPrincipalId
+      : await loadDocumentOwner(db, input.scope.documentId);
+
+  // Subquery: claims that have at least one endorsing human verdict.
+  // We render this via a LEFT JOIN + filter for absence.
+  const claimRows = await db
+    .select({
+      claimId: schema.claim.id,
+      claimText: schema.claim.text,
+      claimStatus: schema.claim.status,
+      createdAt: schema.claim.createdAt,
+      documentOriginId: schema.claim.documentOriginId,
+      createdByKind: schema.principal.kind,
+    })
+    .from(schema.claim)
+    .innerJoin(
+      schema.principal,
+      eq(schema.principal.id, schema.claim.createdBy),
+    )
+    .where(
+      input.scope.kind === 'document'
+        ? and(
+            eq(schema.claim.documentOriginId, input.scope.documentId),
+            lt(schema.claim.createdAt, cutoff),
+            eq(schema.principal.kind, 'agent'),
+          )
+        : and(
+            lt(schema.claim.createdAt, cutoff),
+            eq(schema.principal.kind, 'agent'),
+          ),
+    );
+
+  if (claimRows.length === 0) return [];
+
+  // Pull all endorsing human verdicts for the candidate set in one shot.
+  const candidateIds = claimRows.map((r) => r.claimId);
+  const endorsingRows = await db
+    .select({ claimId: schema.claimReview.claimId })
+    .from(schema.claimReview)
+    .where(
+      and(
+        eq(schema.claimReview.verdict, 'endorses'),
+        eq(schema.claimReview.isAiVerdict, false),
+        isNull(schema.claimReview.withdrawnAt),
+      ),
+    );
+  const endorsedSet = new Set(
+    endorsingRows
+      .filter((r) => candidateIds.includes(r.claimId))
+      .map((r) => r.claimId),
+  );
+
+  return claimRows
+    .filter(
+      (r) =>
+        !endorsedSet.has(r.claimId) &&
+        r.claimStatus !== 'deprecated' &&
+        r.claimStatus !== 'superseded',
+    )
+    .map((r) => ({
+      id: uuidv7(),
+      kind: 'unverified-claim' as const,
+      severity: 'medium' as const,
+      jobId: input.jobId,
+      claimId: r.claimId,
+      evidenceId: null,
+      sourceId: null,
+      citationId: null,
+      documentId: r.documentOriginId,
+      vaultPrincipalId,
+      summary: `Claim has no human-ORCID endorsement after ${days}+ days: "${truncate(r.claimText, 80)}"`,
+      details: {
+        agingDays: days,
+        createdAt: r.createdAt.toISOString(),
+        createdByKind: r.createdByKind,
+      },
+    }));
 }
 
 // ---------- Helpers ----------

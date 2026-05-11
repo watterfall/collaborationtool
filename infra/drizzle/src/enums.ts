@@ -212,6 +212,10 @@ export const extractionKindEnum = pgEnum('extraction_kind', [
 
 // ---------- Knowledge maintenance scan (Phase 3 W4) ----------
 
+// Phase 5 Wave B B4 (ADR-0016 §2.6, migration 0015): adds 7th kind
+// `unverified-claim` — claim with no human ORCID endorsement > 30 days
+// and provenance.actor_kind all 'agent'. Drizzle Kit emits ALTER TYPE
+// for the new value; existing rows unaffected.
 export const findingKindEnum = pgEnum('finding_kind', [
   'unsupported-claim',
   'outdated-source',
@@ -219,6 +223,7 @@ export const findingKindEnum = pgEnum('finding_kind', [
   'contradicted-conclusion',
   'unverified-ai-block',
   'broken-citation',
+  'unverified-claim',
 ]);
 
 export const findingSeverityEnum = pgEnum('finding_severity', [

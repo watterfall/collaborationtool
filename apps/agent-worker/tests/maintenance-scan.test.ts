@@ -353,6 +353,158 @@ describe('scanForFindings — duplicated-claim', () => {
   });
 });
 
+// Phase 5 Wave B B4 — unverified-claim stub helper. The shared stub
+// matches by substring, which is ambiguous between `claim` and
+// `claim_review`; the FIFO helper below sidesteps that for the
+// 2-query scan flow.
+function makeFifoStubDb(rowSets: unknown[][]): unknown {
+  let pulled = 0;
+  function chain(): unknown {
+    return {
+      from: () => {
+        const rows = rowSets[pulled] ?? [];
+        pulled++;
+        const terminal = Promise.resolve(rows);
+        const builder: Record<string, unknown> = {};
+        builder['leftJoin'] = () => builder;
+        builder['innerJoin'] = () => builder;
+        builder['where'] = () => builder;
+        builder['groupBy'] = () => builder;
+        builder['having'] = () => builder;
+        builder['limit'] = () => builder;
+        builder['then'] = terminal.then.bind(terminal);
+        return builder;
+      },
+    };
+  }
+  return { select: () => chain() };
+}
+
+describe('scanForFindings — unverified-claim (Phase 5 Wave B B4 / ADR-0016 §2.6)', () => {
+  it('flags agent-created claim with no human endorsement after 30+ days', async () => {
+    const oldClaim = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+    const db = makeFifoStubDb([
+      // 1st query: claim INNER JOIN principal
+      [
+        {
+          claimId: 'claim:agent-old',
+          claimText: 'AI 写出的论点，超过 30 天无人背书',
+          claimStatus: 'ai-suggested',
+          createdAt: oldClaim,
+          documentOriginId: 'doc:1',
+          createdByKind: 'agent',
+        },
+      ],
+      // 2nd query: claim_review endorsing-human verdicts (none for this claim)
+      [],
+    ]);
+    const findings: PendingFinding[] = await scanForFindings(db as never, {
+      ...baseInput(),
+      findingKinds: ['unverified-claim'],
+    });
+    assert.equal(findings.length, 1);
+    const f = findings[0]!;
+    assert.equal(f.kind, 'unverified-claim');
+    assert.equal(f.severity, 'medium');
+    assert.equal(f.claimId, 'claim:agent-old');
+    assert.equal(f.documentId, 'doc:1');
+    assert.match(f.summary, /no human-ORCID endorsement/);
+    assert.equal((f.details as { agingDays: number }).agingDays, 30);
+    assert.equal((f.details as { createdByKind: string }).createdByKind, 'agent');
+  });
+
+  it('skips agent-created claim once an endorsing human verdict exists', async () => {
+    const oldClaim = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000);
+    const db = makeFifoStubDb([
+      [
+        {
+          claimId: 'claim:endorsed',
+          claimText: '论点已被人类同意',
+          claimStatus: 'ai-suggested',
+          createdAt: oldClaim,
+          documentOriginId: 'doc:1',
+          createdByKind: 'agent',
+        },
+      ],
+      // Endorsement exists for this exact claim id.
+      [{ claimId: 'claim:endorsed' }],
+    ]);
+    const findings = await scanForFindings(db as never, {
+      ...baseInput(),
+      findingKinds: ['unverified-claim'],
+    });
+    assert.equal(findings.length, 0);
+  });
+
+  it('skips deprecated / superseded claims even when aging', async () => {
+    const oldClaim = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const db = makeFifoStubDb([
+      [
+        {
+          claimId: 'claim:gone',
+          claimText: '已废弃',
+          claimStatus: 'deprecated',
+          createdAt: oldClaim,
+          documentOriginId: 'doc:1',
+          createdByKind: 'agent',
+        },
+        {
+          claimId: 'claim:supersededby',
+          claimText: '已被新版替代',
+          claimStatus: 'superseded',
+          createdAt: oldClaim,
+          documentOriginId: 'doc:1',
+          createdByKind: 'agent',
+        },
+      ],
+      [],
+    ]);
+    const findings = await scanForFindings(db as never, {
+      ...baseInput(),
+      findingKinds: ['unverified-claim'],
+    });
+    assert.equal(findings.length, 0);
+  });
+
+  it('returns empty when no candidate claims pass the agent + aging filter', async () => {
+    const db = makeFifoStubDb([[], []]);
+    const findings = await scanForFindings(db as never, {
+      ...baseInput(),
+      findingKinds: ['unverified-claim'],
+    });
+    assert.equal(findings.length, 0);
+  });
+
+  it('honors a custom unverifiedClaimAgingDays threshold', async () => {
+    // ADR-0016 §2.6 ships 30d as the default; Wave D may tune. Verify
+    // override flows into the details payload.
+    const oldClaim = new Date(Date.now() - 12 * 24 * 60 * 60 * 1000);
+    const db = makeFifoStubDb([
+      [
+        {
+          claimId: 'claim:tight-threshold',
+          claimText: 'short window claim',
+          claimStatus: 'ai-suggested',
+          createdAt: oldClaim,
+          documentOriginId: 'doc:1',
+          createdByKind: 'agent',
+        },
+      ],
+      [],
+    ]);
+    const findings = await scanForFindings(db as never, {
+      ...baseInput(),
+      findingKinds: ['unverified-claim'],
+      unverifiedClaimAgingDays: 7,
+    });
+    assert.equal(findings.length, 1);
+    assert.equal(
+      (findings[0]!.details as { agingDays: number }).agingDays,
+      7,
+    );
+  });
+});
+
 describe('scanForFindings — broken-citation', () => {
   it('emits high severity finding for each unresolvable DOI', async () => {
     const db = makeStubDb([
