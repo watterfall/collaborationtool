@@ -28,14 +28,38 @@ import {
 } from '@collaborationtool/doc-store';
 
 /**
- * Phase 4 W7.1: API accepts DocumentHandle. Internally we still call
- * Yjs primitives via doc-store re-exports; baseDoc / resultDoc may
- * come in as raw Y.Doc (legacy callers) or DocumentHandle. We
- * normalise to Y.Doc for the byte-level encoding.
+ * Phase 4 W7.1: API accepts DocumentHandle.
+ * Phase 4.5 W1.1 (codex review 2026-05-11 follow-up): byte-level
+ * encoding now dispatches through the handle's abstract methods
+ * (`encodeStateVector` / `encodeDelta` / `applyUpdate`). Raw Y.Doc
+ * callers (legacy tests) keep working via the module-level Yjs
+ * primitives. **No `.yDoc` reach-through in this file.**
  */
 type DocLike = DocumentHandle | YDoc;
-function toYDoc(d: DocLike): YDoc {
-  return 'yDoc' in d ? d.yDoc : d;
+
+function isHandle(d: DocLike): d is DocumentHandle {
+  // Discriminator: DocumentHandle defines `encodeStateAsUpdate()` as
+  // an instance method; raw Y.Doc does not (Yjs provides
+  // `Y.encodeStateAsUpdate(doc)` as a module function only).
+  return typeof (d as DocumentHandle).encodeStateAsUpdate === 'function';
+}
+
+function encodeStateVectorOf(d: DocLike): Uint8Array {
+  return isHandle(d) ? d.encodeStateVector() : yEncodeStateVector(d);
+}
+
+function encodeDeltaOf(d: DocLike, baseStateVector: Uint8Array): Uint8Array {
+  return isHandle(d)
+    ? d.encodeDelta(baseStateVector)
+    : yEncodeStateAsUpdate(d, baseStateVector);
+}
+
+function applyUpdateTo(d: DocLike, update: Uint8Array): void {
+  if (isHandle(d)) {
+    d.applyUpdate(update);
+    return;
+  }
+  yApplyUpdate(d, update);
 }
 
 export interface CommitPayload {
@@ -57,8 +81,8 @@ export function buildCommitPayload(args: SerializeStepsArgs): CommitPayload {
   const stepsJson = args.steps.map((s) => s.toJSON());
   const pmStepsBinary = new TextEncoder().encode(JSON.stringify(stepsJson));
 
-  const baseStateVector = yEncodeStateVector(toYDoc(args.baseDoc));
-  const yjsUpdateBinary = yEncodeStateAsUpdate(toYDoc(args.resultDoc), baseStateVector);
+  const baseStateVector = encodeStateVectorOf(args.baseDoc);
+  const yjsUpdateBinary = encodeDeltaOf(args.resultDoc, baseStateVector);
 
   return { pmStepsBinary, yjsUpdateBinary, baseStateVector };
 }
@@ -101,7 +125,7 @@ export interface ApplyYjsUpdateArgs {
  * original update bytes (modulo Yjs's natural compression).
  */
 export function applyYjsUpdate(args: ApplyYjsUpdateArgs): void {
-  yApplyUpdate(toYDoc(args.doc), args.yjsUpdateBinary);
+  applyUpdateTo(args.doc, args.yjsUpdateBinary);
 }
 
 /**
@@ -110,5 +134,5 @@ export function applyYjsUpdate(args: ApplyYjsUpdateArgs): void {
  * worker (D11) when reconciling drafts against a moving body state.
  */
 export function nextStateVector(doc: DocLike): Uint8Array {
-  return yEncodeStateVector(toYDoc(doc));
+  return encodeStateVectorOf(doc);
 }

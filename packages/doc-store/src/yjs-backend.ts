@@ -77,6 +77,10 @@ export class YjsDocumentHandle implements DocumentHandle {
     return Y.encodeStateVector(this.yDoc);
   }
 
+  encodeDelta(baseStateVector: Uint8Array): Uint8Array {
+    return Y.encodeStateAsUpdate(this.yDoc, baseStateVector);
+  }
+
   applyUpdate(update: Uint8Array, origin?: unknown): void {
     Y.applyUpdate(this.yDoc, update, origin);
   }

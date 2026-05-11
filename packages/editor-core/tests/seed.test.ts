@@ -1,13 +1,12 @@
 // Phase 4 W6.2 — seedDocumentFromPmJson + isDocumentFragmentEmpty unit tests.
-// W7.1 收口：测试改用 DocumentHandle，但仍可通过 handle.yDoc 验证底层
-// Y.Doc 状态作为 escape-hatch 回归断言。
+// W7.1 收口：测试改用 DocumentHandle 抽象 API；W1.1 (Phase 4.5) 移除
+// `.yDoc` 反射，byte-level 断言走 handle.encodeStateAsUpdate()。
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
   YjsDocumentHandle,
-  yEncodeStateAsUpdate,
 } from '@collaborationtool/doc-store';
 
 import {
@@ -86,8 +85,9 @@ describe('seedDocumentFromPmJson', () => {
       ],
     };
     seedDocumentFromPmJson(handle, json);
-    // escape hatch: byte-level assertion via handle.yDoc.
-    const update = yEncodeStateAsUpdate(handle.yDoc);
+    // Phase 4.5 W1.1: byte-level assertion via abstract API (no
+    // `.yDoc` reach-through).
+    const update = handle.encodeStateAsUpdate();
     assert.ok(update.byteLength > 0);
   });
 });

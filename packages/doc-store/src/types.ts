@@ -47,10 +47,28 @@ export interface DocumentHandle {
   readonly id: string;
 
   /**
-   * Underlying Y.Doc instance. Escape hatch for code that still needs to
-   * pass a Y.Doc to y-prosemirror, y-websocket, y-sweet, etc. Direct
-   * mutation is allowed but logically owned by this handle — do not
-   * destroy it.
+   * Underlying Y.Doc instance. **Integration-boundary escape hatch
+   * ONLY** — allowed call sites (Phase 4.5 W1.1 codex review 2026-05-11
+   * follow-up):
+   *
+   *   1. `apps/sync-gateway/src/backends/y-sweet.ts` — y-sweet HTTP
+   *      provider takes a raw Y.Doc; replacement requires off-ramp from
+   *      y-sweet.
+   *   2. `packages/editor-core/src/sync/setup.ts` — `IndexeddbPersistence`
+   *      + `WebsocketProvider` both take a raw Y.Doc; replacement
+   *      requires off-ramp from y-indexeddb / y-websocket.
+   *   3. `packages/editor-core/src/sync/setup.ts` — y-prosemirror's
+   *      `ySyncPlugin(handle.yDoc)` binding (3rd-party PM binding).
+   *
+   * **Business logic MUST use the abstract API below** (`getText` /
+   * `getMap` / `getXmlFragment` / `transact` / `observe` /
+   * `encodeStateAsUpdate` / `encodeStateVector` / `encodeDelta` /
+   * `applyUpdate`). The grep gate `grep -rn '\.yDoc\b' apps packages
+   * --include='*.ts' | grep -v -E '(doc-store/src|sync/setup|sync-gateway/src/backends/y-sweet|tests/yjs-backend|tests/subdocument)'`
+   * must return 0 results.
+   *
+   * Direct mutation is allowed but logically owned by this handle — do
+   * not destroy it.
    */
   readonly yDoc: Y.Doc;
 
@@ -74,6 +92,15 @@ export interface DocumentHandle {
 
   /** Encode only the state vector — sufficient to compute a delta. */
   encodeStateVector(): Uint8Array;
+
+  /**
+   * Encode a binary delta sufficient to advance a receiver whose state
+   * vector matches `baseStateVector`. Equivalent to Yjs's
+   * `encodeStateAsUpdate(doc, baseStateVector)` two-arg form; exposed
+   * on the handle (Phase 4.5 W1.1) so commit-serialiser callers don't
+   * reach through `.yDoc`.
+   */
+  encodeDelta(baseStateVector: Uint8Array): Uint8Array;
 
   /** Apply a remote update; mutates the doc in place. */
   applyUpdate(update: Uint8Array, origin?: unknown): void;

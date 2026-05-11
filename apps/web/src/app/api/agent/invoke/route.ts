@@ -25,12 +25,10 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 
 import {
-  createAnthropicProvider,
   crossrefMockTransport,
   findAgentByKind,
   invokeAgentViaPlugin,
   resolvePluginAbsolutePath,
-  type ModelProvider,
 } from '@collaborationtool/ai-runtime';
 import { loadPrincipalContext } from '@collaborationtool/permissions';
 
@@ -44,6 +42,7 @@ import {
   isSlow,
 } from '@/lib/observability';
 import { getPrincipalIdForUser } from '@/lib/principal';
+import { resolveAndInstantiateProvider } from '@/lib/provider-resolver';
 
 interface InvokeBody {
   kind?: unknown;
@@ -109,16 +108,18 @@ export async function POST(request: Request): Promise<NextResponse> {
   // its capability check, we MUST pass the user's PrincipalContext.
   const userCtx = { ...ctx, principalId };
 
-  // Anthropic key is server-only env var; absence triggers mock provider
-  // (the host's plugin-host fallback constructs createMockModelProvider
-  // when `provider` is undefined). Phase 4 W7.2 ADR-0013 §2.5: this
-  // route still uses the env-default tier directly. Full ADR-0013 §2.4
-  // resolver wiring (document override > user pref > manifest hint >
-  // env default) lands in W7.3 follow-up.
-  const anthropicKey = process.env['ANTHROPIC_API_KEY'];
-  const provider: ModelProvider | undefined = anthropicKey
-    ? createAnthropicProvider({ id: 'anthropic-env-default', apiKey: anthropicKey })
-    : undefined;
+  // ADR-0013 §2.4 4-tier resolver wired in Phase 4.5 W0.3 (post-codex
+  // review 2026-05-11). Helper loads `document_model_override` +
+  // `user_model_pref` from PG, calls pure resolver, instantiates the
+  // matching adapter. `provider === undefined` only when the chosen
+  // tier carries no api key / endpoint — plugin host then falls back
+  // to `createMockModelProvider` keyed by agent kind (CI / air-gapped
+  // dev path preserved).
+  const { provider, resolved, userConfigured } = await resolveAndInstantiateProvider({
+    db,
+    documentId: body.documentId,
+    principalId,
+  });
 
   // skills root: monorepo root. Phase 1.5 will read from
   // packages/skills (when we move skills under a package).
@@ -156,7 +157,9 @@ export async function POST(request: Request): Promise<NextResponse> {
         kind,
         durationMs,
         slow: isSlow(durationMs),
-        runner: provider ? 'anthropic' : 'mock',
+        runner: provider ? resolved.wireFormat : 'mock',
+        providerSource: resolved.source,
+        userConfigured,
         ...extra,
       },
     });
@@ -271,7 +274,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     captureError(err, {
       route: 'api.agent.invoke',
       principalId: distinctId,
-      tags: { kind: String(kind), runner: provider ? 'anthropic' : 'mock' },
+      tags: {
+        kind: String(kind),
+        runner: provider ? resolved.wireFormat : 'mock',
+        providerSource: resolved.source,
+      },
     });
     observe('error', {
       errorClass: err instanceof Error ? err.name : 'Unknown',
