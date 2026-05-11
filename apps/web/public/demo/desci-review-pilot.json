@@ -1,0 +1,226 @@
+{
+  "$schema": "ai-context-pack-v1",
+  "_note": "Phase 5 Wave C C2 demo specimen — illustrative synthetic data. ORCID iDs are real-formatted but not affiliated with the named scholars. JWS payloads are placeholder strings.",
+  "_extends": "ADR-0011 §2.7 (doc/claims/evidences/claimLinks/sources/provenance) + ADR-0016 §2.3 (reviews)",
+  "doc": {
+    "id": "doc:pilot:claim-on-claim-2026",
+    "title": "Claim-on-Claim Review: a 5-year anchor for desci collaboration",
+    "titleZh": "Claim-on-Claim Review：去中心化科学协作的 5 年差异化锚点",
+    "slug": "desci-review-pilot",
+    "primaryLanguage": "en",
+    "bilingualMode": "facing",
+    "createdAt": "2026-05-12T00:00:00Z",
+    "ownerPrincipalId": "principal:demo:author-1"
+  },
+  "claims": [
+    {
+      "id": "claim:pilot:c1",
+      "text": "Open peer review platforms increase reviewer accountability when they bind reviewer identity to a portable cryptographic attestation rather than a platform-internal user id.",
+      "textZh": "开放同行评审平台只有在把评审者身份绑定到可移植的密码学证明时——而不是平台内部账号——才能真正提升 reviewer 责任感。",
+      "claimType": "main",
+      "status": "approved",
+      "confidence": "high",
+      "documentOriginId": "doc:pilot:claim-on-claim-2026",
+      "createdBy": "principal:demo:author-1",
+      "createdAt": "2026-05-12T00:00:00Z"
+    },
+    {
+      "id": "claim:pilot:c2",
+      "text": "Attaching reviews to individual claims (rather than to whole documents) collapses the 'review thread vs review object' UX confusion that Curvenote / MyST users hit with annotation_thread reuse.",
+      "textZh": "把评审挂到单条 claim（而非整篇 doc）上，能消解 Curvenote / MyST 用户在 annotation_thread 复用时遇到的'评审线程 vs 评审对象' UX 混淆。",
+      "claimType": "main",
+      "status": "approved",
+      "confidence": "high",
+      "documentOriginId": "doc:pilot:claim-on-claim-2026",
+      "createdBy": "principal:demo:author-1",
+      "createdAt": "2026-05-12T00:10:00Z"
+    },
+    {
+      "id": "claim:pilot:c3",
+      "text": "The 3-verdict enum (endorses / challenges / refines) captures >= 95% of reviewer judgments observed in the literature without requiring per-domain customization.",
+      "textZh": "3 态 verdict 枚举 (endorses / challenges / refines) 覆盖了文献中观察到的 >= 95% reviewer 判断，无需按学科定制扩展。",
+      "claimType": "main",
+      "status": "ai-suggested",
+      "confidence": "high",
+      "documentOriginId": "doc:pilot:claim-on-claim-2026",
+      "createdBy": "principal:demo:agent-coordinator",
+      "createdAt": "2026-05-12T00:20:00Z"
+    },
+    {
+      "id": "claim:pilot:c4",
+      "text": "A 30-day human-endorsement window under-flags fast-moving subfields and over-flags slow archival ones. Phase 6 should tune by claim status or by claim's parent corpus.",
+      "textZh": "30 天人类背书窗口对快节奏子领域漏报，对慢节奏档案领域过报。Phase 6 应按 claim status 或所在语料的速度做差异化调参。",
+      "claimType": "counter",
+      "status": "human-reviewed",
+      "confidence": "medium",
+      "documentOriginId": "doc:pilot:claim-on-claim-2026",
+      "createdBy": "principal:demo:reviewer-2",
+      "createdAt": "2026-05-12T09:00:00Z"
+    },
+    {
+      "id": "claim:pilot:c5",
+      "text": "When the claim_review table reaches > 100 verdicts per claim, the public lineage view should paginate by verdict bucket rather than by submission time.",
+      "textZh": "当 claim_review 表对单 claim 超过 100 条 verdict 时，公共 lineage 视图应该按 verdict bucket 分页而不是按提交时间。",
+      "claimType": "synthesis",
+      "status": "approved",
+      "confidence": "medium",
+      "documentOriginId": "doc:pilot:claim-on-claim-2026",
+      "createdBy": "principal:demo:author-1",
+      "createdAt": "2026-05-12T00:40:00Z"
+    }
+  ],
+  "evidences": [
+    {
+      "id": "ev:pilot:e1",
+      "excerpt": "Tennant et al. (2017) review 7 open peer review pilot studies and find that signed reviews retain the same critical content as anonymous ones — the 'fear of retaliation' hypothesis fails to show up in the data.",
+      "excerptZh": "Tennant 等（2017）综述 7 项开放评审 pilot 研究，发现署名评审与匿名评审在批评强度上无差异；'惧怕报复'假说在数据中找不到支持。",
+      "supportsClaimId": "claim:pilot:c1",
+      "citationId": "cite:tennant-2017",
+      "relation": "supports",
+      "status": "approved",
+      "documentOriginId": "doc:pilot:claim-on-claim-2026",
+      "createdBy": "principal:demo:author-1",
+      "createdAt": "2026-05-12T00:05:00Z"
+    },
+    {
+      "id": "ev:pilot:e2",
+      "excerpt": "The eLife 2023 sample of 1,200 open reviews (n=12 disciplines) classified verdicts into 4 buckets, of which 'minor revisions' and 'scope clarification' collapse cleanly into the refines literal.",
+      "excerptZh": "eLife 2023 对 1200 篇开放评审（12 个学科）的 verdict 做了 4 类划分，其中'minor revisions'与'scope clarification'可整洁地折叠进 refines。",
+      "supportsClaimId": "claim:pilot:c3",
+      "citationId": "cite:elife-2023-sample",
+      "relation": "qualifies",
+      "status": "approved",
+      "documentOriginId": "doc:pilot:claim-on-claim-2026",
+      "createdBy": "principal:demo:author-1",
+      "createdAt": "2026-05-12T00:25:00Z"
+    },
+    {
+      "id": "ev:pilot:e3",
+      "excerpt": "A 90-day window in archival history of science would over-flag every claim in the corpus during typical Acta-Archaeologica review cycles (median time to first review ≈ 6 months).",
+      "excerptZh": "在科学史档案语料中，按 90 天窗口几乎全部 claim 会被过度标记（Acta Archaeologica 类期刊首轮评审中位耗时 ≈ 6 个月）。",
+      "supportsClaimId": "claim:pilot:c4",
+      "citationId": "cite:acta-archaeologica-timing",
+      "relation": "challenges",
+      "status": "approved",
+      "documentOriginId": "doc:pilot:claim-on-claim-2026",
+      "createdBy": "principal:demo:reviewer-2",
+      "createdAt": "2026-05-12T09:25:00Z"
+    }
+  ],
+  "claimLinks": [
+    {
+      "id": "link:pilot:c4-refines-c3",
+      "fromClaimId": "claim:pilot:c4",
+      "toClaimId": "claim:pilot:c3",
+      "linkType": "refines"
+    },
+    {
+      "id": "link:pilot:c5-synthesizes-c2-c3",
+      "fromClaimId": "claim:pilot:c5",
+      "toClaimId": "claim:pilot:c2",
+      "linkType": "synthesizes"
+    }
+  ],
+  "sources": [
+    {
+      "id": "cite:tennant-2017",
+      "doi": "10.12688/f1000research.10617.1",
+      "kind": "article",
+      "title": "A multi-disciplinary perspective on emergent and future innovations in peer review (Tennant et al., 2017)",
+      "authors": ["Tennant, J. P.", "Dugan, J. M.", "et al."],
+      "year": 2017
+    },
+    {
+      "id": "cite:elife-2023-sample",
+      "doi": null,
+      "kind": "report",
+      "title": "eLife open peer review verdict taxonomy (2023 internal sample; not peer reviewed)",
+      "authors": ["eLife editorial team"],
+      "year": 2023,
+      "note": "Illustrative source; cite-able analogue but not the literal citation."
+    },
+    {
+      "id": "cite:acta-archaeologica-timing",
+      "doi": null,
+      "kind": "personal-communication",
+      "title": "Median time-to-first-review in archaeology archival journals (panelist discussion, 2024 DeSci Day)",
+      "authors": ["Demo Reviewer 2"],
+      "year": 2024,
+      "note": "Illustrative source — synthetic for demo purposes."
+    }
+  ],
+  "reviews": [
+    {
+      "id": "review:pilot:r1",
+      "claimId": "claim:pilot:c3",
+      "reviewerPrincipalId": "principal:demo:reviewer-1",
+      "reviewerOrcidId": "0000-0002-1825-0097",
+      "isAiVerdict": false,
+      "verdict": "endorses",
+      "bodyMarkdown": "The 3-verdict enum maps cleanly to my own reviewer workflow. I particularly like that `refines` is a first-class literal — Curvenote's 'request changes' + open-ended comment thread is exactly the failure mode we're avoiding.",
+      "bodyMarkdownZh": "3 态 verdict 与我的评审习惯吻合。`refines` 作为一等字面量尤其好——Curvenote 的'请求修改'+ 开放评论线程正是要避免的失败模式。",
+      "evidenceRefs": [],
+      "signedPayloadJws": "<<illustrative-jws-payload-1>>",
+      "orcidSignedAt": "2026-05-12T08:00:00Z",
+      "signatureAlgorithm": "RS256",
+      "submittedAt": "2026-05-12T07:55:00Z",
+      "provenanceId": "prov:pilot:p1"
+    },
+    {
+      "id": "review:pilot:r2",
+      "claimId": "claim:pilot:c4",
+      "reviewerPrincipalId": "principal:demo:reviewer-2",
+      "reviewerOrcidId": "0000-0003-1419-2405",
+      "isAiVerdict": false,
+      "verdict": "challenges",
+      "bodyMarkdown": "Claim c4 already concedes the 30-day window is too short for archival subfields; my evidence (ev:pilot:e3) makes the case quantitatively. I'd push the default to 60 days as a baseline and expose per-corpus tuning before Phase 6.",
+      "bodyMarkdownZh": "Claim c4 已经承认 30 天对档案子领域过短；我的证据 (ev:pilot:e3) 给出量化论据。建议默认 60 天，并在 Phase 6 前暴露按语料的差异化调参接口。",
+      "evidenceRefs": ["ev:pilot:e3"],
+      "signedPayloadJws": "<<illustrative-jws-payload-2>>",
+      "orcidSignedAt": "2026-05-12T09:30:00Z",
+      "signatureAlgorithm": "RS256",
+      "submittedAt": "2026-05-12T09:25:00Z",
+      "provenanceId": "prov:pilot:p2"
+    }
+  ],
+  "provenance": [
+    {
+      "id": "prov:pilot:p1",
+      "actorPrincipalId": "principal:demo:reviewer-1",
+      "actorKind": "user",
+      "triggeredAt": "2026-05-12T07:55:00Z",
+      "inputDocumentIds": ["doc:pilot:claim-on-claim-2026"],
+      "toolCalls": null
+    },
+    {
+      "id": "prov:pilot:p2",
+      "actorPrincipalId": "principal:demo:reviewer-2",
+      "actorKind": "user",
+      "triggeredAt": "2026-05-12T09:25:00Z",
+      "inputDocumentIds": ["doc:pilot:claim-on-claim-2026"],
+      "toolCalls": null
+    }
+  ],
+  "aggregate": {
+    "claim:pilot:c3": {
+      "endorses": 1,
+      "challenges": 0,
+      "refines": 0,
+      "orcidSignedCount": 1,
+      "aiVerdictCount": 0,
+      "totalReviews": 1,
+      "activeReviews": 1,
+      "withdrawnCount": 0
+    },
+    "claim:pilot:c4": {
+      "endorses": 0,
+      "challenges": 1,
+      "refines": 0,
+      "orcidSignedCount": 1,
+      "aiVerdictCount": 0,
+      "totalReviews": 1,
+      "activeReviews": 1,
+      "withdrawnCount": 0
+    }
+  }
+}

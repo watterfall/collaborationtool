@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Phase 5 Wave C C2 — review DAG figure for desci-review-pilot.
+
+  Renders the lineage of claim:pilot:c3:
+    center  claim node
+    left    endorses verdict (accent-moss)
+    right   challenges verdict (accent-ox) + counter-evidence node
+
+  Pure SVG; uses var(--color-accent-moss/ox/ink) so the page-side
+  Design.md token cascade applies. Static fallback colors stay in
+  fill / stroke attributes in case the SVG is opened standalone.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360"
+     role="img" aria-labelledby="title desc"
+     preserveAspectRatio="xMidYMid meet">
+  <title id="title">Claim-on-Claim Review DAG for claim:pilot:c3</title>
+  <desc id="desc">
+    A center claim node with two ORCID-signed verdicts: an endorsing
+    moss-accent node on the left and a challenging oxblood-accent node
+    on the right, the latter linked to a counter-evidence dashed box.
+  </desc>
+
+  <style>
+    .label { font-family: 'IBM Plex Serif', Georgia, serif; font-size: 14px; }
+    .id    { font-family: 'IBM Plex Mono', 'SFMono-Regular', monospace; font-size: 11px; }
+    .pill  { font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 12px; }
+    .small { font-size: 10px; opacity: 0.78; }
+  </style>
+
+  <!-- center: claim node -->
+  <g transform="translate(360 180)">
+    <circle r="48"
+            fill="#fafaf9"
+            stroke="var(--color-ink, #1c1917)"
+            stroke-width="1.5" />
+    <text class="label" text-anchor="middle" dy="-4">claim:c3</text>
+    <text class="small" text-anchor="middle" dy="14">3-verdict enum</text>
+  </g>
+
+  <!-- left: endorses verdict -->
+  <g transform="translate(120 110)">
+    <rect x="-90" y="-30" width="180" height="60" rx="999"
+          fill="none"
+          stroke="var(--color-accent-moss, #6b8e23)"
+          stroke-width="2" />
+    <text class="pill" text-anchor="middle" dy="-4"
+          fill="var(--color-accent-moss, #6b8e23)">
+      endorses · 同意
+    </text>
+    <text class="id" text-anchor="middle" dy="14">0000-0002-1825-0097</text>
+  </g>
+
+  <!-- left arrow -->
+  <line x1="206" y1="125" x2="312" y2="170"
+        stroke="var(--color-accent-moss, #6b8e23)"
+        stroke-width="2"
+        marker-end="url(#arrow-moss)" />
+
+  <!-- right: challenges verdict -->
+  <g transform="translate(600 110)">
+    <rect x="-90" y="-30" width="180" height="60" rx="999"
+          fill="none"
+          stroke="var(--color-accent-ox, #8b0000)"
+          stroke-width="2" />
+    <text class="pill" text-anchor="middle" dy="-4"
+          fill="var(--color-accent-ox, #8b0000)">
+      challenges · 挑战
+    </text>
+    <text class="id" text-anchor="middle" dy="14">0000-0003-1419-2405</text>
+  </g>
+
+  <!-- right arrow -->
+  <line x1="514" y1="125" x2="408" y2="170"
+        stroke="var(--color-accent-ox, #8b0000)"
+        stroke-width="2"
+        marker-end="url(#arrow-ox)" />
+
+  <!-- counter-evidence -->
+  <g transform="translate(600 270)">
+    <rect x="-100" y="-25" width="200" height="50"
+          fill="none"
+          stroke="var(--color-ink, #1c1917)"
+          stroke-width="1"
+          stroke-dasharray="5 4" />
+    <text class="label" text-anchor="middle" dy="-2">ev:e3 — relation=challenges</text>
+    <text class="small" text-anchor="middle" dy="14">90-day window over-flags archival corpus</text>
+  </g>
+
+  <!-- evidence link -->
+  <line x1="600" y1="142" x2="600" y2="244"
+        stroke="var(--color-ink, #1c1917)"
+        stroke-width="1"
+        stroke-dasharray="3 3" />
+
+  <!-- legend -->
+  <g transform="translate(40 320)">
+    <text class="small" fill="var(--color-ink-2, #57534e)">
+      ORCID-signed verdicts · evidence dashed · ADR-0016 §2.2 accent triad
+    </text>
+  </g>
+
+  <defs>
+    <marker id="arrow-moss" viewBox="0 0 10 10" refX="8" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-accent-moss, #6b8e23)" />
+    </marker>
+    <marker id="arrow-ox" viewBox="0 0 10 10" refX="8" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-accent-ox, #8b0000)" />
+    </marker>
+  </defs>
+</svg>
