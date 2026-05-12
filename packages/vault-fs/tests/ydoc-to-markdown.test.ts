@@ -61,4 +61,31 @@ describe('emitMarkdown (Spike-2 Task 2)', () => {
     const m2 = emitMarkdown(doc);
     assert.equal(m1, m2);
   });
+
+  // Task 10: Design.md §11 reject criteria 防止任何 hex 颜色 / Tailwind
+  // palette 字符串混入 markdown emit。Markdown 应该是 plaintext，但 future
+  // regression（有人 hack 加 CSS-styled markdown）会被这里拦下。
+  it('emitMarkdown output passes Design.md §11 reject criteria', () => {
+    const doc = makeYDoc({
+      type: 'doc',
+      content: [
+        { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'H' }] },
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'body ' },
+            { type: 'text', marks: [{ type: 'bold' }], text: 'bold' },
+            { type: 'text', text: ' and ' },
+            { type: 'text', marks: [{ type: 'italic' }], text: 'italic' },
+          ],
+        },
+      ],
+    });
+    const md = emitMarkdown(doc);
+    assert.doesNotMatch(md, /bg-blue-[567]00/, 'Tailwind blue palette banned');
+    assert.doesNotMatch(md, /rounded-(lg|xl|2xl|full)/, 'Tailwind radius palette banned');
+    assert.doesNotMatch(md, /bg-zinc-[12]00/, 'Tailwind zinc palette banned');
+    assert.doesNotMatch(md, /#[0-9A-Fa-f]{6}/, '非语义 hex 颜色禁止入 markdown');
+    assert.doesNotMatch(md, /shadow-(sm|md|lg|xl)/, 'Tailwind shadow palette banned');
+  });
 });
