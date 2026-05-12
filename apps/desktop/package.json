@@ -1,0 +1,17 @@
+{
+  "name": "@collaborationtool/desktop",
+  "version": "0.1.0-spike",
+  "private": true,
+  "description": "Tauri 2.x desktop shell for collaboration tool — Spike-1 PoC",
+  "type": "module",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "test": "cd src-tauri && cargo test --quiet",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.1.0",
+    "typescript": "^5.5.4"
+  }
+}

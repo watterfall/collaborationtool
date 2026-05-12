@@ -1,0 +1,3 @@
+// apps/desktop/src-tauri/src/commands/mod.rs
+pub mod ollama;
+pub mod system;

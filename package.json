@@ -67,7 +67,11 @@
     "e2e:dogfood:providers": "pnpm --filter @collaborationtool/e2e exec playwright test specs/dogfood-providers.spec.ts --reporter=list",
     "e2e:dogfood:multi-agent": "pnpm --filter @collaborationtool/e2e exec playwright test specs/dogfood-multi-agent.spec.ts --reporter=list",
     "e2e:dogfood:maintenance": "pnpm --filter @collaborationtool/e2e exec playwright test specs/dogfood-maintenance.spec.ts --reporter=list",
-    "e2e:dogfood:stress": "pnpm --filter @collaborationtool/e2e exec playwright test specs/dogfood-stress.spec.ts --reporter=list"
+    "e2e:dogfood:stress": "pnpm --filter @collaborationtool/e2e exec playwright test specs/dogfood-stress.spec.ts --reporter=list",
+    "desktop:dev": "pnpm --filter @collaborationtool/desktop dev",
+    "desktop:build": "pnpm --filter @collaborationtool/desktop build",
+    "desktop:test": "pnpm --filter @collaborationtool/desktop test",
+    "desktop:typecheck": "pnpm --filter @collaborationtool/desktop typecheck"
   },
   "devDependencies": {
     "typescript": "^5.7.2"
