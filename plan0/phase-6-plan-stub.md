@@ -76,8 +76,12 @@ Phase 5 21 个 AI commit + 4 个待 user-driven dogfood：
 |---|---|---|---|
 | **W0** | Wave D-5 retrospective + ADR-0020 Proposed → Accepted（或 Accepted with caveat / Superseded）| AI 协助 jili 写 | 0.5 天 |
 | | Wave B 5 criteria retrospective + ADR-0016 升 Accepted | AI 协助 | 0.5 天 |
+| **W0.5** | **Spike-2 plan 起草** (`docs/superpowers/plans/2026-05-12-spike-2-vault-fs.md`, ~1400 行 / 12 tasks) | AI | ✅ |
+| | **Spike-3 plan 起草** (`docs/superpowers/plans/2026-05-12-spike-3-plugin-runtime.md`, ~900 行 / 7 tasks) | AI | ✅ |
 | **W1-W2** | Spike-1 Tauri shell execution（subagent-driven，per memory）| AI | 5-7 天 |
-| | ADR-0017 client-first runtime 起草 + Proposed | AI | 0.5 天 |
+| | Spike-2 vault-fs PoC execution（per spike-2 plan）| AI | 5-7 天 |
+| | Spike-3 plugin runtime selection execution（per spike-3 plan）| AI | 3 天 |
+| | 3 spike 全 PASS 后起 ADR-0017 client-first runtime + ADR-0018 open content（ADR-0019 已在 spike-3 task 6 起 Proposed）| AI | 各 0.5 天 |
 | **W3-W4** | ADR-0018 open content mechanisms 起草 + Proposed | AI | 0.5 天 |
 | | ADR-0019 plugin runtime cross-platform 起草 + Proposed（与 Tauri shell 联动）| AI | 0.5 天 |
 | **W5-W6** | ADR-0021 discovery-graph schema migration（Night artifact 落 PG，含 visibility tier ACL 接 ADR-0014 subdoc 路径）| AI | 1-2 天 |
@@ -112,7 +116,11 @@ Phase 5 21 个 AI commit + 4 个待 user-driven dogfood：
 - [ ] **5 个 night-science 大文件 jili 通读**：Night.md 87KB / Night_Science_Cases_Expanded.md 75KB / Night_Science_Enhanced_PPT.md 46KB / pptx / pdf —— 决定是否需修订 ADR-0020 review log（per ADR-0020 §5 关键反对意见 3）
 - [ ] **Phase 5 状态债清零**：确认 STATUS §1 closeout matrix + 8 既有 ADR review log + Phase 6 plan stub（本文件）全 commit
 - [ ] **MEMORY.md 同步**：记录 Phase 5 closeout + Phase 6 kickoff 时间点 + 两个"Wave D"命名歧义已通过 `triadic_wave_d_progress.md` memory 解决
-- [ ] **`docs/superpowers/specs/` 内容核对**：client-first pivot spec 在那里，ADR-0017 起草前先确认 spec 状态
+- [x] **`docs/superpowers/specs/` 内容核对**：`2026-05-11-client-first-pivot-design.md`（420 行 / 16 节）已 commit；ADR-0001 §5.A 反转决策 + 16 ADR 影响表 + 10 dogfood gate 全在
+- [x] **Spike-1 plan 状态确认**：`docs/superpowers/plans/2026-05-11-spike-1-tauri-shell.md` 1685 行 / 13 tasks / subagent-driven mode 已锁
+- [x] **Spike-2 plan 起草**：`docs/superpowers/plans/2026-05-12-spike-2-vault-fs.md` 12 tasks（packages/vault-fs/ scaffold + emit/parse markdown + sidecar IO + watcher + drift + 3-way merge + 5 fixture + stress + reject grep + ADR review log + 报告）
+- [x] **Spike-3 plan 起草**：`docs/superpowers/plans/2026-05-12-spike-3-plugin-runtime.md` 7 tasks（spec + macOS sandbox-exec PoC + WASM Extism PoC + Windows AppContainer stub + trade-off matrix + decision + ADR-0019 draft + 报告）
+- [ ] **3 spike 执行前 toolchain 检查**：cargo 1.95 ✅ / Node 26 ✅ / pnpm 11 ✅ / **tauri CLI 未装**（spike-1 前 `cargo install tauri-cli`）/ Extism CLI（spike-3 前 `brew install extism/extism/extism` 或 `cargo install extism-cli`）
 
 ---
 
