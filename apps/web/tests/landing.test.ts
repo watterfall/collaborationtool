@@ -250,3 +250,31 @@ describe('landing — heroMockup locale carries triadic content', () => {
     );
   });
 });
+
+describe('landing — v4 architecture (three-way)', () => {
+  it('zh architecture heading is "装好之后长这样"', () => {
+    assert.equal(zh.landing.architecture.heading, '装好之后长这样');
+  });
+  it('zh architecture sub mentions 桌面端 + 协作', () => {
+    assert.match(zh.landing.architecture.sub, /桌面端/);
+    assert.match(zh.landing.architecture.sub, /协作|合作/);
+  });
+  it('en architecture sub mentions Desktop-first + collaborator', () => {
+    assert.match(en.landing.architecture.sub, /Desktop-first/i);
+    assert.match(en.landing.architecture.sub, /collaborat/i);
+  });
+  it('ascii has 3-way structure (3 boxes per row)', () => {
+    // Count ┌ and ┐ in top border row to confirm 3 boxes
+    const zhTopBorder = zh.landing.architecture.ascii[1] ?? '';
+    const enTopBorder = en.landing.architecture.ascii[1] ?? '';
+    const zhBoxCount = (zhTopBorder.match(/┌/g) || []).length;
+    const enBoxCount = (enTopBorder.match(/┌/g) || []).length;
+    assert.equal(zhBoxCount, 3, 'zh ascii top border should have 3 boxes');
+    assert.equal(enBoxCount, 3, 'en ascii top border should have 3 boxes');
+  });
+  it('caption is plain — no Editor/Sync/Snapshot/Agent Worker jargon', () => {
+    assert.doesNotMatch(zh.landing.architecture.caption, /Editor.*Sync.*Snapshot.*Agent Worker/);
+    assert.doesNotMatch(zh.landing.architecture.caption, /pgboss|WAL-G/);
+    assert.doesNotMatch(en.landing.architecture.caption, /pgboss|WAL-G/);
+  });
+});
