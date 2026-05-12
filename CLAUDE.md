@@ -31,7 +31,7 @@
 
 ## 2. 必读文件（顺序）
 
-新会话开始时**先读完这五份**，再动代码：
+新会话开始时**先读完这六份**，再动代码：
 
 1. [`STATUS.md`](./STATUS.md) — 唯一的"项目当前在哪"快照（每次 phase
    推进 / commit landed / ADR 状态变化时更新）
@@ -46,6 +46,10 @@
    tokens（颜色 / 字体 / 间距 / 半径 / 描边）+ 9 surface 准则 + reject
    criteria 13 条 + AI-as-collaborator pattern + provenance reveal 动效。
    **动到 `apps/web/src/` 前必读；reject criteria 是 commit gate**
+6. [`wiki/graph/README.md`](./wiki/graph/README.md) — graphify 跑出的项目
+   知识图谱导览（plan0/ + code/ 两份 `graph.html`）。**新会话先看 god
+   nodes** 与"Surprising Connections"，再决定要不要 grep——比 grep 50 次
+   找 prior art 快。`/graphify query`/`/graphify path` 可问图。
 
 ADR 在 `plan0/adr/0001-0015`——动到对应模块前先读相应 ADR。
 导航 / 依赖图 / 主题聚类 / 阅读顺序建议看 [`plan0/ADR-INDEX.md`](./plan0/ADR-INDEX.md)。

@@ -1,0 +1,16 @@
+{
+  "runs": [
+    {
+      "date": "2026-05-12T03:34:53.737894+00:00",
+      "scope": "packages",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "files": 188,
+      "nodes": 553,
+      "edges": 1070,
+      "note": "AST-only fast path (187 code + 1 doc skipped semantic)"
+    }
+  ],
+  "total_input_tokens": 0,
+  "total_output_tokens": 0
+}

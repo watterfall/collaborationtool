@@ -68,3 +68,6 @@ tests/e2e/playwright-report/
 AGENTS.md
 # Raw codex exec run logs (large; .md artifacts in .codex-review/ stay tracked)
 .codex-review/*.log
+
+### graphify working dir (artifacts curated to wiki/graph/) ###
+/graphify-out/

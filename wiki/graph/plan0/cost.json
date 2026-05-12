@@ -1,0 +1,16 @@
+{
+  "runs": [
+    {
+      "date": "2026-05-12T03:31:44.549699+00:00",
+      "scope": "plan0",
+      "input_tokens": 180000,
+      "output_tokens": 5000,
+      "files": 40,
+      "nodes": 137,
+      "edges": 277,
+      "note": "first run on plan0/, 2 parallel general-purpose subagents"
+    }
+  ],
+  "total_input_tokens": 180000,
+  "total_output_tokens": 5000
+}
