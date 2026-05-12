@@ -12,9 +12,9 @@ export async function generateMetadata(): Promise<Metadata> {
   // regardless of how the share was triggered. Page-level metadata
   // (e.g. landing) may override.
   return {
-    title: '协作论文平台 · Collaboration Tool',
+    title: '探索工作室 · Inquiry Studio',
     description:
-      '本地优先的双语论文协作平台 · A local-first, bilingual research-paper workbench.',
+      '给科研创造过程一个工作室 · A studio for the creative process of science. Desktop-first, local-first, self-hostable.',
   };
 }
 

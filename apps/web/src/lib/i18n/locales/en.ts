@@ -35,19 +35,19 @@ export const en: LocaleDict = {
       settings: 'Settings',
       newOrg: 'New org',
       triadic: 'Triadic',
-      brand: 'Collaboration Tool',
+      brand: 'Inquiry Studio · 探索工作室',
     },
   },
   landing: {
     meta: {
-      title: 'A three-layer system for what science actually produces · desktop-first',
+      title: 'Inquiry Studio · 探索工作室 — a studio for the creative process of science',
       description:
-        "Papers are not the whole of science. Ideas, prototypes, papers — three spaces, treated equally. The 3am metaphor, the dinner argument, the sketch you never used — these are science too. Desktop-first, data on your machine, open-source and self-hostable.",
+        "Not a paper-writing tool. A scientist's creative workbench. Ideas, prototypes, papers — all in one place. The 3am metaphor, the dinner argument, the sketch you never used — these are science too. Desktop-first, data on your machine, open-source and self-hostable.",
     },
     hero: {
-      eyebrow: 'A three-layer system for what science actually produces · desktop-first',
-      headline: 'Papers are not the whole of science.\nIdeas, prototypes, papers —\nthree spaces, treated equally.',
-      sub: 'The 3am metaphor · the dinner argument · the sketch you never used — these are science too.',
+      eyebrow: 'Inquiry Studio · 探索工作室 · desktop-first',
+      headline: "A studio for the creative\nprocess of science.\nIdeas, prototypes, papers — all here.",
+      sub: "Not a paper-writing tool. A scientist's creative workbench.",
       tagline: 'Desktop-first · data stays on your machine · open-source · self-hostable',
       ctaPrimary: 'Start',
       ctaSecondary: 'How to self-host',

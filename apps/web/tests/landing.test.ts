@@ -50,40 +50,40 @@ describe('landing — v4 meta is bilingual + carries triadic positioning', () =>
     assert.match(src, /en\.landing\.meta\.description/);
   });
 
-  it('zh meta description carries the triadic-positioning claim', () => {
-    assert.match(zh.landing.meta.description, /三个空间/);
+  it('zh meta description carries the inquiry-studio claim', () => {
+    assert.match(zh.landing.meta.description, /创造工作台|工作室|创造过程/);
     assert.match(zh.landing.meta.description, /桌面端|本地/);
   });
 
-  it('en meta description carries the triadic-positioning claim', () => {
-    assert.match(en.landing.meta.description, /three spaces/i);
+  it('en meta description carries the inquiry-studio claim', () => {
+    assert.match(en.landing.meta.description, /creative|studio|workbench/i);
     assert.match(en.landing.meta.description, /desktop-first|local/i);
   });
 });
 
-describe('landing — v4 hero copy (triadic positioning)', () => {
-  it('zh headline opens with "论文不是科研的全部"', () => {
-    assert.match(zh.landing.hero.headline, /论文不是科研的全部/);
+describe('landing — v7 hero copy (Inquiry Studio · 探索工作室)', () => {
+  it('zh headline mentions 科研创造过程 + 工作室', () => {
+    assert.match(zh.landing.hero.headline, /科研创造过程|创造过程/);
+    assert.match(zh.landing.hero.headline, /工作室/);
   });
-  it('zh headline mentions 想法、原型、论文 three spaces', () => {
+  it('zh headline still mentions 想法、原型、论文', () => {
     assert.match(zh.landing.hero.headline, /想法/);
     assert.match(zh.landing.hero.headline, /原型/);
     assert.match(zh.landing.hero.headline, /论文/);
   });
-  it('en headline opens with "Papers are not the whole of science"', () => {
-    assert.match(en.landing.hero.headline, /Papers are not the whole of science/i);
+  it('en headline mentions creative process of science', () => {
+    assert.match(en.landing.hero.headline, /creative\s+process|process of science/i);
   });
   it('en headline mentions ideas, prototypes, papers', () => {
     assert.match(en.landing.hero.headline, /Ideas/i);
     assert.match(en.landing.hero.headline, /prototypes/i);
     assert.match(en.landing.hero.headline, /papers/i);
   });
-  it('zh hero sub mentions 3am + specific imagery', () => {
-    assert.match(zh.landing.hero.sub, /3am|隐喻|草图|争论/);
+  it('zh hero sub explicitly contrasts paper tool vs creative workbench', () => {
+    assert.match(zh.landing.hero.sub, /不是.*论文写作工具|创造工作台/);
   });
-  it('en hero sub mentions 3am + specific imagery', () => {
-    assert.match(en.landing.hero.sub, /3am/);
-    assert.match(en.landing.hero.sub, /metaphor|sketch|argument/i);
+  it('en hero sub mentions creative workbench', () => {
+    assert.match(en.landing.hero.sub, /not a paper-writing tool|creative\s+workbench/i);
   });
   it('zh hero tagline mentions 桌面端 + 自托管', () => {
     assert.match(zh.landing.hero.tagline, /桌面端/);

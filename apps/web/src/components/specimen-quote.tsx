@@ -26,12 +26,12 @@ export default function SpecimenQuote() {
             color: 'var(--color-ink)',
           }}
         >
-          协作论文平台{' '}
+          探索工作室{' '}
           <span
             className="italic"
             style={{ color: 'var(--color-ink-2)', fontWeight: 400 }}
           >
-            · Collaboration Tool
+            · Inquiry Studio
           </span>
         </h3>
 
@@ -44,8 +44,7 @@ export default function SpecimenQuote() {
           }}
           data-testid="specimen-paragraph-zh"
         >
-          本文介绍了 Phase 1
-          的协作论文平台原型，把文档建模为<em>异构内容图</em>：Y.Doc CRDT
+          本文介绍了一个面向科研创造过程的工作室原型，把文档建模为<em>异构内容图</em>：Y.Doc CRDT
           承载可编辑树，Postgres 承载引用图与来源链。
         </p>
 
