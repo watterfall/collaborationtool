@@ -195,3 +195,29 @@ export function chipVisualLevel(
   if (kind === 'inline-editor' && ctx.passage.length > 0) return 'secondary';
   return 'normal';
 }
+
+// === Phase 5 Wave B Spike-1: localAi toggle ===
+//
+// When user has Tauri + ollama running, allow inline edit to route to
+// local Ollama instead of server-side ModelProvider. Default off.
+// Kept as a parallel helper module surface to avoid invasive changes to
+// the existing immutable chip / context types — the React component owns
+// the runtime `state` shape and merges `localAi` via these helpers.
+
+export interface InlineAgentMenuLocalAiState {
+  localAi?: boolean;
+}
+
+export function getDefaultMenuState(): InlineAgentMenuLocalAiState {
+  return { localAi: false };
+}
+
+export function isLocalAiEnabled(
+  s: { localAi?: boolean } | null | undefined,
+): boolean {
+  return s?.localAi === true;
+}
+
+export function toggleLocalAi<T extends { localAi?: boolean }>(s: T): T {
+  return { ...s, localAi: !s.localAi };
+}

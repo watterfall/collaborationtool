@@ -30,14 +30,18 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/design';
+import { isTauri } from '@/lib/desktop-bridge';
 import {
   AGENT_CHIPS,
   MENU_STRINGS,
   buildInvokeRequestBody,
   chipVisualLevel,
   isValidDoiInput,
+  toggleLocalAi,
   type ChipDescriptor,
+  type InlineAgentMenuLocalAiState,
 } from '@/lib/inline-agent-menu';
+import { detectOllamaInBrowser } from '@/lib/local-ollama';
 
 const CHIP_BASE_STYLE: React.CSSProperties = {
   display: 'block',
@@ -131,6 +135,13 @@ export default function InlineAgentMenu({
   // menu renders an inline DOI input form instead of the chip grid.
   const [doiInputMode, setDoiInputMode] = useState<ChipDescriptor | null>(null);
   const [doiInput, setDoiInput] = useState('');
+  // Phase 5 Wave B Spike-1 — local-AI (Ollama) toggle, only shown when
+  // Tauri + ollama are both reachable. State is local; routing to local
+  // model happens once ai-runtime client adapter lands (Spike-2/3).
+  const [localAiState, setLocalAiState] = useState<InlineAgentMenuLocalAiState>({
+    localAi: false,
+  });
+  const [ollamaReady, setOllamaReady] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const close = useCallback(() => {
@@ -181,6 +192,19 @@ export default function InlineAgentMenu({
       window.removeEventListener('mousedown', onClick);
     };
   }, [openState, close]);
+
+  // Phase 5 Wave B Spike-1 — probe local Ollama once when running inside
+  // Tauri. Browser sessions skip the probe entirely (Tauri-only feature).
+  useEffect(() => {
+    if (!isTauri()) return;
+    let cancelled = false;
+    void detectOllamaInBrowser().then((ready) => {
+      if (!cancelled) setOllamaReady(ready);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!openState) return null;
 
@@ -458,6 +482,29 @@ export default function InlineAgentMenu({
             </Button>
           </div>
         </div>
+      )}
+
+      {ollamaReady && !doiInputMode && (
+        <label
+          data-testid="inline-agent-menu-local-ai-toggle"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            marginTop: '8px',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '11px',
+            color: 'var(--color-ink-3)',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={localAiState.localAi ?? false}
+            onChange={() => setLocalAiState((prev) => toggleLocalAi(prev))}
+            style={{ accentColor: 'var(--color-ink)' }}
+          />
+          <span>使用本地 AI · Use local AI (Ollama)</span>
+        </label>
       )}
 
       {error && (
