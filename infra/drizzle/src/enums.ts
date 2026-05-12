@@ -260,3 +260,14 @@ export const pluginInstallOriginEnum = pgEnum('plugin_install_origin', [
   'local-path',
   'marketplace',
 ]);
+
+// ---------- Open content (Phase 6 W2 P2 ADR-0018, migration 0016) ----------
+
+// Open peer review can target any of the 3 public surface entities.
+// 'snapshot' covers all share_snapshot.kind variants (section / preprint
+// / dataset) — finer-grained target selection lives in target_id.
+export const openPeerReviewTargetKindEnum = pgEnum('open_peer_review_target_kind', [
+  'question',
+  'dataset',
+  'snapshot',
+]);

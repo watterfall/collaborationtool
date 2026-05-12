@@ -15,6 +15,7 @@
 
 import { sql } from 'drizzle-orm';
 import {
+  bigint,
   bigserial,
   boolean,
   index,
@@ -51,6 +52,7 @@ import {
   mcpOriginEnum,
   mcpTransportEnum,
   modelProviderWireFormatEnum,
+  openPeerReviewTargetKindEnum,
   pluginInstallOriginEnum,
   pluginInstallStatusEnum,
   principalKindEnum,
@@ -1250,3 +1252,190 @@ export type DbDocumentModelOverride = typeof documentModelOverride.$inferSelect;
 export type DbPluginInstall = typeof pluginInstall.$inferSelect;
 export type DbSubdocument = typeof subdocument.$inferSelect;
 export type DbCrossrefIndex = typeof crossrefIndex.$inferSelect;
+
+// ============================================================
+// 23-27. Open content (Phase 6 W2 P2 — migration 0016 / ADR-0018)
+//
+// 5 tables: provenance_merkle_log (append-only chain) + 4 entity tables
+// (open_question / open_dataset / open_peer_review / share_snapshot).
+// Every entity row carries signed_payload_jws (detached JWS by author's
+// ed25519) + merkle_log_entry_id (FK into chain). withdrawn_at is
+// mark-only; edits go through supersede pattern (share_snapshot.
+// supersedes_snapshot_id; other entities reissue under new id).
+// ============================================================
+
+export const provenanceMerkleLog = pgTable(
+  'provenance_merkle_log',
+  {
+    id: text('id').primaryKey(),
+    prevEntryId: text('prev_entry_id'),
+    entrySeq: bigserial('entry_seq', { mode: 'bigint' }).notNull(),
+    entityKind: text('entity_kind').notNull(),
+    entityId: text('entity_id').notNull(),
+    contentHash: bytea('content_hash').notNull(),
+    signedJws: text('signed_jws').notNull(),
+    signerPrincipalId: text('signer_principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    appendedAt: timestamp('appended_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => ({
+    entrySeqIdx: uniqueIndex('provenance_merkle_log_entry_seq_idx').on(t.entrySeq),
+    prevIdx: index('provenance_merkle_log_prev_idx').on(t.prevEntryId),
+    entityIdx: index('provenance_merkle_log_entity_idx').on(t.entityKind, t.entityId),
+    signerIdx: index('provenance_merkle_log_signer_idx').on(
+      t.signerPrincipalId,
+      t.appendedAt,
+    ),
+  }),
+);
+
+export const openQuestion = pgTable(
+  'open_question',
+  {
+    id: text('id').primaryKey(),
+    askerPrincipalId: text('asker_principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    askerOrcidId: text('asker_orcid_id'),
+    questionMd: text('question_md').notNull(),
+    domainTags: text('domain_tags')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    status: text('status').notNull().default('open'),
+    sourceSubdocId: text('source_subdoc_id').references(() => subdocument.id, {
+      onDelete: 'set null',
+    }),
+    signedPayloadJws: text('signed_payload_jws').notNull(),
+    merkleLogEntryId: text('merkle_log_entry_id')
+      .notNull()
+      .references(() => provenanceMerkleLog.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
+    withdrawnReason: text('withdrawn_reason'),
+  },
+  (t) => ({
+    statusIdx: index('open_question_status_idx').on(t.status, t.createdAt),
+    askerIdx: index('open_question_asker_idx').on(t.askerPrincipalId, t.createdAt),
+    orcidIdx: index('open_question_orcid_idx').on(t.askerOrcidId),
+    merkleIdx: index('open_question_merkle_idx').on(t.merkleLogEntryId),
+  }),
+);
+
+export const openDataset = pgTable(
+  'open_dataset',
+  {
+    id: text('id').primaryKey(),
+    contributorPrincipalId: text('contributor_principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    datasetDoi: text('dataset_doi'),
+    title: text('title').notNull(),
+    descriptionMd: text('description_md').notNull(),
+    blobStorageRef: text('blob_storage_ref').notNull(),
+    sizeBytes: bigint('size_bytes', { mode: 'bigint' }).notNull(),
+    licenseSpdx: text('license_spdx').notNull(),
+    signedPayloadJws: text('signed_payload_jws').notNull(),
+    merkleLogEntryId: text('merkle_log_entry_id')
+      .notNull()
+      .references(() => provenanceMerkleLog.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
+    withdrawnReason: text('withdrawn_reason'),
+  },
+  (t) => ({
+    contributorIdx: index('open_dataset_contributor_idx').on(
+      t.contributorPrincipalId,
+      t.createdAt,
+    ),
+    doiIdx: index('open_dataset_doi_idx').on(t.datasetDoi),
+    licenseIdx: index('open_dataset_license_idx').on(t.licenseSpdx),
+    merkleIdx: index('open_dataset_merkle_idx').on(t.merkleLogEntryId),
+  }),
+);
+
+export const openPeerReview = pgTable(
+  'open_peer_review',
+  {
+    id: text('id').primaryKey(),
+    reviewerPrincipalId: text('reviewer_principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    reviewerOrcidId: text('reviewer_orcid_id').notNull(),
+    targetKind: openPeerReviewTargetKindEnum('target_kind').notNull(),
+    targetId: text('target_id').notNull(),
+    verdict: claimReviewVerdictEnum('verdict').notNull(),
+    bodyMd: text('body_md').notNull(),
+    evidenceRefs: text('evidence_refs')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    signedPayloadJws: text('signed_payload_jws').notNull(),
+    merkleLogEntryId: text('merkle_log_entry_id')
+      .notNull()
+      .references(() => provenanceMerkleLog.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
+    withdrawnReason: text('withdrawn_reason'),
+  },
+  (t) => ({
+    targetIdx: index('open_peer_review_target_idx').on(t.targetKind, t.targetId),
+    reviewerIdx: index('open_peer_review_reviewer_idx').on(
+      t.reviewerPrincipalId,
+      t.createdAt,
+    ),
+    orcidIdx: index('open_peer_review_orcid_idx').on(t.reviewerOrcidId),
+    verdictIdx: index('open_peer_review_verdict_idx').on(t.verdict, t.targetKind),
+    merkleIdx: index('open_peer_review_merkle_idx').on(t.merkleLogEntryId),
+  }),
+);
+
+export const shareSnapshot = pgTable(
+  'share_snapshot',
+  {
+    id: text('id').primaryKey(),
+    sourcePrincipalId: text('source_principal_id')
+      .notNull()
+      .references(() => principal.id, { onDelete: 'restrict' }),
+    sourceSubdocId: text('source_subdoc_id').references(() => subdocument.id, {
+      onDelete: 'set null',
+    }),
+    markdownContent: text('markdown_content').notNull(),
+    yjsBinary: bytea('yjs_binary').notNull(),
+    kind: text('kind').notNull(),
+    permalinkHash: text('permalink_hash').notNull().unique(),
+    doi: text('doi').unique(),
+    signedPayloadJws: text('signed_payload_jws').notNull(),
+    merkleLogEntryId: text('merkle_log_entry_id')
+      .notNull()
+      .references(() => provenanceMerkleLog.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+    withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
+    withdrawnReason: text('withdrawn_reason'),
+    supersedesSnapshotId: text('supersedes_snapshot_id'),
+  },
+  (t) => ({
+    kindIdx: index('share_snapshot_kind_idx').on(t.kind, t.createdAt),
+    sourceIdx: index('share_snapshot_source_idx').on(t.sourcePrincipalId, t.createdAt),
+    supersedesIdx: index('share_snapshot_supersedes_idx').on(t.supersedesSnapshotId),
+    merkleIdx: index('share_snapshot_merkle_idx').on(t.merkleLogEntryId),
+  }),
+);
+
+// Type exports for open content (ADR-0018)
+export type DbProvenanceMerkleLog = typeof provenanceMerkleLog.$inferSelect;
+export type DbOpenQuestion = typeof openQuestion.$inferSelect;
+export type DbOpenDataset = typeof openDataset.$inferSelect;
+export type DbOpenPeerReview = typeof openPeerReview.$inferSelect;
+export type DbShareSnapshot = typeof shareSnapshot.$inferSelect;

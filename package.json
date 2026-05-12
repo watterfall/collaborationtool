@@ -60,6 +60,8 @@
     "vault-fs:typecheck": "pnpm --filter @collaborationtool/vault-fs typecheck",
     "identity:test": "pnpm --filter @collaborationtool/identity test",
     "identity:typecheck": "pnpm --filter @collaborationtool/identity typecheck",
+    "open-content:test": "pnpm --filter @collaborationtool/open-content test",
+    "open-content:typecheck": "pnpm --filter @collaborationtool/open-content typecheck",
     "plugin-citation:typecheck": "pnpm --filter @collaborationtool/plugin-citation-agent typecheck",
     "mcp-crossref:test": "pnpm --filter @collaborationtool/mcp-server-crossref test",
     "mcp-crossref:typecheck": "pnpm --filter @collaborationtool/mcp-server-crossref typecheck",

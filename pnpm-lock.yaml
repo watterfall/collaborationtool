@@ -728,6 +728,25 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  packages/open-content:
+    dependencies:
+      '@collaborationtool/identity':
+        specifier: workspace:*
+        version: link:../identity
+      '@noble/hashes':
+        specifier: ^2.2.0
+        version: 2.2.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.18
+      tsx:
+        specifier: ^4.19.2
+        version: 4.21.0
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   packages/permissions:
     dependencies:
       '@collaborationtool/drizzle':
