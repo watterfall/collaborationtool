@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 600" font-family="ui-serif, 'Source Serif 4', serif">
+  <rect width="480" height="600" fill="#FBFAF7"/>
+  <rect x="20" y="20" width="440" height="560" fill="none" stroke="#D8D4CC" stroke-width="1"/>
+  <text x="40" y="60" font-size="11" font-family="ui-monospace, monospace" fill="#1F3A5F" letter-spacing="2">NIGHT · 想点子空间</text>
+  <text x="40" y="100" font-size="18" font-weight="500" fill="#1A1714">2026-03-12 — 一页手稿</text>
+  <line x1="40" y1="115" x2="440" y2="115" stroke="#D8D4CC" stroke-width="1"/>
+  <text x="40" y="155" font-size="14" font-style="italic" fill="#1A1714">"为什么 Google 2024 的 0.8% 错误率比理论极</text>
+  <text x="40" y="178" font-size="14" font-style="italic" fill="#1A1714">限 1% 还低？理论错在哪里？"</text>
+  <text x="40" y="220" font-size="11" font-family="ui-monospace, monospace" fill="#1F3A5F">— 矛盾观察 · contradiction noticed</text>
+  <line x1="40" y1="250" x2="440" y2="250" stroke="#D8D4CC" stroke-width="0.5" stroke-dasharray="3,4"/>
+  <text x="40" y="290" font-size="14" font-style="italic" fill="#1A1714">"会不会错误率不是 device-independent 的</text>
+  <text x="40" y="313" font-size="14" font-style="italic" fill="#1A1714">常数？像血压一样，会随状态变化？"</text>
+  <text x="40" y="355" font-size="11" font-family="ui-monospace, monospace" fill="#1F3A5F">— 隐喻 · metaphor (生理学 ↔ 物理)</text>
+  <line x1="40" y1="385" x2="440" y2="385" stroke="#D8D4CC" stroke-width="0.5" stroke-dasharray="3,4"/>
+  <text x="40" y="425" font-size="14" font-style="italic" fill="#1A1714">"如果是，T1/串扰/温漂 哪个最主导？"</text>
+  <text x="40" y="467" font-size="11" font-family="ui-monospace, monospace" fill="#1F3A5F">— 问题 · question</text>
+  <text x="40" y="540" font-size="11" font-family="ui-monospace, monospace" fill="#7D766C">half-baked · 允许不知道是不是对</text>
+  <text x="40" y="560" font-size="11" font-family="ui-monospace, monospace" fill="#7D766C">3 个 atomic units · contradiction + metaphor + question</text>
+</svg>

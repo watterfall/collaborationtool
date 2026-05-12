@@ -149,6 +149,32 @@ describe('landing — TriadicMockup module shape', () => {
   });
 });
 
+describe('landing — v4 specimens reference triadic SVGs', () => {
+  it('Landing.tsx references three new triadic SVG specimens', () => {
+    const src = readFileSync(
+      path.join(repoWebSrc, 'components/landing/Landing.tsx'),
+      'utf8',
+    );
+    assert.match(src, /landing-specimen-night\.svg/);
+    assert.match(src, /landing-specimen-bridge\.svg/);
+    assert.match(src, /landing-specimen-lineage\.svg/);
+  });
+  it('Landing.tsx no longer references v3 specimens', () => {
+    const src = readFileSync(
+      path.join(repoWebSrc, 'components/landing/Landing.tsx'),
+      'utf8',
+    );
+    assert.doesNotMatch(src, /landing-specimen-typst\.svg/);
+    assert.doesNotMatch(src, /landing-specimen-timeline\.svg/);
+    assert.doesNotMatch(src, /desci-review-pilot-fig1\.svg/);
+  });
+  it('zh specimen captions describe night/bridge/lineage content', () => {
+    assert.match(zh.landing.specimens.nightCaption, /矛盾|隐喻|半成品/);
+    assert.match(zh.landing.specimens.bridgeCaption, /原型|参数|假设/);
+    assert.match(zh.landing.specimens.lineageCaption, /3am|连接|lineage|转化/);
+  });
+});
+
 describe('landing — heroMockup locale carries triadic content', () => {
   it('zh heroMockup names all three layers (NIGHT / BRIDGE / DAY)', () => {
     assert.match(zh.landing.heroMockup.nightLabel, /NIGHT/);

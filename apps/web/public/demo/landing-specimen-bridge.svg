@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 600" font-family="ui-serif, 'Source Serif 4', serif">
+  <rect width="480" height="600" fill="#FBFAF7"/>
+  <rect x="20" y="20" width="440" height="560" fill="none" stroke="#D8D4CC" stroke-width="1"/>
+  <text x="40" y="60" font-size="11" font-family="ui-monospace, monospace" fill="#1F3A5F" letter-spacing="2">BRIDGE · 做原型空间</text>
+  <text x="40" y="100" font-size="18" font-weight="500" fill="#1A1714">假设形式化 · hypothesis sketch</text>
+  <line x1="40" y1="115" x2="440" y2="115" stroke="#D8D4CC" stroke-width="1"/>
+  <text x="40" y="150" font-size="13" fill="#1A1714">toy model：</text>
+  <text x="40" y="173" font-size="13" font-family="ui-monospace, monospace" fill="#1A1714">err(t, d) = α·T1(d)^-1 + β·crosstalk(d) + γ·drift(t)</text>
+  <line x1="40" y1="205" x2="440" y2="205" stroke="#D8D4CC" stroke-width="0.5" stroke-dasharray="3,4"/>
+  <text x="40" y="240" font-size="13" font-weight="500" fill="#1A1714">三个可测参数 · three measurable parameters</text>
+  <text x="60" y="270" font-size="13" fill="#1A1714">• T1（退相干时间）— 已有标准测法</text>
+  <text x="60" y="295" font-size="13" fill="#1A1714">• 串扰（crosstalk）— Google 2023 给了基线</text>
+  <text x="60" y="320" font-size="13" fill="#1A1714">• 温漂（thermal drift）— 我们的设备能测</text>
+  <line x1="40" y1="345" x2="440" y2="345" stroke="#D8D4CC" stroke-width="0.5" stroke-dasharray="3,4"/>
+  <text x="40" y="380" font-size="13" font-weight="500" fill="#1A1714">两个风险 · risks</text>
+  <text x="60" y="408" font-size="13" fill="#1A1714">• α/β/γ 可能 device-coupled，跨设备无法迁移</text>
+  <text x="60" y="430" font-size="13" fill="#1A1714">• 若 γ 主导，文献无 prior art 作 baseline</text>
+  <line x1="40" y1="455" x2="440" y2="455" stroke="#D8D4CC" stroke-width="0.5" stroke-dasharray="3,4"/>
+  <text x="40" y="490" font-size="13" font-weight="500" fill="#1A1714">如果这真的成立 · what it would overturn</text>
+  <text x="40" y="513" font-size="13" font-style="italic" fill="#1A1714">→ surface code threshold 理论需要重新参数化</text>
+  <text x="40" y="560" font-size="11" font-family="ui-monospace, monospace" fill="#7D766C">还不是论文 · 但已经能给同行看</text>
+</svg>

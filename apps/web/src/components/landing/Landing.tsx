@@ -192,11 +192,9 @@ export function Landing({ t }: { t: LocaleDict }) {
         </p>
       </section>
 
-      {/* Specimens — 3 image figures showing real outputs. Local SVGs
-          shipped from /public/demo/ so the landing renders even with
-          JS off. Each figure is a hairline-bordered <figure> + serif
-          caption. Image links open the source SVG in a new tab so
-          designers can copy / inspect. */}
+      {/* Specimens — v4: 3 张三层视角图（替代 v3 的 typst/timeline/dag
+          这 3 张 Day-视角图）。Source: /public/demo/landing-specimen-
+          {night,bridge,lineage}.svg。 */}
       <section className="flex flex-col gap-6">
         <header className="flex flex-col gap-2">
           <p className="label-cap">{specimens.heading}</p>
@@ -210,21 +208,21 @@ export function Landing({ t }: { t: LocaleDict }) {
         </header>
         <div className="flex flex-col gap-8">
           <SpecimenFigure
-            src="/demo/landing-specimen-typst.svg"
-            alt={specimens.typstAlt}
-            caption={specimens.typstCaption}
+            src="/demo/landing-specimen-night.svg"
+            alt={specimens.nightAlt}
+            caption={specimens.nightCaption}
             aspectRatio="480 / 600"
           />
           <SpecimenFigure
-            src="/demo/landing-specimen-timeline.svg"
-            alt={specimens.timelineAlt}
-            caption={specimens.timelineCaption}
-            aspectRatio="480 / 360"
+            src="/demo/landing-specimen-bridge.svg"
+            alt={specimens.bridgeAlt}
+            caption={specimens.bridgeCaption}
+            aspectRatio="480 / 600"
           />
           <SpecimenFigure
-            src="/demo/desci-review-pilot-fig1.svg"
-            alt={specimens.dagAlt}
-            caption={specimens.dagCaption}
+            src="/demo/landing-specimen-lineage.svg"
+            alt={specimens.lineageAlt}
+            caption={specimens.lineageCaption}
             aspectRatio="720 / 360"
           />
         </div>
