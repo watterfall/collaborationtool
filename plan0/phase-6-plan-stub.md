@@ -85,6 +85,8 @@ Phase 5 21 个 AI commit + 4 个待 user-driven dogfood：
 | | **ADR-0018 open content mechanisms drafting**（plan0/adr/0018-open-content-mechanisms.md ~260 行）—— Status: Proposed；含 packages/identity/ spec | AI | ✅ |
 | | **Spike-1 runtime acceptance playbook** —— docs/superpowers/runtime-acceptance/2026-05-12-spike-1-runtime-gates.md ~350 行；4 gate user-executable | AI | ✅ |
 | | Phase 6 W2-W3 runtime gates 实操（G1 3-platform binary / G2 套远端 URL / G3 系统集成 / G4 notarize+sign）| **user-driven** | 1-3 周 |
+| **W2 P1** | **`packages/identity/`** ed25519 + argon2id + ORCID（ADR-0018 §2.1，commit `c7af95f`）—— 6 src + 5 test files；DEFAULT_KDF_OPTS t=3/m=64MiB；canonical ORCID link payload 共享 JWS signing；**34 测 PASS** | AI | ✅ |
+| **W2 P1** | **doc-store FileSystemBackend**（ADR-0017 §1.3，commit `c7af95f`）—— FileSystemDocumentHandle + cold-start 三档（sidecar→markdown→empty）+ debounced flush 双通道（sidecar 500ms / markdown 2000ms）+ DI hooks（避免 doc-store ← editor-core ← vault-fs 循环）；**13 测 PASS**；doc-store 17→30 测 | AI | ✅ |
 | **W3-W4** | ADR-0018 open content mechanisms 起草 + Proposed | AI | 0.5 天 |
 | | ADR-0019 plugin runtime cross-platform 起草 + Proposed（与 Tauri shell 联动）| AI | 0.5 天 |
 | **W5-W6** | ADR-0021 discovery-graph schema migration（Night artifact 落 PG，含 visibility tier ACL 接 ADR-0014 subdoc 路径）| AI | 1-2 天 |
