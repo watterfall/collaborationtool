@@ -351,3 +351,31 @@ D4 完成后本 ADR §3 转 Accepted；如果 Typst 翻车则 fallback xeCJK + m
 - §2.7 Vercel AI SDK 采用还是延后（D14 用了 Anthropic SDK 直接，未引入 AI SDK）—
   Phase 2 reviewer agent 落地时再决定
 - §2.3 y-sweet horizontal scale 评估（Phase 4 50+ 人开放评审场景）
+
+---
+
+## Phase 5 Wave B Spike-1 review log（2026-05-11）
+
+- 加 **Tauri 2.x** 到 tech stack（desktop shell；webview 套 Next.js + Rust 系统集成层）
+- 加 **Rust toolchain 1.75+** 到 build prereq（host 已实测 cargo 1.95 + rustc 1.95）
+- 加 **reqwest 0.12 / mockito 1.5 / tokio 1** 到 Rust deps（Ollama HTTP detect + 单元测试）
+- 加 **tauri-plugin-{shell, notification, os, deep-link, updater}** plugin set
+- 加 **GitHub Actions matrix build pipeline**（4 platforms：macOS arm64/x64 + Linux x64 + Windows x64）
+- **minisign keypair** 用于 Tauri Updater 签名（私钥放 GitHub Secrets `TAURI_SIGNING_PRIVATE_KEY*`）
+- **icon / notarization / Windows signing** 当前是 placeholder / 占位，Phase 6 W2 真补
+- **frontendDist** Spike-1 用 `../dist` 占位（gitignored），dev 走 devUrl `http://localhost:3000`；
+  Phase 6 W1 决议切到 `apps/web/.next/standalone`
+- `tauri::feature: macos-private-api` 未启用（与 tauri.conf.json allowlist 不匹配，Spike-1 webview shell 用不到，
+  Phase 6 W1 决议是否启用）
+- `tauri-plugin-shell::Shell::open` deprecation warning 已留，Phase 6 W1 替换为 `tauri-plugin-opener`
+
+**新增 wire-format / 模块边界**：
+
+- TS 侧 `apps/web/src/lib/local-ollama.ts`：`detectOllamaInBrowser` / `chatCompletion` /
+  `parseStreamChunk`（直 fetch `http://localhost:11434`，绕过 server-side ai-runtime ollama provider）
+- TS 侧 `apps/web/src/lib/desktop-bridge.ts`：`isTauri()` + `safeInvoke<T>()`，window.__TAURI_INTERNALS__
+  探测 + 优雅降级到 null（非 Tauri 环境）
+- Rust 侧 `commands::ollama::detect_ollama_available` + `commands::system::open_external_url`
+
+**Spike-1 验收**：3 Rust 单元测试 + 14 web node:test 全 PASS；cargo check 全 PASS；
+跨平台 CI matrix 上线；端到端 GH Actions binary 验证 + 真 ollama smoke 留 task 11/13 实测填写。
