@@ -175,6 +175,28 @@ describe('landing — v4 specimens reference triadic SVGs', () => {
   });
 });
 
+describe('landing — v4 differentiation (5 rows)', () => {
+  it('zh has exactly 5 differentiation rows', () => {
+    assert.equal(zh.landing.differentiation.rows.length, 5);
+  });
+  it('en has exactly 5 differentiation rows', () => {
+    assert.equal(en.landing.differentiation.rows.length, 5);
+  });
+  it('zh heading is "和别的工具有啥不同"', () => {
+    assert.equal(zh.landing.differentiation.heading, '和别的工具有啥不同');
+  });
+  it('one of the rows is "first author"-framing rejection', () => {
+    const zhFirstAuthor = zh.landing.differentiation.rows.find(r =>
+      r.competitor.includes('first author'),
+    );
+    const enFirstAuthor = en.landing.differentiation.rows.find(r =>
+      r.competitor.toLowerCase().includes('first author'),
+    );
+    assert.ok(zhFirstAuthor, 'zh missing first-author row');
+    assert.ok(enFirstAuthor, 'en missing first-author row');
+  });
+});
+
 describe('landing — heroMockup locale carries triadic content', () => {
   it('zh heroMockup names all three layers (NIGHT / BRIDGE / DAY)', () => {
     assert.match(zh.landing.heroMockup.nightLabel, /NIGHT/);
