@@ -7,7 +7,8 @@ export * from './_shared';
 export * from './ydoc-to-markdown';
 export * from './markdown-to-ydoc';
 export * from './sidecar-io';
-// Tasks 5-7 fill these:
+export * from './file-watcher';
+// Tasks 6-7 fill these:
 // export * from './markdown-to-ydoc';
 // export * from './sidecar-io';
 // export * from './file-watcher';
