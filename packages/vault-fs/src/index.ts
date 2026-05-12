@@ -4,8 +4,8 @@
 // (vault-fs component) for the design.
 
 export * from './_shared';
-// Tasks 2-7 fill these:
-// export * from './ydoc-to-markdown';
+export * from './ydoc-to-markdown';
+// Tasks 3-7 fill these:
 // export * from './markdown-to-ydoc';
 // export * from './sidecar-io';
 // export * from './file-watcher';
