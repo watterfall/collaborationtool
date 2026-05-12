@@ -53,28 +53,24 @@ export const en: LocaleDict = {
       ctaSecondary: 'How to self-host',
     },
     pillars: {
-      heading: 'Core capabilities',
-      sub: 'Four things done well, instead of stacking features.',
-      editor: {
-        title: 'Editor: markup-as-source, WYSIWYM rendered',
-        desc: 'A structured editor on ProseMirror + TipTap; equations render in <50ms, keystrokes feel <100ms; paper nodes (figure, table, citation, theorem, cell) are first-class from day one — never bolted on later.',
-        diagram: 'PM JSON  →  commit  →  MyST / Typst / JATS / DOCX / HTML',
+      heading: 'What it does',
+      sub: 'Three workspaces. Each has its own content types, collaboration patterns and archive.',
+      thinking: {
+        title: 'The thinking space',
+        desc: "The 3am connection, the dinner argument, the \"huh, what if this method from math applies to biology?\" — all first-class. Words, hand sketches, a contradiction you noticed, a counter-example. Half-baked is allowed.",
       },
-      ai: {
-        title: 'AI as collaborator: actions, not a chat sidebar',
-        desc: 'AI works through concrete actions — insert a citation, rewrite a sentence, find a reference. Three composable layers (plugins · skills · MCP servers) plus bring-your-own model means no single-vendor lock-in.',
-        diagram: 'plugin · skill · MCP server  →  coordinator  →  your paper',
+      prototyping: {
+        title: 'The prototyping space',
+        desc: "Turn an idea into something. A toy model, a translation from \"I feel these are connected\" to \"three measurable parameters\", a design sketch that's not paper-grade but gets your idea across. Done here, you're not at a paper yet — but you can show colleagues.",
       },
-      provenance: {
-        title: 'Provenance: every paragraph is traceable',
-        desc: 'Each AI intervention records actorPrincipalId, agentContext, promptHash and toolCalls — hard evidence for review and rollback. Not a disclaimer, a data structure.',
-        diagram: 'actor · prompt · model · tools  ⇄  every commit signed',
+      paper: {
+        title: 'The paper space',
+        desc: "The traditional part — write the paper, run the experiments, go through review, export to PDF / Word / JATS. We do this layer as well as anyone. But it's one of three layers, not all of them.",
       },
-      bilingual: {
-        title: 'Bilingual: equally serious typography on both sides',
-        desc: 'CJK and Latin tuned separately (Source Han Serif / Songti / Noto). Quotes, breaking and spacing decided per script — not per document. HTML, Typst PDF, JATS and DOCX share one typography pre-pass.',
-        diagram: 'zh · en · math · code  →  one pre-pass  →  4 export formats',
-      },
+    },
+    attribution: {
+      heading: 'Every idea has a name',
+      desc: 'No more "first author et al." Every idea, every metaphor, every contradiction is tracked to who proposed it, with timestamps. Each contribution is independently citable. Authorship is no longer a ranking game.',
     },
     differentiation: {
       heading: 'A 5-year anchor',

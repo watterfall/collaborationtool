@@ -109,14 +109,29 @@ describe('landing — hero + architecture copy in both locales', () => {
       'ASCII diagrams must agree on line count to layout the same width',
     );
   });
-  it('all four pillars are translated (no Latin "Coming soon" in zh, no zh in en hero)', () => {
-    for (const k of ['editor', 'ai', 'provenance', 'bilingual'] as const) {
+});
+
+describe('landing — v4 pillars (3 spaces) + attribution', () => {
+  it('all three pillars (thinking/prototyping/paper) are translated', () => {
+    for (const k of ['thinking', 'prototyping', 'paper'] as const) {
       const z = zh.landing.pillars[k].title;
       const e = en.landing.pillars[k].title;
       assert.notEqual(z, '', `zh.landing.pillars.${k}.title empty`);
       assert.notEqual(e, '', `en.landing.pillars.${k}.title empty`);
       assert.notEqual(z, e, `pillar ${k}: zh and en titles must differ`);
     }
+  });
+  it('zh thinking-space pillar mentions 3am + 草图 + 矛盾', () => {
+    assert.match(zh.landing.pillars.thinking.desc, /3am/);
+    assert.match(zh.landing.pillars.thinking.desc, /草图|矛盾/);
+  });
+  it('en thinking-space pillar mentions 3am + sketch + contradiction', () => {
+    assert.match(en.landing.pillars.thinking.desc, /3am/);
+    assert.match(en.landing.pillars.thinking.desc, /sketch|contradiction/i);
+  });
+  it('attribution section rejects first-author framing', () => {
+    assert.match(zh.landing.attribution.desc, /first author|排第几/);
+    assert.match(en.landing.attribution.desc, /first author/i);
   });
 });
 

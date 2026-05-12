@@ -53,28 +53,24 @@ export const zh = {
       ctaSecondary: '怎么装到自己电脑',
     },
     pillars: {
-      heading: '核心能力',
-      sub: '四件事做到位，而非堆叠功能。',
-      editor: {
-        title: '编辑器：Markup-as-source，WYSIWYM 呈现',
-        desc: '基于 ProseMirror + TipTap 的结构化编辑器；公式 < 50ms 渲染、键入 < 100ms 反馈；论文节点（图、表、引用、定理、Cell）从第 0 阶段就是头等公民，不是事后插件。',
-        diagram: 'PM JSON  →  commit  →  MyST / Typst / JATS / DOCX / HTML',
+      heading: '能做什么',
+      sub: '三个工作空间。每个空间有自己的内容类型、自己的协作方式、自己的 archive。',
+      thinking: {
+        title: '想点子的地方',
+        desc: '你 3am 醒来想到的连接、和朋友餐桌上的争论、把一个数学方法用到生物上的"咦"——都是 first-class 内容。可以是文字、可以是手画草图、可以是一个矛盾观察、可以是一个反例。允许半成品。',
       },
-      ai: {
-        title: 'AI 协作：协作动作，不是聊天框',
-        desc: 'AI 走的是"插入引用 / 改一句话 / 找一篇 reference"这种具体动作；plugin 扩展、skill 库、MCP 服务三层可组合，BYO 模型；不绑定单一供应商。',
-        diagram: 'plugin · skill · MCP server   →   coordinator   →   你的论文',
+      prototyping: {
+        title: '做原型的地方',
+        desc: '想用一个想法做点什么——一个 toy model、一段把"我感觉这有关系"翻译成"可测的三个参数"、一个还不到论文水平但能让别人理解你在想什么的设计草图。这一层做完，离论文还差一截，但已经能给同行看了。',
       },
-      provenance: {
-        title: 'Provenance：每一段文字都可追溯',
-        desc: '每次 AI 介入都写入 actorPrincipalId / agentContext / promptHash / toolCalls，留作未来 review 与撤回的硬证据；不是 disclaimer，是数据结构。',
-        diagram: 'actor · prompt · model · tools  ⇄  每个 commit 都签名',
+      paper: {
+        title: '写论文的地方',
+        desc: '传统的写论文、跑实验、走评审、导出 PDF / Word / JATS——这一层我们做得和别人一样好。但只占三层中的一层；不是全部。',
       },
-      bilingual: {
-        title: '中英双语 · 排版同等精细',
-        desc: 'CJK 与拉丁排版分开调（Source Han Serif / Songti / Noto），引号、断行、空格按 script 而非按文档判断；导出 HTML / Typst PDF / JATS / DOCX 共用同一套 typography pre-pass。',
-        diagram: 'zh · en · 公式 · 代码  →  统一 pre-pass  →  4 种导出',
-      },
+    },
+    attribution: {
+      heading: '每一个想法都有名字',
+      desc: '不再是"first author et al."。每个想法是谁提的、每个隐喻是谁想到的、每个矛盾是谁挖出来的——都被记下来，都独立可被引用。论文里"作者"不再是排第几的游戏。',
     },
     differentiation: {
       heading: '5 年差异化锚点',

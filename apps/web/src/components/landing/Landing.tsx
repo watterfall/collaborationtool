@@ -21,6 +21,7 @@ const REPO_URL = 'https://github.com/watterfall/collaborationtool';
 export function Landing({ t }: { t: LocaleDict }) {
   const hero = t.landing.hero;
   const pillars = t.landing.pillars;
+  const attribution = t.landing.attribution;
   const diff = t.landing.differentiation;
   const specimens = t.landing.specimens;
   const arch = t.landing.architecture;
@@ -74,9 +75,9 @@ export function Landing({ t }: { t: LocaleDict }) {
         </div>
       </section>
 
-      {/* Pillars — hairline-separated rows, not card grid. Each row is
-          a small editorial spread: serif title + serif body + mono
-          ASCII diagram on the left rule. */}
+      {/* Pillars — v4: 3 个空间（想点子 / 做原型 / 写论文），删 v3 的
+          4 个 ASCII 微图（实现路径写法）。grid 在 ≥md 是 3 列，让"三层"
+          视觉权重对齐。 */}
       <section className="flex flex-col gap-10">
         <header className="flex flex-col gap-2">
           <p className="label-cap">{pillars.heading}</p>
@@ -86,33 +87,39 @@ export function Landing({ t }: { t: LocaleDict }) {
               color: 'var(--color-ink)',
               letterSpacing: '-0.005em',
             }}
+            data-prose="bilingual"
           >
             {pillars.sub}
           </h2>
         </header>
 
-        <div className="grid grid-cols-1 gap-12 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
           <Pillar
-            title={pillars.editor.title}
-            desc={pillars.editor.desc}
-            diagram={pillars.editor.diagram}
+            title={pillars.thinking.title}
+            desc={pillars.thinking.desc}
           />
           <Pillar
-            title={pillars.ai.title}
-            desc={pillars.ai.desc}
-            diagram={pillars.ai.diagram}
+            title={pillars.prototyping.title}
+            desc={pillars.prototyping.desc}
           />
           <Pillar
-            title={pillars.provenance.title}
-            desc={pillars.provenance.desc}
-            diagram={pillars.provenance.diagram}
-          />
-          <Pillar
-            title={pillars.bilingual.title}
-            desc={pillars.bilingual.desc}
-            diagram={pillars.bilingual.diagram}
+            title={pillars.paper.title}
+            desc={pillars.paper.desc}
           />
         </div>
+      </section>
+
+      {/* Attribution — v4 新节，反 first-author. 独立 visual 节，
+          不并入 pillars grid（spec §3.3 第 4 节）。 */}
+      <section className="flex flex-col gap-3">
+        <p className="label-cap">{attribution.heading}</p>
+        <p
+          className="max-w-prose font-serif text-[16px] leading-[1.78]"
+          style={{ color: 'var(--color-ink)' }}
+          data-prose="bilingual"
+        >
+          {attribution.desc}
+        </p>
       </section>
 
       {/* Differentiation — 4 hairline-separated rows comparing the
@@ -353,11 +360,9 @@ function SpecimenFigure({
 function Pillar({
   title,
   desc,
-  diagram,
 }: {
   title: string;
   desc: string;
-  diagram: string;
 }) {
   return (
     <article className="flex flex-col gap-3">
@@ -375,15 +380,6 @@ function Pillar({
       >
         {desc}
       </p>
-      <pre
-        className="py-1 pl-3 font-mono text-[11px] leading-[1.5]"
-        style={{
-          color: 'var(--color-ink-3)',
-          borderLeft: '1px solid var(--color-hairline)',
-        }}
-      >
-        {diagram}
-      </pre>
     </article>
   );
 }
