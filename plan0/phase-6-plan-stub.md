@@ -81,7 +81,10 @@ Phase 5 21 个 AI commit + 4 个待 user-driven dogfood：
 | **W1** | **Spike-3 plugin runtime selection execution** —— 全 7 task 完成 (`5ce6a97` merge)；ADR-0019 Proposed；hybrid runtime decision (WASM primary + per-OS native fallback) | AI | ✅ |
 | | **Spike-1 Tauri shell execution**（subagent-driven 重启）—— 全 13 task 完成 (`98e3f30` merge of `d762212..1db6f37`)；apps/desktop/ Tauri 2.x 全套 (tray / notifications / .paper / deep-link / Updater) + apps/web/{desktop-bridge,local-ollama,InlineAgentMenu local-AI toggle} + GH Actions desktop-release.yml + ADR-0003 review log；code-side 全 PASS（Rust 3 mockito + TS 14 node:test）；runtime gates (binary build / remote URL smoke / notarize+sign) DEFERRED Phase 6 W2 | AI | ✅ |
 | | **Spike-2 vault-fs PoC execution**（subagent-driven 重启）—— 全 12 task 完成 (`6492b36` merge of `60281ce..28c3036`)；packages/vault-fs/ 9 src + 11 test 含 5 spec §8 fixture (cold-start / external-edit / 3-way merge / sidecar 损坏 / sync 中断) + Design.md reject grep + 5-client stress + Y.Doc/PM JSON wire 兼容；**4/4 验收 PASS / 31 测全绿**；ADR-0001 §8.6 + ADR-0005 review log；subagent fix 6 处 plan API mismatch (含 plan 修复未覆盖的 3 处：yXmlFragmentToProsemirrorJSON 1-arg / Y.XmlText 必需 / 多 client 共享 seed) | AI | ✅ |
-| **W2** | 3 spike 全 PASS 后起 ADR-0017 client-first runtime + ADR-0018 open content（ADR-0019 已在 spike-3 task 6 起 Proposed）| AI | 各 0.5 天 |
+| **W2** | **ADR-0017 client-first runtime drafting**（plan0/adr/0017-client-first-runtime.md ~280 行）—— Status: Proposed | AI | ✅ |
+| | **ADR-0018 open content mechanisms drafting**（plan0/adr/0018-open-content-mechanisms.md ~260 行）—— Status: Proposed；含 packages/identity/ spec | AI | ✅ |
+| | **Spike-1 runtime acceptance playbook** —— docs/superpowers/runtime-acceptance/2026-05-12-spike-1-runtime-gates.md ~350 行；4 gate user-executable | AI | ✅ |
+| | Phase 6 W2-W3 runtime gates 实操（G1 3-platform binary / G2 套远端 URL / G3 系统集成 / G4 notarize+sign）| **user-driven** | 1-3 周 |
 | **W3-W4** | ADR-0018 open content mechanisms 起草 + Proposed | AI | 0.5 天 |
 | | ADR-0019 plugin runtime cross-platform 起草 + Proposed（与 Tauri shell 联动）| AI | 0.5 天 |
 | **W5-W6** | ADR-0021 discovery-graph schema migration（Night artifact 落 PG，含 visibility tier ACL 接 ADR-0014 subdoc 路径）| AI | 1-2 天 |
