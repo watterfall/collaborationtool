@@ -149,24 +149,37 @@ describe('landing — TriadicMockup module shape', () => {
   });
 });
 
-describe('landing — v4 specimens reference triadic SVGs', () => {
-  it('Landing.tsx references three new triadic SVG specimens', () => {
+describe('landing — v6 specimens use HTML components (not <img src=svg>)', () => {
+  it('Landing.tsx imports 3 triadic specimen components', () => {
     const src = readFileSync(
       path.join(repoWebSrc, 'components/landing/Landing.tsx'),
       'utf8',
     );
-    assert.match(src, /landing-specimen-night\.svg/);
-    assert.match(src, /landing-specimen-bridge\.svg/);
-    assert.match(src, /landing-specimen-lineage\.svg/);
+    assert.match(src, /from ['"]\.\/NightArtifactCard['"]/);
+    assert.match(src, /from ['"]\.\/BridgeArtifactCard['"]/);
+    assert.match(src, /from ['"]\.\/LineageGraph['"]/);
   });
-  it('Landing.tsx no longer references v3 specimens', () => {
+  it('Landing.tsx no longer uses <img src=landing-specimen-*.svg>', () => {
     const src = readFileSync(
       path.join(repoWebSrc, 'components/landing/Landing.tsx'),
       'utf8',
     );
+    // v6 dropped SVG <img> in favor of React components for real typography
+    assert.doesNotMatch(src, /landing-specimen-night\.svg/);
+    assert.doesNotMatch(src, /landing-specimen-bridge\.svg/);
+    assert.doesNotMatch(src, /landing-specimen-lineage\.svg/);
+    // v3 specimens (typst/timeline/dag) also still gone
     assert.doesNotMatch(src, /landing-specimen-typst\.svg/);
     assert.doesNotMatch(src, /landing-specimen-timeline\.svg/);
     assert.doesNotMatch(src, /desci-review-pilot-fig1\.svg/);
+  });
+  it('the 3 specimen components export a callable', async () => {
+    const night = await import('../src/components/landing/NightArtifactCard');
+    const bridge = await import('../src/components/landing/BridgeArtifactCard');
+    const lineage = await import('../src/components/landing/LineageGraph');
+    assert.equal(typeof night.NightArtifactCard, 'function');
+    assert.equal(typeof bridge.BridgeArtifactCard, 'function');
+    assert.equal(typeof lineage.LineageGraph, 'function');
   });
   it('zh specimen captions describe night/bridge/lineage content', () => {
     assert.match(zh.landing.specimens.nightCaption, /矛盾|隐喻|半成品/);

@@ -12,10 +12,14 @@
 // they hold up across CJK and Latin glyph widths without bespoke
 // SVGs.
 
+import * as React from 'react';
 import Link from 'next/link';
 
 import type { LocaleDict } from '@/lib/i18n/types';
 import { TriadicMockup } from './TriadicMockup';
+import { NightArtifactCard } from './NightArtifactCard';
+import { BridgeArtifactCard } from './BridgeArtifactCard';
+import { LineageGraph } from './LineageGraph';
 
 const REPO_URL = 'https://github.com/watterfall/collaborationtool';
 
@@ -150,24 +154,15 @@ export function Landing({ t }: { t: LocaleDict }) {
             </p>
           </header>
           <div className="flex flex-col gap-8">
-            <SpecimenFigure
-              src="/demo/landing-specimen-night.svg"
-              alt={specimens.nightAlt}
-              caption={specimens.nightCaption}
-              aspectRatio="600 / 760"
-            />
-            <SpecimenFigure
-              src="/demo/landing-specimen-bridge.svg"
-              alt={specimens.bridgeAlt}
-              caption={specimens.bridgeCaption}
-              aspectRatio="600 / 740"
-            />
-            <SpecimenFigure
-              src="/demo/landing-specimen-lineage.svg"
-              alt={specimens.lineageAlt}
-              caption={specimens.lineageCaption}
-              aspectRatio="1200 / 470"
-            />
+            <SpecimenBlock caption={specimens.nightCaption}>
+              <NightArtifactCard />
+            </SpecimenBlock>
+            <SpecimenBlock caption={specimens.bridgeCaption}>
+              <BridgeArtifactCard />
+            </SpecimenBlock>
+            <SpecimenBlock caption={specimens.lineageCaption}>
+              <LineageGraph />
+            </SpecimenBlock>
           </div>
         </div>
       </section>
@@ -342,34 +337,19 @@ export function Landing({ t }: { t: LocaleDict }) {
   );
 }
 
-function SpecimenFigure({
-  src,
-  alt,
+// v6: specimens 改为 React HTML 组件渲染（NightArtifactCard /
+// BridgeArtifactCard / LineageGraph），不再用 <img src=svg>。SpecimenBlock
+// 只负责 wrap + 提供 serif italic figcaption。
+function SpecimenBlock({
   caption,
-  aspectRatio,
+  children,
 }: {
-  src: string;
-  alt: string;
   caption: string;
-  aspectRatio: string;
+  children: React.ReactNode;
 }) {
   return (
     <figure className="flex flex-col gap-2">
-      <a href={src} target="_blank" rel="noopener noreferrer">
-        <img
-          src={src}
-          alt={alt}
-          loading="lazy"
-          decoding="async"
-          style={{
-            width: '100%',
-            height: 'auto',
-            aspectRatio,
-            border: '1px solid var(--color-hairline)',
-            background: 'var(--color-paper)',
-          }}
-        />
-      </a>
+      {children}
       <figcaption
         className="font-serif text-sm italic leading-[1.55]"
         style={{ color: 'var(--color-ink-2)' }}
