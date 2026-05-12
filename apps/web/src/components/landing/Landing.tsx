@@ -154,19 +154,19 @@ export function Landing({ t }: { t: LocaleDict }) {
               src="/demo/landing-specimen-night.svg"
               alt={specimens.nightAlt}
               caption={specimens.nightCaption}
-              aspectRatio="480 / 600"
+              aspectRatio="600 / 760"
             />
             <SpecimenFigure
               src="/demo/landing-specimen-bridge.svg"
               alt={specimens.bridgeAlt}
               caption={specimens.bridgeCaption}
-              aspectRatio="480 / 600"
+              aspectRatio="600 / 740"
             />
             <SpecimenFigure
               src="/demo/landing-specimen-lineage.svg"
               alt={specimens.lineageAlt}
               caption={specimens.lineageCaption}
-              aspectRatio="720 / 360"
+              aspectRatio="1200 / 470"
             />
           </div>
         </div>

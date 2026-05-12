@@ -404,6 +404,37 @@ h1 {
 }
 
 /* ---------------------------------------------------------------------------
+ * Triadic mockup — Hero 三层 lineage 可视化（Design.md §11 守 #2 + #12）
+ *
+ * .layer-card：3 层 card 的基础样式 + hover 状态。CSS-only，无 JS。
+ *   hover 时 border 从 hairline 变 accent-ink + bg 从 paper-2 变 paper-3。
+ *   transition 用 ease-out 120ms 与项目 button/link 一致。
+ *
+ * .edge-arrow：layer 之间的 ↓ 标签 + interaction-mode 名。hover 让 mode
+ *   名颜色从 ink-3 变 accent-ink（暗示"可点开看 ADR-0020 定义"，但目前
+ *   是纯 marketing 装饰，不真跳）。
+ * -------------------------------------------------------------------------- */
+
+.layer-card {
+  border: 1px solid var(--color-hairline);
+  background: var(--color-paper-2);
+  transition:
+    border-color 180ms ease-out,
+    background-color 180ms ease-out;
+}
+.layer-card:hover {
+  border-color: var(--color-accent-ink);
+  background: var(--color-paper-3);
+}
+
+.edge-arrow {
+  transition: color 180ms ease-out;
+}
+.edge-arrow:hover .edge-mode {
+  color: var(--color-accent-ink);
+}
+
+/* ---------------------------------------------------------------------------
  * Block hover-rail (Design.md §5.6).
  *
  * 4 stacked 22px square buttons that float at the left of a paragraph.

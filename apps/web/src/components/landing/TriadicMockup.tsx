@@ -7,7 +7,10 @@
 //   - 箭头用 ascii `↓` glyph + 小字标签（不是 SVG icon，不是 emoji，§11 #4）
 //   - layer 标签（NIGHT / BRIDGE / DAY）用 mono caps + accent-ink，不当 status pill
 //
-// 无 JS 交互。文案全走 locale 字典。
+// 交互：CSS-only hover（.layer-card / .edge-arrow classes 在 globals.css），
+// hover layer card 时 border-color 从 hairline 变 accent-ink + bg 从 paper-2
+// 变 paper-3；hover edge arrow 时 mode 名颜色变 accent-ink。Server component，
+// 无 JS。
 
 import type { LocaleDict } from '@/lib/i18n/types';
 
@@ -53,13 +56,7 @@ function LayerCard({
   tag: string;
 }) {
   return (
-    <article
-      className="flex flex-col gap-2 px-4 py-3"
-      style={{
-        border: '1px solid var(--color-hairline)',
-        background: 'var(--color-paper-2)',
-      }}
-    >
+    <article className="layer-card flex flex-col gap-2 px-4 py-3">
       <p
         className="font-mono text-[11px] uppercase tracking-wider"
         style={{ color: 'var(--color-accent-ink)' }}
@@ -86,7 +83,7 @@ function LayerCard({
 function EdgeArrow({ label, mode }: { label: string; mode: string }) {
   return (
     <div
-      className="flex items-center gap-3 self-center font-mono text-[11px]"
+      className="edge-arrow flex items-center gap-3 self-center font-mono text-[11px]"
       style={{ color: 'var(--color-ink-3)' }}
     >
       <span
@@ -96,7 +93,7 @@ function EdgeArrow({ label, mode }: { label: string; mode: string }) {
         ↓
       </span>
       <span data-prose="bilingual">{label}</span>
-      <span style={{ color: 'var(--color-ink-3)' }}>· {mode}</span>
+      <span className="edge-mode" style={{ color: 'var(--color-ink-3)' }}>· {mode}</span>
     </div>
   );
 }

@@ -1,22 +1,79 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 600" font-family="ui-serif, 'Source Serif 4', serif">
-  <rect width="480" height="600" fill="#FBFAF7"/>
-  <rect x="20" y="20" width="440" height="560" fill="none" stroke="#D8D4CC" stroke-width="1"/>
-  <text x="40" y="60" font-size="11" font-family="ui-monospace, monospace" fill="#1F3A5F" letter-spacing="2">BRIDGE · 做原型空间</text>
-  <text x="40" y="100" font-size="18" font-weight="500" fill="#1A1714">假设形式化 · hypothesis sketch</text>
-  <line x1="40" y1="115" x2="440" y2="115" stroke="#D8D4CC" stroke-width="1"/>
-  <text x="40" y="150" font-size="13" fill="#1A1714">toy model：</text>
-  <text x="40" y="173" font-size="13" font-family="ui-monospace, monospace" fill="#1A1714">err(t, d) = α·T1(d)^-1 + β·crosstalk(d) + γ·drift(t)</text>
-  <line x1="40" y1="205" x2="440" y2="205" stroke="#D8D4CC" stroke-width="0.5" stroke-dasharray="3,4"/>
-  <text x="40" y="240" font-size="13" font-weight="500" fill="#1A1714">三个可测参数 · three measurable parameters</text>
-  <text x="60" y="270" font-size="13" fill="#1A1714">• T1（退相干时间）— 已有标准测法</text>
-  <text x="60" y="295" font-size="13" fill="#1A1714">• 串扰（crosstalk）— Google 2023 给了基线</text>
-  <text x="60" y="320" font-size="13" fill="#1A1714">• 温漂（thermal drift）— 我们的设备能测</text>
-  <line x1="40" y1="345" x2="440" y2="345" stroke="#D8D4CC" stroke-width="0.5" stroke-dasharray="3,4"/>
-  <text x="40" y="380" font-size="13" font-weight="500" fill="#1A1714">两个风险 · risks</text>
-  <text x="60" y="408" font-size="13" fill="#1A1714">• α/β/γ 可能 device-coupled，跨设备无法迁移</text>
-  <text x="60" y="430" font-size="13" fill="#1A1714">• 若 γ 主导，文献无 prior art 作 baseline</text>
-  <line x1="40" y1="455" x2="440" y2="455" stroke="#D8D4CC" stroke-width="0.5" stroke-dasharray="3,4"/>
-  <text x="40" y="490" font-size="13" font-weight="500" fill="#1A1714">如果这真的成立 · what it would overturn</text>
-  <text x="40" y="513" font-size="13" font-style="italic" fill="#1A1714">→ surface code threshold 理论需要重新参数化</text>
-  <text x="40" y="560" font-size="11" font-family="ui-monospace, monospace" fill="#7D766C">还不是论文 · 但已经能给同行看</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 740" font-family="ui-serif, 'Source Serif 4', serif">
+  <rect width="600" height="740" fill="#FBFAF7"/>
+  <rect x="24" y="24" width="552" height="692" fill="none" stroke="#1A1714" stroke-width="0.6"/>
+
+  <!-- ===== Header strip ===== -->
+  <text x="44" y="58" font-size="10" font-family="ui-monospace, monospace" fill="#1F3A5F" letter-spacing="3">BRIDGE · 做原型空间</text>
+  <text x="44" y="98" font-size="22" font-weight="500" fill="#1A1714">device-dependent error model</text>
+  <text x="44" y="124" font-size="13" font-style="italic" fill="#4A443C">假设形式化 · 2026-04-08 · jili + alice</text>
+  <line x1="44" y1="142" x2="556" y2="142" stroke="#1A1714" stroke-width="0.8"/>
+
+  <!-- ===== Section 1: The Model ===== -->
+  <text x="44" y="174" font-size="11" font-family="ui-monospace, monospace" fill="#1F3A5F" letter-spacing="2">1 · TOY MODEL</text>
+
+  <!-- formula box -->
+  <rect x="60" y="190" width="480" height="76" fill="#F2EEE4" stroke="#D8D4CC"/>
+  <text x="300" y="225" font-size="20" font-style="italic" fill="#1A1714" text-anchor="middle">err(t, d)  =  α · T₁(d)⁻¹  +  β · xtalk(d)  +  γ · drift(t)</text>
+  <text x="300" y="250" font-size="11" font-family="ui-monospace, monospace" fill="#4A443C" text-anchor="middle">α, β, γ ∈ ℝ⁺  ·  d ∈ devices  ·  t ∈ time</text>
+
+  <text x="44" y="290" font-size="12" font-style="italic" fill="#4A443C">假设：错误率不是常数，而是 device + time 的函数。</text>
+  <text x="44" y="308" font-size="12" font-style="italic" fill="#4A443C">三个参数都可独立测量，可跨 device 迁移。</text>
+
+  <!-- ===== Section 2: Measurable Parameters (bar chart) ===== -->
+  <line x1="44" y1="328" x2="556" y2="328" stroke="#D8D4CC" stroke-width="0.5" stroke-dasharray="3,3"/>
+  <text x="44" y="356" font-size="11" font-family="ui-monospace, monospace" fill="#1F3A5F" letter-spacing="2">2 · 三个可测参数</text>
+
+  <!-- Bar 1: T1 (well-known) -->
+  <text x="44" y="384" font-size="12" fill="#1A1714">T₁  退相干时间</text>
+  <rect x="180" y="372" width="280" height="14" fill="#FBFAF7" stroke="#D8D4CC" stroke-width="0.5"/>
+  <rect x="180" y="372" width="252" height="14" fill="#1F3A5F" opacity="0.55"/>
+  <text x="466" y="384" font-size="10" font-family="ui-monospace, monospace" fill="#4A443C">已有标准测法</text>
+
+  <!-- Bar 2: crosstalk (partial baseline) -->
+  <text x="44" y="412" font-size="12" fill="#1A1714">xtalk  串扰</text>
+  <rect x="180" y="400" width="280" height="14" fill="#FBFAF7" stroke="#D8D4CC" stroke-width="0.5"/>
+  <rect x="180" y="400" width="168" height="14" fill="#1F3A5F" opacity="0.55"/>
+  <text x="466" y="412" font-size="10" font-family="ui-monospace, monospace" fill="#4A443C">Google 2023 基线</text>
+
+  <!-- Bar 3: drift (new, no prior art) -->
+  <text x="44" y="440" font-size="12" fill="#1A1714">drift  温漂</text>
+  <rect x="180" y="428" width="280" height="14" fill="#FBFAF7" stroke="#D8D4CC" stroke-width="0.5"/>
+  <rect x="180" y="428" width="56" height="14" fill="#1F3A5F" opacity="0.55"/>
+  <text x="466" y="440" font-size="10" font-family="ui-monospace, monospace" fill="#4A443C">本组首测</text>
+
+  <!-- axis labels -->
+  <text x="180" y="458" font-size="9" font-family="ui-monospace, monospace" fill="#8A8276">prior art 成熟度 ──────────────────────────────────────→</text>
+
+  <!-- ===== Section 3: Risk callouts ===== -->
+  <line x1="44" y1="478" x2="556" y2="478" stroke="#D8D4CC" stroke-width="0.5" stroke-dasharray="3,3"/>
+  <text x="44" y="506" font-size="11" font-family="ui-monospace, monospace" fill="#1F3A5F" letter-spacing="2">3 · 两个风险点</text>
+
+  <line x1="44" y1="518" x2="44" y2="568" stroke="#7B2D26" stroke-width="2"/>
+  <text x="58" y="534" font-size="12" font-weight="500" fill="#1A1714">α / β / γ 可能 device-coupled</text>
+  <text x="58" y="552" font-size="11" font-style="italic" fill="#4A443C">→ 拟合参数无法跨 device 迁移，文章 generalize 受限。</text>
+
+  <line x1="44" y1="578" x2="44" y2="628" stroke="#7B2D26" stroke-width="2"/>
+  <text x="58" y="594" font-size="12" font-weight="500" fill="#1A1714">γ（温漂）若主导</text>
+  <text x="58" y="612" font-size="11" font-style="italic" fill="#4A443C">→ 文献无 prior art 作 baseline，需自己造对照实验。</text>
+
+  <!-- ===== Section 4: Test plan checklist ===== -->
+  <line x1="44" y1="640" x2="556" y2="640" stroke="#D8D4CC" stroke-width="0.5" stroke-dasharray="3,3"/>
+  <text x="44" y="664" font-size="11" font-family="ui-monospace, monospace" fill="#1F3A5F" letter-spacing="2">4 · 测试 plan</text>
+
+  <rect x="44" y="676" width="11" height="11" fill="none" stroke="#1A1714"/>
+  <text x="62" y="686" font-size="11" fill="#1A1714">单 device 三参数测量 · 复现 Google baseline</text>
+
+  <rect x="44" y="694" width="11" height="11" fill="#1A1714"/>
+  <line x1="46" y1="696" x2="53" y2="703" stroke="#FBFAF7" stroke-width="1.5"/>
+  <line x1="46" y1="703" x2="53" y2="696" stroke="#FBFAF7" stroke-width="1.5"/>
+  <text x="62" y="704" font-size="11" fill="#1A1714">跨 3 device 拟合 α/β/γ · ✓ alice 04-15</text>
+
+  <rect x="304" y="676" width="11" height="11" fill="none" stroke="#1A1714"/>
+  <text x="322" y="686" font-size="11" fill="#1A1714">温漂对照实验（同 device 加热 ±20°C）</text>
+
+  <rect x="304" y="694" width="11" height="11" fill="none" stroke="#1A1714"/>
+  <text x="322" y="704" font-size="11" fill="#1A1714">如果模型成立 → 撰写论文（→ Day 层）</text>
+
+  <!-- ===== Footer ===== -->
+  <text x="44" y="730" font-size="10" font-family="ui-monospace, monospace" fill="#8A8276">还不是论文 · 但已经能给同行看 · ORCID-signed contribution-graph: jili (formula) + alice (testing) </text>
 </svg>
