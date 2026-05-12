@@ -78,10 +78,10 @@ Phase 5 21 个 AI commit + 4 个待 user-driven dogfood：
 | | Wave B 5 criteria retrospective + ADR-0016 升 Accepted | AI 协助 | 0.5 天 |
 | **W0.5** | **Spike-2 plan 起草** (`docs/superpowers/plans/2026-05-12-spike-2-vault-fs.md`, ~1400 行 / 12 tasks) | AI | ✅ |
 | | **Spike-3 plan 起草** (`docs/superpowers/plans/2026-05-12-spike-3-plugin-runtime.md`, ~900 行 / 7 tasks) | AI | ✅ |
-| **W1-W2** | Spike-1 Tauri shell execution（subagent-driven，per memory）| AI | 5-7 天 |
-| | Spike-2 vault-fs PoC execution（per spike-2 plan）| AI | 5-7 天 |
-| | Spike-3 plugin runtime selection execution（per spike-3 plan）| AI | 3 天 |
-| | 3 spike 全 PASS 后起 ADR-0017 client-first runtime + ADR-0018 open content（ADR-0019 已在 spike-3 task 6 起 Proposed）| AI | 各 0.5 天 |
+| **W1** | **Spike-3 plugin runtime selection execution** —— 全 7 task 完成 (`5ce6a97` merge)；ADR-0019 Proposed；hybrid runtime decision (WASM primary + per-OS native fallback) | AI | ✅ |
+| | Spike-1 Tauri shell execution（subagent-driven） —— **PAUSED**：worktree sandbox permission 仅 8 entry 窄 allow list，subagent stop-on-failure 严格遵循 stopped at task 0；重启需扩 `.claude/settings.local.json` allow list（~15 entries） | AI | ⏸ |
+| | Spike-2 vault-fs PoC execution —— **PAUSED**：同 permission 阻断 + plan 含 3 处 API mismatch（paperSchema 函数化 / prosemirrorJSONToYDoc 签名 / strong-em vs bold-italic）；重启需修 plan + 扩 permission | AI | ⏸ |
+| **W2** | 3 spike 全 PASS 后起 ADR-0017 client-first runtime + ADR-0018 open content（ADR-0019 已在 spike-3 task 6 起 Proposed）| AI | 各 0.5 天 |
 | **W3-W4** | ADR-0018 open content mechanisms 起草 + Proposed | AI | 0.5 天 |
 | | ADR-0019 plugin runtime cross-platform 起草 + Proposed（与 Tauri shell 联动）| AI | 0.5 天 |
 | **W5-W6** | ADR-0021 discovery-graph schema migration（Night artifact 落 PG，含 visibility tier ACL 接 ADR-0014 subdoc 路径）| AI | 1-2 天 |
