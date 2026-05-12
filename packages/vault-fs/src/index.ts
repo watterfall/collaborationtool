@@ -8,7 +8,8 @@ export * from './ydoc-to-markdown';
 export * from './markdown-to-ydoc';
 export * from './sidecar-io';
 export * from './file-watcher';
-// Tasks 6-7 fill these:
+export * from './drift-detector';
+// Task 7 fills these:
 // export * from './markdown-to-ydoc';
 // export * from './sidecar-io';
 // export * from './file-watcher';
