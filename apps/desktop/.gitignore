@@ -1,0 +1,9 @@
+src-tauri/target/
+src-tauri/Cargo.lock
+src-tauri/gen/
+*.dmg
+*.deb
+*.AppImage
+*.msi
+*.exe
+*.app
