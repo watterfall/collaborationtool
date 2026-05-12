@@ -1,0 +1,17 @@
+{
+  "name": "spike-3-wasm-host",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "run": "node --import tsx run.ts",
+    "measure": "node --import tsx measure.ts"
+  },
+  "dependencies": {
+    "@extism/extism": "^2.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
