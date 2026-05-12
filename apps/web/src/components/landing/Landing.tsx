@@ -84,239 +84,257 @@ export function Landing({ t }: { t: LocaleDict }) {
       {/* Pillars — v4: 3 个空间（想点子 / 做原型 / 写论文），删 v3 的
           4 个 ASCII 微图（实现路径写法）。grid 在 ≥md 是 3 列，让"三层"
           视觉权重对齐。 */}
-      <section className="flex flex-col gap-10">
-        <header className="flex flex-col gap-2">
-          <p className="label-cap">{pillars.heading}</p>
-          <h2
-            className="font-serif text-3xl font-medium"
-            style={{
-              color: 'var(--color-ink)',
-              letterSpacing: '-0.005em',
-            }}
-            data-prose="bilingual"
-          >
-            {pillars.sub}
-          </h2>
-        </header>
+      <section>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-10">
+          <header className="flex flex-col gap-2">
+            <p className="label-cap">{pillars.heading}</p>
+            <h2
+              className="font-serif text-3xl font-medium"
+              style={{
+                color: 'var(--color-ink)',
+                letterSpacing: '-0.005em',
+              }}
+              data-prose="bilingual"
+            >
+              {pillars.sub}
+            </h2>
+          </header>
 
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
-          <Pillar
-            title={pillars.thinking.title}
-            desc={pillars.thinking.desc}
-          />
-          <Pillar
-            title={pillars.prototyping.title}
-            desc={pillars.prototyping.desc}
-          />
-          <Pillar
-            title={pillars.paper.title}
-            desc={pillars.paper.desc}
-          />
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
+            <Pillar
+              title={pillars.thinking.title}
+              desc={pillars.thinking.desc}
+            />
+            <Pillar
+              title={pillars.prototyping.title}
+              desc={pillars.prototyping.desc}
+            />
+            <Pillar
+              title={pillars.paper.title}
+              desc={pillars.paper.desc}
+            />
+          </div>
         </div>
       </section>
 
       {/* Attribution — v4 新节，反 first-author. 独立 visual 节，
           不并入 pillars grid（spec §3.3 第 4 节）。 */}
-      <section className="flex flex-col gap-3">
-        <p className="label-cap">{attribution.heading}</p>
-        <p
-          className="max-w-prose font-serif text-[16px] leading-[1.78]"
-          style={{ color: 'var(--color-ink)' }}
-          data-prose="bilingual"
-        >
-          {attribution.desc}
-        </p>
+      <section>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
+          <p className="label-cap">{attribution.heading}</p>
+          <p
+            className="max-w-prose font-serif text-[16px] leading-[1.78]"
+            style={{ color: 'var(--color-ink)' }}
+            data-prose="bilingual"
+          >
+            {attribution.desc}
+          </p>
+        </div>
+      </section>
+
+      {/* Specimens — v4: 3 张三层视角图（替代 v3 的 typst/timeline/dag
+          这 3 张 Day-视角图）。Source: /public/demo/landing-specimen-
+          {night,bridge,lineage}.svg。
+          T7: 提前到 Differentiation 之前（spec §3.4 节顺序：访客看完
+          pillar 文字立刻看到三层实物）。 */}
+      <section>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+          <header className="flex flex-col gap-2">
+            <p className="label-cap">{specimens.heading}</p>
+            <p
+              className="font-serif text-base italic leading-[1.6]"
+              style={{ color: 'var(--color-ink-2)' }}
+              data-prose="bilingual"
+            >
+              {specimens.sub}
+            </p>
+          </header>
+          <div className="flex flex-col gap-8">
+            <SpecimenFigure
+              src="/demo/landing-specimen-night.svg"
+              alt={specimens.nightAlt}
+              caption={specimens.nightCaption}
+              aspectRatio="480 / 600"
+            />
+            <SpecimenFigure
+              src="/demo/landing-specimen-bridge.svg"
+              alt={specimens.bridgeAlt}
+              caption={specimens.bridgeCaption}
+              aspectRatio="480 / 600"
+            />
+            <SpecimenFigure
+              src="/demo/landing-specimen-lineage.svg"
+              alt={specimens.lineageAlt}
+              caption={specimens.lineageCaption}
+              aspectRatio="720 / 360"
+            />
+          </div>
+        </div>
       </section>
 
       {/* Differentiation — 4 hairline-separated rows comparing the
           adjacent tools. ADR-0016 says the 5-year anchor is claim-level
           ORCID-signed review DAGs; this section names the contrast
           directly so a researcher landing here knows what they're
-          getting that they wouldn't elsewhere. */}
-      <section className="flex flex-col gap-6">
-        <header className="flex flex-col gap-2">
-          <p className="label-cap">{diff.heading}</p>
-          <h2
-            className="font-serif text-3xl font-medium"
-            style={{
-              color: 'var(--color-ink)',
-              letterSpacing: '-0.005em',
-            }}
-            data-prose="bilingual"
-          >
-            {diff.sub}
-          </h2>
-        </header>
-        <ul className="flex flex-col">
-          {diff.rows.map((row, i) => (
-            <li
-              key={row.competitor}
-              className="grid gap-x-6 gap-y-2 py-4 md:grid-cols-[120px_1fr]"
-              style={
-                i > 0
-                  ? { borderTop: '1px solid var(--color-hairline)' }
-                  : undefined
-              }
+          getting that they wouldn't elsewhere.
+          T7: 下沉到第 5 节（在 Specimens 之后），服务"已经感兴趣、要做
+          横向比较"的访客。 */}
+      <section>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+          <header className="flex flex-col gap-2">
+            <p className="label-cap">{diff.heading}</p>
+            <h2
+              className="font-serif text-3xl font-medium"
+              style={{
+                color: 'var(--color-ink)',
+                letterSpacing: '-0.005em',
+              }}
+              data-prose="bilingual"
             >
-              <p
-                className="font-sans text-sm"
-                style={{ color: 'var(--color-ink-2)' }}
+              {diff.sub}
+            </h2>
+          </header>
+          <ul className="flex flex-col">
+            {diff.rows.map((row, i) => (
+              <li
+                key={row.competitor}
+                className="grid gap-x-6 gap-y-2 py-4 md:grid-cols-[120px_1fr]"
+                style={
+                  i > 0
+                    ? { borderTop: '1px solid var(--color-hairline)' }
+                    : undefined
+                }
               >
-                vs {row.competitor}
-              </p>
-              <div className="flex flex-col gap-1">
                 <p
-                  className="font-serif text-[15px] italic leading-[1.7]"
-                  style={{ color: 'var(--color-ink-3)' }}
-                  data-prose="bilingual"
+                  className="font-sans text-sm"
+                  style={{ color: 'var(--color-ink-2)' }}
                 >
-                  {row.theyDo}
+                  vs {row.competitor}
                 </p>
-                <p
-                  className="font-serif text-[15px] leading-[1.7]"
-                  style={{ color: 'var(--color-ink)' }}
-                  data-prose="bilingual"
-                >
-                  {row.weDo}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <p
-          className="font-sans text-xs"
-          style={{ color: 'var(--color-ink-3)' }}
-          data-prose="bilingual"
-        >
-          {diff.footnote}
-        </p>
-      </section>
-
-      {/* Specimens — v4: 3 张三层视角图（替代 v3 的 typst/timeline/dag
-          这 3 张 Day-视角图）。Source: /public/demo/landing-specimen-
-          {night,bridge,lineage}.svg。 */}
-      <section className="flex flex-col gap-6">
-        <header className="flex flex-col gap-2">
-          <p className="label-cap">{specimens.heading}</p>
+                <div className="flex flex-col gap-1">
+                  <p
+                    className="font-serif text-[15px] italic leading-[1.7]"
+                    style={{ color: 'var(--color-ink-3)' }}
+                    data-prose="bilingual"
+                  >
+                    {row.theyDo}
+                  </p>
+                  <p
+                    className="font-serif text-[15px] leading-[1.7]"
+                    style={{ color: 'var(--color-ink)' }}
+                    data-prose="bilingual"
+                  >
+                    {row.weDo}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
           <p
-            className="font-serif text-base italic leading-[1.6]"
-            style={{ color: 'var(--color-ink-2)' }}
+            className="font-sans text-xs"
+            style={{ color: 'var(--color-ink-3)' }}
             data-prose="bilingual"
           >
-            {specimens.sub}
+            {diff.footnote}
           </p>
-        </header>
-        <div className="flex flex-col gap-8">
-          <SpecimenFigure
-            src="/demo/landing-specimen-night.svg"
-            alt={specimens.nightAlt}
-            caption={specimens.nightCaption}
-            aspectRatio="480 / 600"
-          />
-          <SpecimenFigure
-            src="/demo/landing-specimen-bridge.svg"
-            alt={specimens.bridgeAlt}
-            caption={specimens.bridgeCaption}
-            aspectRatio="480 / 600"
-          />
-          <SpecimenFigure
-            src="/demo/landing-specimen-lineage.svg"
-            alt={specimens.lineageAlt}
-            caption={specimens.lineageCaption}
-            aspectRatio="720 / 360"
-          />
         </div>
       </section>
 
       {/* Architecture — ascii diagram on a left rule (hairline-thick
           variant), serif caption sized down. */}
-      <section className="flex flex-col gap-4">
-        <header className="flex flex-col gap-1">
-          <p className="label-cap">{arch.heading}</p>
+      <section>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+          <header className="flex flex-col gap-1">
+            <p className="label-cap">{arch.heading}</p>
+            <p
+              className="font-serif text-base italic leading-[1.6]"
+              style={{ color: 'var(--color-ink-2)' }}
+              data-prose="bilingual"
+            >
+              {arch.sub}
+            </p>
+          </header>
+          <pre
+            className="overflow-x-auto py-2 pl-4 font-mono text-[12px] leading-[1.55]"
+            style={{
+              color: 'var(--color-ink-2)',
+              borderLeft: '2px solid var(--color-pencil)',
+            }}
+            aria-label={arch.heading}
+          >
+            {arch.ascii.join('\n')}
+          </pre>
           <p
-            className="font-serif text-base italic leading-[1.6]"
+            className="max-w-prose font-serif text-sm leading-[1.7]"
             style={{ color: 'var(--color-ink-2)' }}
             data-prose="bilingual"
           >
-            {arch.sub}
+            {arch.caption}
           </p>
-        </header>
-        <pre
-          className="overflow-x-auto py-2 pl-4 font-mono text-[12px] leading-[1.55]"
-          style={{
-            color: 'var(--color-ink-2)',
-            borderLeft: '2px solid var(--color-pencil)',
-          }}
-          aria-label={arch.heading}
-        >
-          {arch.ascii.join('\n')}
-        </pre>
-        <p
-          className="max-w-prose font-serif text-sm leading-[1.7]"
-          style={{ color: 'var(--color-ink-2)' }}
-          data-prose="bilingual"
-        >
-          {arch.caption}
-        </p>
+        </div>
       </section>
 
       {/* Bottom nav — single-line link list; hairline divider above. */}
-      <section className="flex flex-col gap-3 pt-8">
-        <hr className="rule" />
-        <p className="label-cap mt-3">{navL.heading}</p>
-        <ul
-          className="flex flex-wrap gap-x-6 gap-y-2 font-sans text-sm"
-          style={{ color: 'var(--color-ink-2)' }}
-        >
-          <li>
-            <a
-              href={`${REPO_URL}/blob/main/README.md`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline-offset-4 hover:underline"
-            >
-              {navL.readme}
-            </a>
-          </li>
-          <li>
-            <a
-              href={`${REPO_URL}/blob/main/plan0/ADR-INDEX.md`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline-offset-4 hover:underline"
-            >
-              {navL.adrIndex}
-            </a>
-          </li>
-          <li>
-            <a
-              href={`${REPO_URL}/blob/main/docs/USER_GUIDE.md`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline-offset-4 hover:underline"
-            >
-              {navL.userGuide}
-            </a>
-          </li>
-          <li>
-            <a
-              href={`${REPO_URL}/blob/main/LICENSE`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline-offset-4 hover:underline"
-            >
-              {navL.license}
-            </a>
-          </li>
-        </ul>
+      <section className="pt-8">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
+          <hr className="rule" />
+          <p className="label-cap mt-3">{navL.heading}</p>
+          <ul
+            className="flex flex-wrap gap-x-6 gap-y-2 font-sans text-sm"
+            style={{ color: 'var(--color-ink-2)' }}
+          >
+            <li>
+              <a
+                href={`${REPO_URL}/blob/main/README.md`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline-offset-4 hover:underline"
+              >
+                {navL.readme}
+              </a>
+            </li>
+            <li>
+              <a
+                href={`${REPO_URL}/blob/main/plan0/ADR-INDEX.md`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline-offset-4 hover:underline"
+              >
+                {navL.adrIndex}
+              </a>
+            </li>
+            <li>
+              <a
+                href={`${REPO_URL}/blob/main/docs/USER_GUIDE.md`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline-offset-4 hover:underline"
+              >
+                {navL.userGuide}
+              </a>
+            </li>
+            <li>
+              <a
+                href={`${REPO_URL}/blob/main/LICENSE`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline-offset-4 hover:underline"
+              >
+                {navL.license}
+              </a>
+            </li>
+          </ul>
+        </div>
       </section>
 
-      <footer
-        className="flex flex-col gap-1 pb-8 font-sans text-xs"
-        style={{ color: 'var(--color-ink-3)' }}
-      >
-        <p>{footer.tagline}</p>
-        <p>{footer.built}</p>
+      <footer className="pb-8">
+        <div
+          className="mx-auto flex w-full max-w-3xl flex-col gap-1 font-sans text-xs"
+          style={{ color: 'var(--color-ink-3)' }}
+        >
+          <p>{footer.tagline}</p>
+          <p>{footer.built}</p>
+        </div>
       </footer>
     </main>
   );
