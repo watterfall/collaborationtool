@@ -17,6 +17,8 @@
     "@collaborationtool/discovery-graph": "workspace:*",
     "@collaborationtool/drizzle": "workspace:*",
     "@collaborationtool/editor-core": "workspace:*",
+    "@collaborationtool/identity": "workspace:*",
+    "@collaborationtool/open-content": "workspace:*",
     "@collaborationtool/permissions": "workspace:*",
     "@collaborationtool/render-myst": "workspace:*",
     "@collaborationtool/render-typst": "workspace:*",

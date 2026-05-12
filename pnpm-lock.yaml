@@ -332,6 +332,12 @@ importers:
       '@collaborationtool/editor-core':
         specifier: workspace:*
         version: link:../../packages/editor-core
+      '@collaborationtool/identity':
+        specifier: workspace:*
+        version: link:../../packages/identity
+      '@collaborationtool/open-content':
+        specifier: workspace:*
+        version: link:../../packages/open-content
       '@collaborationtool/permissions':
         specifier: workspace:*
         version: link:../../packages/permissions
