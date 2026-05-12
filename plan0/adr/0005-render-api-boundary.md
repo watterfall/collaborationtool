@@ -320,6 +320,36 @@ Phase 1.5 是这件事的 deadline。
 - **遗留 Phase 1.5**：PmDocInput 提取到 schema 包；citation join layer；
   Word / .docx 接入；mystmd 官方 transformer 评估
 
+### Phase 6 Spike-2 review log — markdown emit ↔ PM JSON wire 兼容性（2026-05-12）
+
+> 加于 2026-05-12（Phase 6 Spike-2 完工）。回应 client-first pivot
+> （`docs/superpowers/specs/2026-05-11-client-first-pivot-design.md`）在
+> `packages/vault-fs/` 引入第 6 个 emitter（markdown ↔ Y.Doc reconcile）
+> 需要的兼容性证据。
+
+**Spike-2 落地的兼容性测试**（branch `claude/spike-2-vault-fs`）：
+
+| 验证项 | 结果 | 测试文件 |
+|---|---|---|
+| `emitMarkdown(yDoc)` 走 `yXmlFragmentToProsemirrorJSON` → paperSchema().nodeFromJSON(pmJson) → MarkdownSerializer.serialize；保持 PM JSON 作为 wire format（本 ADR §2 决策） | PASS | `packages/vault-fs/src/ydoc-to-markdown.ts` |
+| `parseMarkdown(md)` 走 defaultMarkdownParser → PM JSON → renameMarks (strong→bold, em→italic) + flatten 不支持 block → prosemirrorJSONToYDoc | PASS | `packages/vault-fs/src/markdown-to-ydoc.ts` |
+| 双向 round-trip 稳定：`emit(parse(emit(parse(md)))) === emit(parse(md))` | PASS | `tests/markdown-to-ydoc.test.ts:38` |
+| 9 paper-schema custom node (claim/evidence/figure/figureCaption/equation/computationalCell/inlineEquation/citationRef/datasetRef/footnoteRef) emit 为 HTML comment 兜底；preserve round-trip | PASS | `tests/markdown-to-ydoc.test.ts:46` |
+| TipTap mark 命名（bold/italic）和 prosemirror-markdown 默认 schema 的 strong/em 别名对齐 | 别名 mapping 已加，PASS | `src/ydoc-to-markdown.ts:46-50` |
+
+**对本 ADR §2 决策的修正**：本 ADR 立的 "PM JSON 是 wire format" 决策
+**继续 valid**——Spike-2 第 6 个 emitter (markdown) 严格走 PM JSON 中间
+表示，未引入第 2 个 wire format。
+
+**遗留到 Phase 6 W3-W4**：
+- HTML comment 兜底替换为 markdown directive (`::claim{...}`) — 需 markdown-it
+  custom plugin，并把 `paper-schema custom nodes` 加进 `defaultMarkdownParser`
+  替代品（基于 markdown-it tokens 写新 MarkdownParser，对齐 paperSchema）。
+- defaultMarkdownParser 不支持的 block (bullet_list/ordered_list/list_item/
+  blockquote/code_block/horizontal_rule/hard_break/image) 在 Spike-2 flatten
+  为 paragraph；Phase 6 W3-W4 加 paperSchema list / blockquote / code_block /
+  image extension 后切换为 lower-to-schema 实现。
+
 ---
 
 ## 7. References

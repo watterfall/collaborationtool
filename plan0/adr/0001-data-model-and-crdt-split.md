@@ -768,6 +768,51 @@ Night/Bridge 抽到独立 Yjs subdoc，再评估增量切换成本。
 工作量全部在新 package（discovery-graph + bridge-layer）+ 新 ER 表（如有，
 留 ADR-0021）。Phase 1 "扛 Phase 3/4 场景" 现也扛 Phase 5 三层架构。
 
+### 8.6 Phase 6 Spike-2 review log — §5.A 反转的实证基础（2026-05-12）
+
+§5.A 原承诺："PG（authoritative state）+ Y.Doc（CRDT operational layer）"
+即 PG 是 truth、Y.Doc 走在线协同 + snapshot worker 同步到 PG。Phase 6
+client-first pivot（spec `docs/superpowers/specs/2026-05-11-client-first-pivot-design.md`
+§13）将此反转：**markdown 文件 + `.vault/yjs/*.bin` sidecar 在 client 端是
+truth**；PG 退化为可选公共内容缓存。Spike-2 `packages/vault-fs/` 是这一
+反转的实证 PoC。
+
+**Spike-2 落地（branch `claude/spike-2-vault-fs`，2026-05-12）**：
+
+| Component | 形态 | 测试 |
+|---|---|---|
+| `emitMarkdown(yDoc: Y.Doc): string` | prosemirror-markdown defaultSerializer + paper-schema custom nodes 兜底 (HTML comment) + bold/italic mark 别名 | 5 测 PASS（含 reject grep） |
+| `parseMarkdown(md, baseDoc?): Y.Doc` | defaultMarkdownParser → renameMarks (strong→bold) + flatten 不支持 block 节点 → prosemirrorJSONToYDoc | 5 测 PASS |
+| `readSidecar / writeSidecar` | VFSB 4-byte magic + atomic rename + SidecarCorruptError | 5 测 PASS |
+| `watchVault` | chokidar 4 + `.vault/` ignore + awaitWriteFinish | 3 测 PASS |
+| `detectDrift` | sha256 hex 比较（无 canonicalizer，Phase 6 W3-W4 加） | 3 测 PASS |
+| `threeWayMerge` | naive line diff + overlap → ConflictRegion + "local wins" simplification | 4 测 PASS |
+| 5 验收 fixture | cold-start / external-edit / 3-way merge / sidecar 损坏 / sync 中断 | 5 测 PASS |
+| Stress harness | 5 client × 1000 op + 1000-op offline 窗口 → final mesh sync → CRDT + markdown 一致 | 1 测 PASS |
+
+**API deviation from spike-2 plan**（在 impl 时纠偏，不动 plan）：
+
+- `yXmlFragmentToProsemirrorJSON(yDoc, 'prosemirror')` 是 plan 写法，实际
+  y-prosemirror@1.3.7 签名 `(xmlFragment: Y.XmlFragment) → Record`，单参。
+- stress harness 子 paragraph 不能用 plain `Y.Text`（y-prosemirror serialize
+  throws "Unexpected case"），需用 `Y.XmlText`。
+- 5 client setup 需 client-0 创建 seed → 其他 4 client `applyUpdate(seed)`
+  克隆，否则每 client 创建独立 paragraph，merge 后 5 paragraph 各看各的。
+
+**对 §5.A 的修正**：在 client-first 模式下，§5.A 描述的"PG 是 truth"路径
+**继续存在**但作为 server-side optional pipeline；client 默认走 vault-fs
+路径，PG 仅用于公共内容发布 / 协作者 invitation flow。完整修正预计
+Phase 6 W3-W4 ADR-0017（client-first runtime, Proposed）落地后写入本 ADR
+§9 / 新增 §11 review log。Spike-2 仅证明**反转技术可行**（library 层
+API 全 PASS），不立即修改 §5.A 文本——保留作为"双轨过渡期"参考。
+
+**遗留 / 推迟到 Phase 6 W3-W4**：
+- markdown 直 parse paper-schema custom nodes（claim 等）—— Spike-2 走
+  HTML comment 兜底，Phase 6 W3-W4 swap markdown-it directive plugin
+- diff3 改 Myers / Patience 算法（Spike-2 naive line diff PoC quality）
+- canonicalizer（trailing blank 归一化）
+- 3-way merge UI 在 apps/desktop（Spike-1 artifacts 集成）
+
 ---
 
 ## 9. References
