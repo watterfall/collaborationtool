@@ -228,26 +228,45 @@ describe('landing — heroMockup locale carries triadic content', () => {
     assert.strictEqual(zh.landing.heroMockup.edge1Mode, en.landing.heroMockup.edge1Mode);
     assert.strictEqual(zh.landing.heroMockup.edge2Mode, en.landing.heroMockup.edge2Mode);
   });
-  it('TriadicMockup component does not use rounded-lg/xl/2xl or shadow / blue', async () => {
-    const src = readFileSync(
+  it('Landing.tsx + TriadicMockup do not use rounded-lg/xl/2xl, shadow, blue, zinc, or hex literals', async () => {
+    const triadicSrc = readFileSync(
       path.join(repoWebSrc, 'components/landing/TriadicMockup.tsx'),
       'utf8',
     );
-    assert.doesNotMatch(
-      src,
-      /rounded-(lg|xl|2xl|full)/,
-      'Design.md §11 #2 — no large radius (except .pill 999px)',
+    const landingSrc = readFileSync(
+      path.join(repoWebSrc, 'components/landing/Landing.tsx'),
+      'utf8',
     );
-    assert.doesNotMatch(
-      src,
-      /shadow-(sm|md|lg|xl)/,
-      'Design.md §11 #12 — no box-shadow',
-    );
-    assert.doesNotMatch(
-      src,
-      /bg-blue-(500|600|700)/,
-      'Design.md §11 #1 — no saturated blue',
-    );
+    for (const [name, src] of [
+      ['TriadicMockup.tsx', triadicSrc],
+      ['Landing.tsx', landingSrc],
+    ] as const) {
+      assert.doesNotMatch(
+        src,
+        /rounded-(lg|xl|2xl|full)/,
+        `${name}: Design.md §11 #2 — no large radius`,
+      );
+      assert.doesNotMatch(
+        src,
+        /shadow-(sm|md|lg|xl)/,
+        `${name}: Design.md §11 #12 — no box-shadow`,
+      );
+      assert.doesNotMatch(
+        src,
+        /bg-blue-(500|600|700)/,
+        `${name}: Design.md §11 #1 — no saturated blue`,
+      );
+      assert.doesNotMatch(
+        src,
+        /bg-zinc-(50|100|200)/,
+        `${name}: Design.md §11 — no zinc backgrounds`,
+      );
+      assert.doesNotMatch(
+        src,
+        /#(3B82F6|2563EB|0EA5E9)/i,
+        `${name}: Design.md §11 — no hex literal saturated blues`,
+      );
+    }
   });
 });
 
@@ -258,6 +277,7 @@ describe('landing — v4 architecture (three-way)', () => {
   it('zh architecture sub mentions 桌面端 + 协作', () => {
     assert.match(zh.landing.architecture.sub, /桌面端/);
     assert.match(zh.landing.architecture.sub, /协作|合作/);
+    assert.match(zh.landing.architecture.caption, /桌面|本地|服务器/);
   });
   it('en architecture sub mentions Desktop-first + collaborator', () => {
     assert.match(en.landing.architecture.sub, /Desktop-first/i);

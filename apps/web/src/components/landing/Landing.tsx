@@ -172,7 +172,7 @@ export function Landing({ t }: { t: LocaleDict }) {
         </div>
       </section>
 
-      {/* Differentiation — 4 hairline-separated rows comparing the
+      {/* Differentiation — 5 hairline-separated rows comparing the
           adjacent tools. ADR-0016 says the 5-year anchor is claim-level
           ORCID-signed review DAGs; this section names the contrast
           directly so a researcher landing here knows what they're
@@ -274,7 +274,9 @@ export function Landing({ t }: { t: LocaleDict }) {
         </div>
       </section>
 
-      {/* Bottom nav — single-line link list; hairline divider above. */}
+      {/* nav — pt-8 outer-section padding（不像其他 sections 那样
+          全 className 下沉到 inner div）：rule + label 之间需要额外
+          breath，节级 padding 比 inner div 自己加更干净。 */}
       <section className="pt-8">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
           <hr className="rule" />
