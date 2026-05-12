@@ -243,18 +243,21 @@ EOF
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import * as Y from 'yjs';
 import { prosemirrorJSONToYDoc } from 'y-prosemirror';
 
 import { paperSchema } from '@collaborationtool/editor-core';
 import { emitMarkdown } from '../src/ydoc-to-markdown';
 
-function makeYDoc(pmJson: Record<string, unknown>): Y.Doc {
-  const doc = new Y.Doc();
-  const fragment = doc.getXmlFragment('prosemirror');
-  // y-prosemirror helper: PM JSON → Y.Doc XmlFragment
-  prosemirrorJSONToYDoc(paperSchema, pmJson, fragment);
-  return doc;
+// API note (Spike-2 W1 fix, 2026-05-12):
+//   - paperSchema is a *function* (singleton factory), not a constant —
+//     editor-core/src/schema.ts:21 `export function paperSchema(): Schema`
+//   - prosemirrorJSONToYDoc signature is
+//     `(schema, state, xmlFragment = 'prosemirror') → Y.Doc`
+//     (y-prosemirror@1.3.7 src/lib.js:299) — last arg is the fragment
+//     NAME (string), not a fragment OBJECT; return value is the Y.Doc.
+function makeYDoc(pmJson: Record<string, unknown>) {
+  // 3rd arg defaults to 'prosemirror' — match emitMarkdown's lookup.
+  return prosemirrorJSONToYDoc(paperSchema(), pmJson);
 }
 
 describe('emitMarkdown (Spike-2 Task 2)', () => {
@@ -305,16 +308,23 @@ describe('emitMarkdown (Spike-2 Task 2)', () => {
 // Y.Doc → markdown emit.
 // Strategy: Y.Doc XmlFragment → PM tree (via yXmlFragmentToProsemirrorJSON) →
 // markdown via prosemirror-markdown's defaultMarkdownSerializer extended
-// for paper-schema custom nodes (claim / evidence / claim-review-anchor /
+// for paper-schema custom nodes/marks (claim / evidence / claim-review-anchor /
 // figure / dataset).
 //
 // For Spike-2 only base nodes (doc / heading / paragraph / bullet_list /
-// ordered_list / list_item / blockquote / code_block / text / em / strong /
-// link / image) are wired. Custom paper-schema nodes (claim / evidence /
-// figure / dataset / annotation-anchor / claim-review-anchor) emit as
-// markdown comments `<!-- claim id="..." text="..." -->` for round-trip
-// preservation — Phase 6 W3-W4 will replace with proper markdown directive
-// syntax (`::claim{...}` per MyST).
+// ordered_list / list_item / blockquote / code_block / text / link / image)
+// + bold + italic marks are wired. Custom paper-schema nodes (claim /
+// evidence / figure / dataset / annotation-anchor / claim-review-anchor)
+// emit as markdown comments `<!-- claim id="..." text="..." -->` for
+// round-trip preservation — Phase 6 W3-W4 will replace with proper markdown
+// directive syntax (`::claim{...}` per MyST).
+//
+// API note (Spike-2 W1 fix, 2026-05-12):
+//   - paperSchema is a *function*: call `paperSchema()` to get the Schema
+//   - prosemirror-markdown defaultMarkdownSerializer expects mark names
+//     `strong` and `em`; TipTap @tiptap/extension-bold registers name
+//     `bold` and @tiptap/extension-italic registers name `italic`. Add
+//     aliases mapping bold→strong, italic→em rules so emit round-trips.
 
 import * as Y from 'yjs';
 import { yXmlFragmentToProsemirrorJSON } from 'y-prosemirror';
@@ -328,11 +338,20 @@ import { paperSchema } from '@collaborationtool/editor-core';
 
 // Build a Serializer that knows about paper-schema custom nodes/marks.
 // Custom nodes fall back to HTML-comment preservation; see file header.
-const paperSerializer = buildPaperSerializer(paperSchema);
+const paperSerializer = buildPaperSerializer(paperSchema());
 
 function buildPaperSerializer(schema: Schema): MarkdownSerializer {
   const nodes = { ...defaultMarkdownSerializer.nodes };
   const marks = { ...defaultMarkdownSerializer.marks };
+
+  // TipTap mark-name aliases — defaultMarkdownSerializer indexes by
+  // `strong` / `em` but our schema (via TipTap) registers `bold` / `italic`.
+  if (schema.marks['bold'] && !marks['bold']) {
+    marks['bold'] = defaultMarkdownSerializer.marks['strong']!;
+  }
+  if (schema.marks['italic'] && !marks['italic']) {
+    marks['italic'] = defaultMarkdownSerializer.marks['em']!;
+  }
 
   // Spike-2 stub: custom nodes preserved as comments.
   const customNodeNames = [
@@ -358,7 +377,7 @@ export function emitMarkdown(yDoc: Y.Doc): string {
   const fragment = yDoc.getXmlFragment('prosemirror');
   if (fragment.length === 0) return '';
   const pmJson = yXmlFragmentToProsemirrorJSON(yDoc, 'prosemirror');
-  const node = paperSchema.nodeFromJSON(pmJson);
+  const node = paperSchema().nodeFromJSON(pmJson);
   return paperSerializer.serialize(node);
 }
 ```
@@ -466,6 +485,14 @@ describe('parseMarkdown (Spike-2 Task 3)', () => {
 // nodes — they round-trip as raw HTML blocks (preserved verbatim).
 // Phase 6 W3-W4 will swap to a custom Parser extending markdown-it with
 // directive plugin (`:::claim{...}`) for proper paper-schema parse.
+//
+// API note (Spike-2 W1 fix, 2026-05-12): defaultMarkdownParser is
+// constructed against the DEFAULT prosemirror-markdown schema (which uses
+// `strong` / `em` mark names). When we feed its JSON into our
+// paperSchema (which has `bold` / `italic`), the marks would not validate.
+// Solution: rename marks in the JSON between parse and prosemirrorJSONToYDoc.
+// Phase 6 W3-W4 swaps to a markdown-it custom parser built against
+// paperSchema directly so this rename is no longer needed.
 
 import * as Y from 'yjs';
 import { prosemirrorJSONToYDoc } from 'y-prosemirror';
@@ -478,25 +505,49 @@ export interface ParseMarkdownOptions {
   baseDoc?: Y.Doc;
 }
 
+// Recursive helper: rename mark names in a PM JSON tree.
+function renameMarks(node: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...node };
+  if (Array.isArray(out['marks'])) {
+    out['marks'] = (out['marks'] as Array<Record<string, unknown>>).map((m) => {
+      if (m['type'] === 'strong') return { ...m, type: 'bold' };
+      if (m['type'] === 'em') return { ...m, type: 'italic' };
+      return m;
+    });
+  }
+  if (Array.isArray(out['content'])) {
+    out['content'] = (out['content'] as Array<Record<string, unknown>>).map(renameMarks);
+  }
+  return out;
+}
+
 export function parseMarkdown(
   markdown: string,
   options: ParseMarkdownOptions = {},
 ): Y.Doc {
-  const doc = options.baseDoc ?? new Y.Doc();
-  if (markdown.length === 0) return doc;
+  if (markdown.length === 0) return options.baseDoc ?? new Y.Doc();
 
   const pmNode = defaultMarkdownParser.parse(markdown);
   if (!pmNode) {
     throw new Error('vault-fs: markdown parse returned null');
   }
-  const pmJson = pmNode.toJSON() as Record<string, unknown>;
-  const fragment = doc.getXmlFragment('prosemirror');
-  // Clear existing content if no baseDoc supplied (fresh parse).
-  if (!options.baseDoc && fragment.length > 0) {
-    fragment.delete(0, fragment.length);
+  const rawJson = pmNode.toJSON() as Record<string, unknown>;
+  const pmJson = renameMarks(rawJson); // strong→bold, em→italic
+  // prosemirrorJSONToYDoc returns a fresh Y.Doc; the 3rd arg is the
+  // fragment NAME (string), not a fragment OBJECT.
+  // (y-prosemirror@1.3.7 src/lib.js:299 — see Task 2 file header note.)
+  const fresh = prosemirrorJSONToYDoc(paperSchema(), pmJson);
+
+  // If caller passed baseDoc, merge the fresh state into it via an update.
+  if (options.baseDoc) {
+    const update = Y.encodeStateAsUpdate(fresh);
+    // Clear existing fragment so we don't double-append.
+    const baseFragment = options.baseDoc.getXmlFragment('prosemirror');
+    if (baseFragment.length > 0) baseFragment.delete(0, baseFragment.length);
+    Y.applyUpdate(options.baseDoc, update);
+    return options.baseDoc;
   }
-  prosemirrorJSONToYDoc(paperSchema, pmJson, fragment);
-  return doc;
+  return fresh;
 }
 ```
 
