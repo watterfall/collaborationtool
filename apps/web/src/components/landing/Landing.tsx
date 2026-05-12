@@ -33,25 +33,31 @@ export function Landing({ t }: { t: LocaleDict }) {
       className="mx-auto flex min-h-screen max-w-3xl flex-col gap-20 px-6 py-16"
       style={{ color: 'var(--color-ink)' }}
     >
-      {/* Hero — eyebrow label-cap + display serif headline + italic lede
-          + 2 CTA. Asymmetric on a single column for the marketing
-          surface; the editor/docs surfaces use the wider 1.1fr · 0.9fr
-          asymmetric grid (Design.md §6.3). */}
+      {/* Hero — v4 triadic positioning. H1 巨号 display serif，
+          拆 3 行（whitespace-pre-line 解析 \n）。tagline 是新字段，
+          放在 H1 + sub 之间。Mockup 在 Task 3 加，本 task hero
+          仍单列。 */}
       <section className="flex flex-col gap-6">
-        <p className="label-cap">vol. 01 · issue 00 · pre-release</p>
+        <p className="label-cap">{hero.eyebrow}</p>
         <h1
-          className="font-serif text-4xl font-medium leading-[1.1] sm:text-5xl"
-          style={{ color: 'var(--color-ink)', letterSpacing: '-0.01em' }}
+          className="whitespace-pre-line font-serif text-5xl font-medium leading-[0.98] tracking-[-0.02em] sm:text-6xl lg:text-7xl"
+          style={{ color: 'var(--color-ink)' }}
           data-prose="bilingual"
         >
           {hero.headline}
         </h1>
         <p
-          className="max-w-prose font-serif text-lg italic leading-[1.55]"
+          className="max-w-prose font-serif text-lg italic leading-[1.55] sm:text-xl"
           style={{ color: 'var(--color-ink-2)' }}
           data-prose="bilingual"
         >
           {hero.sub}
+        </p>
+        <p
+          className="font-sans text-sm leading-[1.6]"
+          style={{ color: 'var(--color-ink-3)' }}
+        >
+          {hero.tagline}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <Link href="/signup" className="btn-primary">
@@ -66,12 +72,6 @@ export function Landing({ t }: { t: LocaleDict }) {
             {hero.ctaSecondary}
           </a>
         </div>
-        <p
-          className="font-sans text-xs leading-[1.6]"
-          style={{ color: 'var(--color-ink-3)' }}
-        >
-          本地优先 · Markdown / MyST / Typst 为源文件 · ORCID 登录
-        </p>
       </section>
 
       {/* Pillars — hairline-separated rows, not card grid. Each row is

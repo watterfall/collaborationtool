@@ -40,17 +40,17 @@ export const en: LocaleDict = {
   },
   landing: {
     meta: {
-      title: 'Collaboration Tool · An AI-native research writing workbench',
+      title: 'A three-layer system for what science actually produces · desktop-first',
       description:
-        'A local-first, bilingual writing platform for research papers: structured editor, AI as collaborator, end-to-end provenance, self-hostable, with first-class CJK and Latin typography.',
+        "Papers are not the whole of science. Ideas, prototypes, papers — three spaces, treated equally. The 3am metaphor, the dinner argument, the sketch you never used — these are science too. Desktop-first, data on your machine, open-source and self-hostable.",
     },
     hero: {
-      eyebrow: 'A workbench for researchers',
-      headline:
-        'Think, write, verify, publish — one workbench for the whole loop.',
-      sub: 'Local-first. AI is a collaborator, not a chat sidebar. Chinese and English are both first-class.',
-      ctaPrimary: 'Get started',
-      ctaSecondary: 'Self-host guide',
+      eyebrow: 'A three-layer system for what science actually produces · desktop-first',
+      headline: 'Papers are not the whole of science.\nIdeas, prototypes, papers —\nthree spaces, treated equally.',
+      sub: 'The 3am metaphor · the dinner argument · the sketch you never used — these are science too.',
+      tagline: 'Desktop-first · data stays on your machine · open-source · self-hostable',
+      ctaPrimary: 'Start',
+      ctaSecondary: 'How to self-host',
     },
     pillars: {
       heading: 'Core capabilities',

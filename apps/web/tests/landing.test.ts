@@ -38,12 +38,8 @@ describe('landing — page.tsx auth redirect contract', () => {
   });
 });
 
-describe('landing — SEO metadata is bilingual', () => {
+describe('landing — v4 meta is bilingual + carries triadic positioning', () => {
   it('includes zh title + en title + zh description + en description', () => {
-    // page.tsx generateMetadata joins the two localized meta strings
-    // with " · ". We don't import the Server Component (it pulls
-    // next/headers which is RSC-only); instead we read the source
-    // and check the static strings used for joining.
     const src = readFileSync(
       path.join(repoWebSrc, 'app/page.tsx'),
       'utf8',
@@ -54,27 +50,58 @@ describe('landing — SEO metadata is bilingual', () => {
     assert.match(src, /en\.landing\.meta\.description/);
   });
 
-  it('zh and en meta strings carry the load-bearing claims', () => {
-    // zh: 本地优先, 双语
-    assert.match(zh.landing.meta.description, /本地优先/);
-    assert.match(zh.landing.meta.description, /双语|中英/);
-    // en: local-first, bilingual
-    assert.match(en.landing.meta.description, /local-first/i);
-    assert.match(en.landing.meta.description, /bilingual/i);
+  it('zh meta description carries the triadic-positioning claim', () => {
+    assert.match(zh.landing.meta.description, /三个空间/);
+    assert.match(zh.landing.meta.description, /桌面端|本地/);
+  });
+
+  it('en meta description carries the triadic-positioning claim', () => {
+    assert.match(en.landing.meta.description, /three spaces/i);
+    assert.match(en.landing.meta.description, /desktop-first|local/i);
+  });
+});
+
+describe('landing — v4 hero copy (triadic positioning)', () => {
+  it('zh headline opens with "论文不是科研的全部"', () => {
+    assert.match(zh.landing.hero.headline, /论文不是科研的全部/);
+  });
+  it('zh headline mentions 想法、原型、论文 three spaces', () => {
+    assert.match(zh.landing.hero.headline, /想法/);
+    assert.match(zh.landing.hero.headline, /原型/);
+    assert.match(zh.landing.hero.headline, /论文/);
+  });
+  it('en headline opens with "Papers are not the whole of science"', () => {
+    assert.match(en.landing.hero.headline, /Papers are not the whole of science/i);
+  });
+  it('en headline mentions ideas, prototypes, papers', () => {
+    assert.match(en.landing.hero.headline, /Ideas/i);
+    assert.match(en.landing.hero.headline, /prototypes/i);
+    assert.match(en.landing.hero.headline, /papers/i);
+  });
+  it('zh hero sub mentions 3am + specific imagery', () => {
+    assert.match(zh.landing.hero.sub, /3am|隐喻|草图|争论/);
+  });
+  it('en hero sub mentions 3am + specific imagery', () => {
+    assert.match(en.landing.hero.sub, /3am/);
+    assert.match(en.landing.hero.sub, /metaphor|sketch|argument/i);
+  });
+  it('zh hero tagline mentions 桌面端 + 自托管', () => {
+    assert.match(zh.landing.hero.tagline, /桌面端/);
+    assert.match(zh.landing.hero.tagline, /自托管/);
+  });
+  it('en hero tagline mentions Desktop-first + self-hostable', () => {
+    assert.match(en.landing.hero.tagline, /Desktop-first/i);
+    assert.match(en.landing.hero.tagline, /self-hostable/i);
+  });
+  it('zh ctaPrimary is "开始用"', () => {
+    assert.equal(zh.landing.hero.ctaPrimary, '开始用');
+  });
+  it('en ctaPrimary is "Start"', () => {
+    assert.equal(en.landing.hero.ctaPrimary, 'Start');
   });
 });
 
 describe('landing — hero + architecture copy in both locales', () => {
-  it('zh hero mentions 本地优先 + AI + 协作者', () => {
-    assert.match(zh.landing.hero.sub, /本地优先/);
-    assert.match(zh.landing.hero.sub, /AI/);
-    assert.match(zh.landing.hero.sub, /协作者/);
-  });
-  it('en hero mentions Local-first + AI + collaborator', () => {
-    assert.match(en.landing.hero.sub, /Local-first/i);
-    assert.match(en.landing.hero.sub, /AI/);
-    assert.match(en.landing.hero.sub, /collaborator/i);
-  });
   it('architecture ASCII has matching line counts in zh and en', () => {
     assert.equal(
       zh.landing.architecture.ascii.length,
