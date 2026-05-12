@@ -141,3 +141,64 @@ describe('landing — Landing component module shape', () => {
     assert.equal(typeof mod.Landing, 'function');
   });
 });
+
+describe('landing — TriadicMockup module shape', () => {
+  it('exports a TriadicMockup function', async () => {
+    const mod = await import('../src/components/landing/TriadicMockup');
+    assert.equal(typeof mod.TriadicMockup, 'function');
+  });
+});
+
+describe('landing — heroMockup locale carries triadic content', () => {
+  it('zh heroMockup names all three layers (NIGHT / BRIDGE / DAY)', () => {
+    assert.match(zh.landing.heroMockup.nightLabel, /NIGHT/);
+    assert.match(zh.landing.heroMockup.bridgeLabel, /BRIDGE/);
+    assert.match(zh.landing.heroMockup.dayLabel, /DAY/);
+  });
+  it('en heroMockup names all three layers', () => {
+    assert.match(en.landing.heroMockup.nightLabel, /NIGHT/);
+    assert.match(en.landing.heroMockup.bridgeLabel, /BRIDGE/);
+    assert.match(en.landing.heroMockup.dayLabel, /DAY/);
+  });
+  it('edge modes are valid InteractionMode values from ADR-0020 §2.3', () => {
+    const valid = new Set([
+      'hypothesis-output',
+      'anomaly-input',
+      'constraint-transfer',
+      'metaphor-bridge',
+      'question-return',
+      'method-transfer',
+    ]);
+    assert.ok(valid.has(zh.landing.heroMockup.edge1Mode), 'edge1Mode zh');
+    assert.ok(valid.has(zh.landing.heroMockup.edge2Mode), 'edge2Mode zh');
+    assert.ok(valid.has(en.landing.heroMockup.edge1Mode), 'edge1Mode en');
+    assert.ok(valid.has(en.landing.heroMockup.edge2Mode), 'edge2Mode en');
+  });
+  it('edge modes are identical strings in zh and en (not translated, internal enum)', () => {
+    // edge mode names are InteractionMode enum values from ADR-0020 §2.3.
+    // They are NOT user-facing translatable strings — must be byte-identical.
+    assert.strictEqual(zh.landing.heroMockup.edge1Mode, en.landing.heroMockup.edge1Mode);
+    assert.strictEqual(zh.landing.heroMockup.edge2Mode, en.landing.heroMockup.edge2Mode);
+  });
+  it('TriadicMockup component does not use rounded-lg/xl/2xl or shadow / blue', async () => {
+    const src = readFileSync(
+      path.join(repoWebSrc, 'components/landing/TriadicMockup.tsx'),
+      'utf8',
+    );
+    assert.doesNotMatch(
+      src,
+      /rounded-(lg|xl|2xl|full)/,
+      'Design.md §11 #2 — no large radius (except .pill 999px)',
+    );
+    assert.doesNotMatch(
+      src,
+      /shadow-(sm|md|lg|xl)/,
+      'Design.md §11 #12 — no box-shadow',
+    );
+    assert.doesNotMatch(
+      src,
+      /bg-blue-(500|600|700)/,
+      'Design.md §11 #1 — no saturated blue',
+    );
+  });
+});

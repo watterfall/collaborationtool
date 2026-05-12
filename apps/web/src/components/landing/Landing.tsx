@@ -15,6 +15,7 @@
 import Link from 'next/link';
 
 import type { LocaleDict } from '@/lib/i18n/types';
+import { TriadicMockup } from './TriadicMockup';
 
 const REPO_URL = 'https://github.com/watterfall/collaborationtool';
 
@@ -31,47 +32,52 @@ export function Landing({ t }: { t: LocaleDict }) {
   return (
     <main
       id="main"
-      className="mx-auto flex min-h-screen max-w-3xl flex-col gap-20 px-6 py-16"
+      className="mx-auto flex min-h-screen max-w-3xl flex-col gap-20 px-6 py-16 lg:max-w-6xl"
       style={{ color: 'var(--color-ink)' }}
     >
-      {/* Hero — v4 triadic positioning. H1 巨号 display serif，
-          拆 3 行（whitespace-pre-line 解析 \n）。tagline 是新字段，
-          放在 H1 + sub 之间。Mockup 在 Task 3 加，本 task hero
-          仍单列。 */}
-      <section className="flex flex-col gap-6">
-        <p className="label-cap">{hero.eyebrow}</p>
-        <h1
-          className="whitespace-pre-line font-serif text-5xl font-medium leading-[0.98] tracking-[-0.02em] sm:text-6xl lg:text-7xl"
-          style={{ color: 'var(--color-ink)' }}
-          data-prose="bilingual"
-        >
-          {hero.headline}
-        </h1>
-        <p
-          className="max-w-prose font-serif text-lg italic leading-[1.55] sm:text-xl"
-          style={{ color: 'var(--color-ink-2)' }}
-          data-prose="bilingual"
-        >
-          {hero.sub}
-        </p>
-        <p
-          className="font-sans text-sm leading-[1.6]"
-          style={{ color: 'var(--color-ink-3)' }}
-        >
-          {hero.tagline}
-        </p>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <Link href="/signup" className="btn-primary">
-            {hero.ctaPrimary}
-          </Link>
-          <a
-            href={`${REPO_URL}/blob/main/docs/SELF_HOST.md`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-ghost"
+      {/* Hero — v4 triadic. Desktop: 2 列（左文字 1.1fr · 右 mockup 0.9fr，
+          asymmetric per Design.md §6.3 同款）。Mobile: stack 单列。 */}
+      <section className="flex flex-col gap-10 lg:grid lg:grid-cols-[1.1fr_0.9fr] lg:gap-x-12">
+        {/* 左半 — Hero copy */}
+        <div className="flex flex-col gap-6">
+          <p className="label-cap">{hero.eyebrow}</p>
+          <h1
+            className="whitespace-pre-line font-serif text-5xl font-medium leading-[0.98] tracking-[-0.02em] sm:text-6xl lg:text-7xl"
+            style={{ color: 'var(--color-ink)' }}
+            data-prose="bilingual"
           >
-            {hero.ctaSecondary}
-          </a>
+            {hero.headline}
+          </h1>
+          <p
+            className="max-w-prose font-serif text-lg italic leading-[1.55] sm:text-xl"
+            style={{ color: 'var(--color-ink-2)' }}
+            data-prose="bilingual"
+          >
+            {hero.sub}
+          </p>
+          <p
+            className="font-sans text-sm leading-[1.6]"
+            style={{ color: 'var(--color-ink-3)' }}
+          >
+            {hero.tagline}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <Link href="/signup" className="btn-primary">
+              {hero.ctaPrimary}
+            </Link>
+            <a
+              href={`${REPO_URL}/blob/main/docs/SELF_HOST.md`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-ghost"
+            >
+              {hero.ctaSecondary}
+            </a>
+          </div>
+        </div>
+        {/* 右半 — TriadicMockup */}
+        <div className="lg:pt-2">
+          <TriadicMockup t={t} />
         </div>
       </section>
 
