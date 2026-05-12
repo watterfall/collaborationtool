@@ -379,3 +379,28 @@ D4 完成后本 ADR §3 转 Accepted；如果 Typst 翻车则 fallback xeCJK + m
 
 **Spike-1 验收**：3 Rust 单元测试 + 14 web node:test 全 PASS；cargo check 全 PASS；
 跨平台 CI matrix 上线；端到端 GH Actions binary 验证 + 真 ollama smoke 留 task 11/13 实测填写。
+
+## Phase 6 W2 review log（2026-05-12）
+
+Phase 6 client-first pivot 引入 **3 项新 tech stack 加项**：
+
+1. **Tauri 2.x desktop shell** — apps/desktop/ 已上线（Spike-1 `98e3f30`）。
+   Rust 1.75+ / @tauri-apps/cli 2.x / 4 plugin (shell / notification / os /
+   tray-icon) / GH Actions matrix 4-platform / minisign Updater。
+2. **@noble crypto stack** — packages/identity/ (`c7af95f`) 引入
+   `@noble/ed25519@2.3.0` + `@noble/hashes@2.2.0`（argon2id / sha512） +
+   `@noble/ciphers@2.2.0`（xchacha20-poly1305）。**libsodium 未引入**（per
+   Spike-3 selection — @noble pure JS + cross-Tauri 跨平台无原生依赖；
+   libsodium-native 引入 N-API binding 增加 Tauri build 复杂度而无明显收益）。
+   secp256k1 主动避（DeSCI 去区块链立场，per spec §1 Q4）。
+3. **WASM Extism + Wasmtime** — ADR-0019 Proposed `5ce6a97` hybrid plugin
+   runtime（WASM primary + per-OS native fallback）。Phase 6 W9-W10
+   packages/plugin-runtime-wasm/ 真实施 +
+   packages/plugin-runtime-native/ per-OS adapters 时正式入栈。
+
+**对 §2 tech stack 11 项的影响**：零删除。Phase 1 11 项栈（pnpm /
+Postgres / TipTap / Yjs / Next.js 15 / 等）继续作 Phase 6 server-side +
+shared substrate；Phase 6 加 desktop 客户端栈 + 客户端 crypto + plugin
+runtime 3 项作 client-first runtime substrate。
+
+**实证 commit hash**：见 ADR-0001 §8.7 "实证 commit hash" 列表。

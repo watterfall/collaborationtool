@@ -813,6 +813,69 @@ API 全 PASS），不立即修改 §5.A 文本——保留作为"双轨过渡期
 - canonicalizer（trailing blank 归一化）
 - 3-way merge UI 在 apps/desktop（Spike-1 artifacts 集成）
 
+### 8.7 Phase 6 W2 ADR-0017 — §5.A "PG truth → client truth" 正式反转（2026-05-12）
+
+本 ADR §5.A 长期承诺 "Postgres-as-truth"（事件溯源主存储）；ADR-0017
+Client-first runtime（`b3df724` Proposed）将其反转为 **client-as-truth +
+server-as-replicated-cache**。本节是 §5.A 的正式 review log，不撤销原
+context（§5.A 在 Phase 1-4 是 valid），仅记录 Phase 6 起的语义转换。
+
+**反转触发**：spec `2026-05-11-client-first-pivot-design.md` §1 Q5a
+（user 11 轮 brainstorm 锁定 + memory `client_first_pivot_2026_05.md`）。
+
+**反转条件已满足（Spike-1/2/3 实证）**：
+- Spike-1 `98e3f30` apps/desktop/ Tauri shell 全 13 task PASS — 客户端
+  runtime substrate 可行
+- Spike-2 `6492b36` packages/vault-fs/ 6 API（emit/parse markdown +
+  sidecar + watcher + drift + 3-way merge）+ 5 spec §8 fixture 全 PASS
+  + 5-client stress 1000 ops + offline/online 切换收敛 — markdown ↔ Y.Doc
+  双向 reconcile 可工程化
+- Spike-3 `5ce6a97` ADR-0019 Proposed hybrid plugin runtime（WASM Extism
+  primary + per-OS native fallback）— 客户端 plugin sandbox 可跨平台
+- W2 P1 `c7af95f`：(a) packages/identity/ ed25519 + argon2id + ORCID
+  link 全套（34 测 PASS）= 客户端 signed provenance 基础；(b)
+  packages/doc-store/src/filesystem-backend.ts FileSystemDocumentHandle
+  以 DI hooks 模式接 vault-fs（破 doc-store ← editor-core ← vault-fs
+  循环依赖）+ cold-start 三档 + 双通道 debounced flush（13 测 PASS）—
+  本 ADR §5.D 承诺的 doc-store 抽象在客户端模式下也兑现
+
+**§5.A 语义改写**（不删原文，本节为 superseded by 的具体语义）：
+
+| 维度 | §5.A 原承诺（Phase 1-4） | ADR-0017 反转（Phase 6+） |
+|---|---|---|
+| Truth | PG（事件溯源主存储）| client `~/MyVault/*.md` + `.vault/yjs/*.bin` sidecar |
+| Server 角色 | Single source of truth + 协作 relay | Pure relay + replicated cache + open-content surface |
+| 冲突 resolution | server-side timestamp / approval flow | Client wins on conflict（per spec §2 invariant #1）|
+| Yjs binary 角色 | y-sweet provider → PG bytea snapshot | client `.vault/yjs/*.bin` sidecar 是 truth；server 退到 cache |
+| Markdown 角色 | render emitter 单向产物 | First-class human-readable source；spike-2 双向 reconcile |
+| Offline editing | server unreachable = block | spec §9 G9：server outage 30 min 不阻塞 + 重连批量 sync |
+| AI 数据流 | server agent 唯一路径 | Two-tier: private subdoc → client local agent (ollama / BYO) / public-unlisted → server open-agent-worker |
+
+**对既有 PG schema 的影响**：**零删字段 / 零重命名**。语义降级是文档层
+（review log）+ application 路径变化（sync-gateway 退到 pure relay），
+PG 表 + 索引继续作 replicated cache + open-content store。后续 migration
+0017+（Phase 6 W3+）加 `principal.ed25519_public_key` 等 client-first
+substrate 列；不动既有列。
+
+**对 §5.D doc-store 抽象的影响**：兑现而非破坏。W7.1 抽象 +
+FileSystemBackend（W2 P1 落地）+ 既有 YjsDocumentHandle 三者构成
+DocumentHandle 实现矩阵。**Loro / Automerge 切换评估推 Phase 7+**（per
+§8.4 长期方向），本 ADR 反转不引入新 CRDT 切换需求。
+
+**对 ADR-0001 §6 Phase 1 schema 承诺的影响**：**承诺继续兑现**。Phase 1
+schema "扛 Phase 3/4/5 场景" 现也扛 Phase 6 client-first 反转 + open
+content + Triadic Architecture 三层（per §8.5 ADR-0020 review log）。
+
+**实证 commit hash**：`e74267b` (ADR-0020) + `2faefe2` / `ad076f1` /
+`5c82f83` / `3aa4f57` (Wave D-1~D-4 Triadic) + `5ce6a97` (Spike-3) +
+`98e3f30` (Spike-1) + `6492b36` (Spike-2) + `b3df724` (ADR-0017+0018
+Proposed + playbook) + `c7af95f` (identity + FileSystemBackend) +
+`7e6c730` (migration 0016 + open-content) + `71c8228` (F4 publish).
+
+**ADR-0017 Status promote**：本 review log Phase 6 W2 完成；ADR-0017
+Status: Proposed → **Accepted with caveat**（cavet: dogfood gate G1-G10
+跑通后 Accepted 无 caveat），与 Phase 6 W11-W12 closeout 同期 promote。
+
 ---
 
 ## 9. References

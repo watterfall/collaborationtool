@@ -468,3 +468,35 @@ reviewer/researcher 路径仍 `mock` 依 ADR-0008）。
   finding kind / promotion 协议
 - Phase 6 决定 export shape 是否含 Triadic lineage（视 ADR-0020 → Accepted
   情况）
+
+### Phase 6 W2 ADR-0018 — signed provenance chain + Merkle log 联动（2026-05-12）
+
+ADR-0018 Open Content Mechanisms（`b3df724` Proposed）引入：
+
+1. **`packages/open-content/`** (`7e6c730`)：canonical-payload 序列化器
+   (sorted-key recursive JSON + sha-256) + Merkle log helpers
+   (buildMerkleEntry / verifyMerkleEntry / verifyMerkleChain 3 invariant
+   walker)；31 测全 PASS
+2. **migration 0016** (`7e6c730`)：4 entity 表 (open_question /
+   open_dataset / open_peer_review / share_snapshot) + provenance_merkle_log
+   append-only chain；每 entity 行 non-null signed_payload_jws + 非空
+   merkle_log_entry_id FK
+3. **`packages/identity/`** (`c7af95f`)：ed25519 keypair + argon2id +
+   xchacha20-poly1305 + ORCID link canonical payload（34 测）
+4. **apps/web /api/publish + service layer** (`71c8228`)：F4 publish flow
+   single endpoint for all 4 kinds + content-shape validators + signature
+   verifier DI hook（37 测）
+
+**对本 ADR §2 claim / evidence schema 的影响**：**零修改**。claim_review
+（ADR-0016）仍 per-document Day-layer；open_peer_review（ADR-0018）是
+public-surface 跨 4 entity 类型；二者不重叠。本 ADR §2.7 export shape
+（AI context pack）当前仍 Day-only；Phase 6 W3+ 视 ADR-0020 Triadic →
+Accepted 后评估是否含 cross-layer lineage edges。
+
+**对 6 finding kind 的影响**：ADR-0018 §2.6 提议 Phase 6+ 加第 8 类
+finding `dangling-merkle-ref`（merkle_log_entry_id FK 失效；本期 PG FK
+约束已防御，无需 finding kind 兜底，留作 future）。
+
+**Evidence Tier**：`contract` (canonical-payload + Merkle helpers + 表
+schema + F4 publish service layer + 1 API route 全 contract test；W3+
+真 ORCID OAuth + ed25519 public key 列加入后升 `mixed`)。

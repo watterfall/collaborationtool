@@ -150,10 +150,13 @@ export interface MerkleChainVerifyResult {
 }
 
 /**
- * Walk the entire log and check three invariants:
+ * Walk the entire log and check four invariants:
  *   (1) Exactly one genesis row (prev_entry_id = null)
  *   (2) entry_seq strictly monotonic in PG insert order
  *   (3) Every non-genesis row's prev_entry_id refers to an existing row
+ *   (4) No two rows share the same prev_entry_id (chain must be linear —
+ *       a fork would let two entries claim the same predecessor, breaking
+ *       the append-only single-chain guarantee)
  *
  * Per-row signature + content_hash check is `verifyMerkleEntry`'s job;
  * caller composes (this checks structural integrity, that checks payload).
@@ -170,6 +173,7 @@ export function verifyMerkleChain(rows: readonly MerkleChainRow[]): MerkleChainV
   const sorted = [...rows].sort((a, b) => Number(a.entrySeq - b.entrySeq));
   const anomalies: MerkleChainAnomaly[] = [];
   const seenIds = new Set<EntityId>();
+  const usedPrevIds = new Set<EntityId>();
 
   // Invariant 1: exactly one genesis row.
   const genesisRows = sorted.filter((r) => r.prevEntryId === null);
@@ -196,20 +200,31 @@ export function verifyMerkleChain(rows: readonly MerkleChainRow[]): MerkleChainV
     }
     prevSeq = row.entrySeq;
 
-    if (row.prevEntryId !== null && !seenIds.has(row.prevEntryId)) {
-      // prev points to either a missing row OR a later-seq row (out of order)
-      // Pre-collect IDs in `sorted` to distinguish.
-      const allIds = new Set(sorted.map((r) => r.id));
-      if (!allIds.has(row.prevEntryId)) {
+    if (row.prevEntryId !== null) {
+      // Invariant 4: prev_entry_id must be unique across the log.
+      if (usedPrevIds.has(row.prevEntryId)) {
         anomalies.push({
           rowId: row.id,
-          reason: `prev_entry_id ${row.prevEntryId} refers to non-existent row`,
+          reason: `prev_entry_id ${row.prevEntryId} already referenced by another entry (forked chain)`,
         });
-      } else {
-        anomalies.push({
-          rowId: row.id,
-          reason: `prev_entry_id ${row.prevEntryId} refers to a row with later or equal entry_seq`,
-        });
+      }
+      usedPrevIds.add(row.prevEntryId);
+
+      if (!seenIds.has(row.prevEntryId)) {
+        // prev points to either a missing row OR a later-seq row (out of order)
+        // Pre-collect IDs in `sorted` to distinguish.
+        const allIds = new Set(sorted.map((r) => r.id));
+        if (!allIds.has(row.prevEntryId)) {
+          anomalies.push({
+            rowId: row.id,
+            reason: `prev_entry_id ${row.prevEntryId} refers to non-existent row`,
+          });
+        } else {
+          anomalies.push({
+            rowId: row.id,
+            reason: `prev_entry_id ${row.prevEntryId} refers to a row with later or equal entry_seq`,
+          });
+        }
       }
     }
     seenIds.add(row.id);

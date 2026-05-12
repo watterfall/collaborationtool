@@ -438,3 +438,40 @@ orchestrator**：
 
 **Evidence Tier**：本节 Triadic 部分 `contract`（jsonb 侧通道 + 8 单测）；
 真 Coordinator 6-mode dispatch 在 Wave D-5 / Phase 6 升 `mixed` → `real`。
+
+### Phase 6 W2 ADR-0017 — Two-tier agent runtime (client + open-server)（2026-05-12）
+
+ADR-0017 client-first runtime（`b3df724` Proposed）把本 ADR §2.2 single
+server agent runtime 扩为 **two-tier**：
+
+| 维度 | client-side (`packages/ai-runtime-client/` Phase 6 W9-W10) | server-side (`apps/open-agent-worker/` renamed from agent-worker) |
+|---|---|---|
+| 服务对象 | private subdoc (visibility=private/inherit) | public/unlisted subdoc |
+| Model provider | local ollama / BYO key（local-ollama 已 Spike-1 `98e3f30`） | server env API key（Anthropic / OpenAI / etc） |
+| Plugin sandbox | WASM Extism + per-OS native（ADR-0019 hybrid） | bwrap（既有 ADR-0012） |
+| Quota | per-vault local（不入 server） | server-side per-principal（Wave A A1，已 real） |
+| Provenance | `.vault/provenance.log` ed25519-signed (ADR-0018) | PG `provenance` table（既有） |
+| Dispatch routing | visibility-per-subdoc 前置闸（per ADR-0017 §2.4 F6） | 同左 |
+
+**对本 ADR §2.2 multi-step dispatch loop 的影响**：runCoordinatorLoop
+内核**不动**；前置加 visibility routing 决定本次 invoke 走 server 还是
+client tier；两 tier 共享 plugin contract + ModelProvider interface
+(`packages/ai-runtime-client/` 与 `packages/ai-runtime/` 接口同源，
+运行时分叉)。
+
+**对 §2.4 quota / cancel / 可中断的影响**：保留 + 复制到 client tier。
+client tier 的 quota 计在本地 .vault/usage.sqlite（不入 server）+ cancel
+通过 Tauri command；可中断模型与 server tier 同源。
+
+**与 ADR-0020 Triadic Coordinator 6-mode 关系**：互不冲突。本 ADR §6
+review log "Phase 5 ADR-0020 Triadic 影响" 描述的 6 InteractionMode 是
+dispatch decision metadata；本 ADR Phase 6 review log 描述的 two-tier
+是 dispatch destination split。Coordinator decision 既携带
+interaction-mode 又走 visibility routing。
+
+**Evidence Tier**：`contract`（接口契约 + Spike-1 客户端 ollama PoC
+real，但 reviewer/researcher 真 LLM round-trip 仍 mock）；Phase 6 W9-W10
+两 tier 真接入后升 `mixed` → `real`。
+
+**实证 commit hash**：`b3df724` (ADR-0017 Proposed) + Spike-1 `98e3f30`
+inline AI toggle + apps/web/src/lib/local-ollama.ts。

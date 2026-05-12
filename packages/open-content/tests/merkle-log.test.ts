@@ -226,4 +226,35 @@ describe('verifyMerkleChain — chain integrity', () => {
       r.anomalies.some((a) => /later or equal entry_seq|non-existent row|no genesis/.test(a.reason)),
     );
   });
+
+  it('detects forked chain (two entries share the same prev_entry_id)', () => {
+    // a (genesis) → b ; then c also points to a → fork at a.
+    // Without invariant 4 this would slip past because `a` is already in
+    // seenIds by the time `c` is walked.
+    const rows = [
+      makeRow('a', null, 1n),
+      makeRow('b', 'a', 2n),
+      makeRow('c', 'a', 3n), // <-- fork: claims a as predecessor too
+    ];
+    const r = verifyMerkleChain(rows);
+    assert.ok(
+      r.anomalies.some((x) => /forked chain/.test(x.reason)),
+      `expected forked-chain anomaly, got: ${JSON.stringify(r.anomalies)}`,
+    );
+    // The fork anomaly must be attributed to the later entry (c), not a.
+    const forkAnomaly = r.anomalies.find((x) => /forked chain/.test(x.reason));
+    assert.equal(forkAnomaly?.rowId, 'c');
+  });
+
+  it('detects 3-way fork (three entries claim the same predecessor)', () => {
+    const rows = [
+      makeRow('g', null, 1n),
+      makeRow('b', 'g', 2n),
+      makeRow('c', 'g', 3n),
+      makeRow('d', 'g', 4n),
+    ];
+    const r = verifyMerkleChain(rows);
+    const forks = r.anomalies.filter((x) => /forked chain/.test(x.reason));
+    assert.equal(forks.length, 2, `expected 2 fork anomalies (c, d), got: ${JSON.stringify(forks)}`);
+  });
 });
