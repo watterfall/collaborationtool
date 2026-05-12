@@ -1,0 +1,7 @@
+# Spike-3 WASM Extism — gitignore build artifacts; CI / dev rebuilds.
+plugin/target/
+plugin/Cargo.lock
+echo_plugin.wasm
+host/node_modules/
+host/pnpm-lock.yaml
+host/package-lock.json

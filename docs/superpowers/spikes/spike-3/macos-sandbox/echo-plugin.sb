@@ -1,0 +1,17 @@
+;; macOS sandbox-exec profile (SBPL — sandbox profile language)
+;; Spike-3 PoC: minimal profile that denies file write outside tmpdir and
+;; denies network entirely.
+
+(version 1)
+(deny default)
+(allow process-exec
+       (literal "/bin/bash")
+       (literal "/usr/bin/jq")
+       (literal "/usr/bin/cat")
+       (literal "/usr/bin/echo"))
+(allow process-fork)
+(allow file-read*)        ; allow reading bash / jq / their dylibs
+(allow file-write*
+       (regex #"^/private/var/folders/.*/T/"))  ; tmpdir only
+(deny network*)
+(deny mach-lookup)
