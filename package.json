@@ -58,6 +58,8 @@
     "bridge-layer:typecheck": "pnpm --filter @collaborationtool/bridge-layer typecheck",
     "vault-fs:test": "pnpm --filter @collaborationtool/vault-fs test",
     "vault-fs:typecheck": "pnpm --filter @collaborationtool/vault-fs typecheck",
+    "identity:test": "pnpm --filter @collaborationtool/identity test",
+    "identity:typecheck": "pnpm --filter @collaborationtool/identity typecheck",
     "plugin-citation:typecheck": "pnpm --filter @collaborationtool/plugin-citation-agent typecheck",
     "mcp-crossref:test": "pnpm --filter @collaborationtool/mcp-server-crossref test",
     "mcp-crossref:typecheck": "pnpm --filter @collaborationtool/mcp-server-crossref typecheck",
