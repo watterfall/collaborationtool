@@ -52,6 +52,13 @@
       "desktop": {
         "schemes": ["collabtool"]
       }
+    },
+    "updater": {
+      "endpoints": [
+        "https://github.com/<org>/collaborationtool/releases/latest/download/latest.json"
+      ],
+      "pubkey": "REPLACE_WITH_OUTPUT_OF_tauri_signer_generate",
+      "dialog": true
     }
   }
 }
