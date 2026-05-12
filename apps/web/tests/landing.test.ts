@@ -93,11 +93,17 @@ describe('landing — v7 hero copy (Inquiry Studio · 探索工作室)', () => {
     assert.match(en.landing.hero.tagline, /Desktop-first/i);
     assert.match(en.landing.hero.tagline, /self-hostable/i);
   });
-  it('zh ctaPrimary is "开始用"', () => {
-    assert.equal(zh.landing.hero.ctaPrimary, '开始用');
+  it('zh ctaPrimary is "进工作室"', () => {
+    assert.equal(zh.landing.hero.ctaPrimary, '进工作室');
   });
-  it('en ctaPrimary is "Start"', () => {
-    assert.equal(en.landing.hero.ctaPrimary, 'Start');
+  it('en ctaPrimary is "Enter the studio"', () => {
+    assert.equal(en.landing.hero.ctaPrimary, 'Enter the studio');
+  });
+  it('zh manifesto names the philosophical thesis', () => {
+    assert.match(zh.landing.manifesto.body, /创造力|发生在论文之外/);
+  });
+  it('en manifesto names the philosophical thesis', () => {
+    assert.match(en.landing.manifesto.body, /creative\s+part|outside the paper/i);
   });
 });
 

@@ -49,8 +49,11 @@ export const en: LocaleDict = {
       headline: "A studio for the creative\nprocess of science.\nIdeas, prototypes, papers — all here.",
       sub: "Not a paper-writing tool. A scientist's creative workbench.",
       tagline: 'Desktop-first · data stays on your machine · open-source · self-hostable',
-      ctaPrimary: 'Start',
+      ctaPrimary: 'Enter the studio',
       ctaSecondary: 'How to self-host',
+    },
+    manifesto: {
+      body: 'The most creative part of science happens outside the paper.',
     },
     heroMockup: {
       nightLabel: 'NIGHT · idea',
@@ -66,10 +69,10 @@ export const en: LocaleDict = {
       dayLabel: 'DAY · paper',
       dayBody: 'We propose a device-dependent error model with three measurable parameters…',
       dayTag: 'Manuscript draft',
-      footerHint: 'The connections between the three spaces are recorded independently: which idea became which prototype, which prototype became which paragraph of the paper.',
+      footerHint: 'Every step of the creative process is recorded independently: which idea became which prototype, which prototype became which paragraph of the paper.',
     },
     pillars: {
-      heading: 'What it does',
+      heading: "What's in the studio",
       sub: 'Three workspaces. Each has its own content types, collaboration patterns and archive.',
       thinking: {
         title: 'The thinking space',
@@ -81,7 +84,7 @@ export const en: LocaleDict = {
       },
       paper: {
         title: 'The paper space',
-        desc: "The traditional part — write the paper, run the experiments, go through review, export to PDF / Word / JATS. We do this layer as well as anyone. But it's one of three layers, not all of them.",
+        desc: 'Where the creative process lands as a paper — write, run experiments, go through review, export to PDF / Word / JATS. We do this as well as anyone. One stage of the studio; but the most creative part of science happens before it.',
       },
     },
     attribution: {
@@ -90,7 +93,7 @@ export const en: LocaleDict = {
     },
     differentiation: {
       heading: "How it's different",
-      sub: 'Short version: other tools handle just the paper. We handle the whole chain — idea → prototype → paper.',
+      sub: 'Other tools handle the paper. We handle the entire creative process of science — ideas, prototypes, papers, all in the studio.',
       rows: [
         {
           competitor: 'Notion / Obsidian',
@@ -122,12 +125,12 @@ export const en: LocaleDict = {
     },
     specimens: {
       heading: 'Take a look',
-      sub: 'A thinking sketch, a prototype table, a map of how the three layers connect.',
+      sub: 'A thinking sketch, a prototype table, a map of the creative process.',
       nightAlt: 'A page in the thinking space — a contradiction noticed, a metaphor draft, an open question',
       nightCaption: 'A page in the thinking space: a contradiction noticed, a metaphor in draft, a question that may or may not lead anywhere. Half-baked is allowed.',
       bridgeAlt: 'A table in the prototyping space — a hypothesis with three measurable parameters and risks',
       bridgeCaption: 'A table in the prototyping space: one hypothesis, three measurable parameters, two risks, one line on "what this would overturn if true". Not a paper — but enough to show.',
-      lineageAlt: 'Lineage graph between three layers — idea → prototype → paper',
+      lineageAlt: 'Lineage graph of the creative process — idea → prototype → paper',
       lineageCaption: "A map across layers: which 3am idea ended up in which paragraph? Which prototypes were never used? Each edge is labelled with how the transformation happened.",
     },
     architecture: {

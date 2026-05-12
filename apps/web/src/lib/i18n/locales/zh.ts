@@ -49,8 +49,11 @@ export const zh = {
       headline: '给科研创造过程\n一个工作室。\n想法、原型、论文 — 全在这里。',
       sub: '不是论文写作工具。是科学家的创造工作台。',
       tagline: '桌面端为主 · 数据存在你电脑上 · 开源 · 可自托管',
-      ctaPrimary: '开始用',
+      ctaPrimary: '进工作室',
       ctaSecondary: '怎么装到自己电脑',
+    },
+    manifesto: {
+      body: '科学最有创造力的部分，发生在论文之外。',
     },
     heroMockup: {
       nightLabel: 'NIGHT · 想法 / idea',
@@ -66,10 +69,10 @@ export const zh = {
       dayLabel: 'DAY · 论文 / paper',
       dayBody: 'We propose a device-dependent error model with three measurable parameters…',
       dayTag: '论文草稿 · manuscript draft',
-      footerHint: '三个空间之间的连接被独立记下来：哪个想法变成了哪个原型，哪个原型变成了哪段论文。',
+      footerHint: '创造过程的每一步都被独立记下来：哪个想法变成了哪个原型，哪个原型变成了哪段论文。',
     },
     pillars: {
-      heading: '能做什么',
+      heading: '工作室里有什么',
       sub: '三个工作空间。每个空间有自己的内容类型、自己的协作方式、自己的 archive。',
       thinking: {
         title: '想点子的地方',
@@ -81,7 +84,7 @@ export const zh = {
       },
       paper: {
         title: '写论文的地方',
-        desc: '传统的写论文、跑实验、走评审、导出 PDF / Word / JATS——这一层我们做得和别人一样好。但只占三层中的一层；不是全部。',
+        desc: '把创造过程的成果落到论文 — 写、跑实验、走评审、导出 PDF / Word / JATS。这一步我们做得和别人一样好。是工作室里的一个阶段，但科研最有创造力的部分发生在它之前。',
       },
     },
     attribution: {
@@ -90,7 +93,7 @@ export const zh = {
     },
     differentiation: {
       heading: '和别的工具有啥不同',
-      sub: '简单说：别的工具只承接最终论文。我们承接想法 → 原型 → 论文整个链条。',
+      sub: '别的工具承接论文。我们承接整个科研创造过程 — 想法、原型、论文都在工作室里。',
       rows: [
         {
           competitor: 'Notion / Obsidian',
@@ -122,13 +125,13 @@ export const zh = {
     },
     specimens: {
       heading: '看一眼',
-      sub: '一张想法手稿、一张原型表、一张三层之间的连接图。',
+      sub: '一张想法手稿、一张原型表、一张创造过程的连接图。',
       nightAlt: '想点子空间里的一页内容 —— 包含一个矛盾观察、一段隐喻草稿、一个未答问题',
       nightCaption: '想点子空间的一页：矛盾观察、隐喻草稿、一段还没确定的提问。允许半成品，允许"不知道是不是对的"。',
       bridgeAlt: '原型空间里的一张表 —— 一个假设的三个可测参数 + 风险点',
       bridgeCaption: '原型空间的一张表：一个假设、三个可测参数、两个风险点、一段"如果这真的成立会推翻什么"。这不是论文，但已经能给同行看。',
       lineageAlt: '三层 artifact 之间的连接图 —— 想法 → 原型 → 论文 的 lineage',
-      lineageCaption: '一张三层之间的连接图：哪个 3am 灵感最后变成了哪一段论文？哪个原型从来没用上？每条连接都带"是什么方式转化的"标注。',
+      lineageCaption: '一张创造过程的连接图：哪个 3am 灵感最后变成了哪一段论文？哪个原型从来没用上？每条连接都带"是什么方式转化的"标注。',
     },
     architecture: {
       heading: '装好之后长这样',

@@ -27,6 +27,7 @@ export function Landing({ t }: { t: LocaleDict }) {
   const hero = t.landing.hero;
   const pillars = t.landing.pillars;
   const attribution = t.landing.attribution;
+  const manifesto = t.landing.manifesto;
   const diff = t.landing.differentiation;
   const specimens = t.landing.specimens;
   const arch = t.landing.architecture;
@@ -82,6 +83,23 @@ export function Landing({ t }: { t: LocaleDict }) {
         {/* 右半 — TriadicMockup */}
         <div className="lg:pt-2">
           <TriadicMockup t={t} />
+        </div>
+      </section>
+
+      {/* Manifesto transition (v8 C1) — single-line philosophical pull-quote
+          between Hero and Pillars. Rules above and below for editorial
+          treatment. Big italic serif 2xl→3xl on lg. */}
+      <section>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+          <hr className="rule" />
+          <p
+            className="font-serif text-2xl italic leading-[1.35] sm:text-3xl"
+            style={{ color: 'var(--color-ink)' }}
+            data-prose="bilingual"
+          >
+            {manifesto.body}
+          </p>
+          <hr className="rule" />
         </div>
       </section>
 
