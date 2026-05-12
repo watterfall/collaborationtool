@@ -1,0 +1,32 @@
+[package]
+name = "collabtool-desktop"
+version = "0.1.0"
+description = "Collaboration tool desktop shell — Spike-1"
+edition = "2021"
+rust-version = "1.75"
+
+[lib]
+name = "collabtool_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.0", features = ["tray-icon"] }
+tauri-plugin-notification = "2.0"
+tauri-plugin-shell = "2.0"
+tauri-plugin-os = "2.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+log = "0.4"
+
+[dev-dependencies]
+mockito = "1.5"
+tokio-test = "0.4"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
