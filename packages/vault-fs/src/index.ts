@@ -9,7 +9,7 @@ export * from './markdown-to-ydoc';
 export * from './sidecar-io';
 export * from './file-watcher';
 export * from './drift-detector';
-// Task 7 fills these:
+export * from './three-way-merge';
 // export * from './markdown-to-ydoc';
 // export * from './sidecar-io';
 // export * from './file-watcher';
