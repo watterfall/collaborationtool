@@ -9,6 +9,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./filesystem": {
+      "types": "./src/filesystem-backend.ts",
+      "default": "./src/filesystem-backend.ts"
     }
   },
   "scripts": {

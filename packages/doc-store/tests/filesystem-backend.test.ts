@@ -16,7 +16,7 @@ import {
   markdownPath,
   sidecarPath,
   type FileSystemHooks,
-} from '../src/index';
+} from '../src/filesystem-backend';
 
 // ---------- stub vault-fs primitives ----------
 // 4-byte magic header mirrors vault-fs format so real wire interop

@@ -22,19 +22,10 @@ export { YjsDocumentHandle } from './yjs-backend';
 export type { YjsDocumentHandleOptions } from './yjs-backend';
 
 // Phase 6 W2-W3 (ADR-0017 §1.3) — filesystem-backed handle for desktop.
-// Wraps a Y.Doc + sidecar (.vault/yjs/<id>.bin) + markdown twin.
-// Markdown emit/parse are INJECTED via FileSystemHooks to avoid the
-// doc-store ← editor-core ← vault-fs cycle (vault-fs depends on
-// editor-core for paperSchema; doc-store stays purely CRDT).
-export {
-  FileSystemDocumentHandle,
-  sidecarPath,
-  markdownPath,
-} from './filesystem-backend';
-export type {
-  FileSystemDocumentHandleOptions,
-  FileSystemHooks,
-} from './filesystem-backend';
+// NOT re-exported from this barrel because it pulls `node:fs/promises`
+// into any consumer's dependency graph (editor-core → web client bundle
+// → webpack `UnhandledSchemeError`). Import from the subpath instead:
+//   import { FileSystemDocumentHandle } from '@collaborationtool/doc-store/filesystem';
 
 export {
   DocStore,
