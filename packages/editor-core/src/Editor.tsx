@@ -68,12 +68,16 @@ export function Editor(props: EditorProps): React.ReactElement {
       token: props.token,
     });
 
-    if (props.seedContent && isDocumentFragmentEmpty(bundle.handle)) {
+    if (isDocumentFragmentEmpty(bundle.handle)) {
+      // Y.XmlFragment is empty on first open. y-prosemirror with an empty
+      // fragment leaves PM without a root block, which renders as a
+      // non-interactive blank surface (can't focus, can't type). Seed
+      // either the supplied template OR a minimal `<p></p>` so the
+      // editor has something to bind to.
+      const pmJson = props.seedContent ?? { type: 'doc', content: [{ type: 'paragraph' }] };
       try {
-        seedDocumentFromPmJson(bundle.handle, props.seedContent);
+        seedDocumentFromPmJson(bundle.handle, pmJson);
       } catch (err) {
-        // Don't bring down the editor — log and proceed with an empty
-        // doc. The user can paste content manually.
         // eslint-disable-next-line no-console
         console.warn('[editor-core] seedDocumentFromPmJson failed:', err);
       }
@@ -160,9 +164,13 @@ function EditorMounted({
         Collaboration.configure({ document: sync.ydoc }),
       ],
       editable: !readOnly,
-      // ProseMirror checks for `document` at construction time; keep this
-      // false to defer to client mount only (Next.js SSR safety).
-      immediatelyRender: false,
+      // Render the PM view synchronously. `EditorMounted` only runs after
+      // `sync != null` (gateway open, post-hydration), so SSR never hits
+      // `document.createElement` — the previous `immediatelyRender: false`
+      // worked around a Next.js SSR race that doesn't actually happen here
+      // and instead left `<EditorContent>` mounted before `editor.view`
+      // existed, producing a blank non-interactive surface (the bug).
+      immediatelyRender: true,
     },
     [sync.ydoc, readOnly],
   );
@@ -173,7 +181,16 @@ function EditorMounted({
     }
   }, [editor, onEditorReadyRef]);
 
-  if (!editor) return <div className="h-32" />;
+  if (!editor) {
+    return (
+      <div style={{ padding: '12px', background: '#fee', color: '#900', fontFamily: 'monospace', fontSize: '12px' }}>
+        DEBUG: useEditor returned null (TipTap failed to mount). sync.ydoc clientID={String(sync.ydoc.clientID)}
+      </div>
+    );
+  }
+
+  const docJson = editor.state.doc.toJSON();
+  const docSize = editor.state.doc.content.size;
 
   return (
     <div className="flex flex-col gap-2">
@@ -181,6 +198,13 @@ function EditorMounted({
         connection mode:{' '}
         <strong>{mode ?? '…'}</strong>
         {readOnly && ' · 只读 (read-only)'}
+        {' · '}
+        <span style={{ color: editor.isEditable ? 'green' : 'red' }}>
+          editable={String(editor.isEditable)}
+        </span>
+        {' · doc.size='}{docSize}
+        {' · doc.type='}{docJson.type ?? 'undefined'}
+        {' · children='}{Array.isArray(docJson.content) ? docJson.content.length : 0}
       </div>
       <EditorContent
         editor={editor}

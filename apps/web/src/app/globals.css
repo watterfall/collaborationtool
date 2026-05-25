@@ -1,5 +1,11 @@
 @import 'tailwindcss';
 
+/* Tailwind v4 only scans the current package by default. Pull in shared
+ * workspace packages that emit className strings (editor-core renders
+ * `<EditorContent className="...">`; without this @source those arbitrary
+ * values silently miss the JIT and the editor area collapses to 0px). */
+@source "../../../../packages/editor-core/src/**/*.{tsx,ts}";
+
 /* ---------------------------------------------------------------------------
  * Editorial design tokens — see plan0/Design.md for rationale.
  *
