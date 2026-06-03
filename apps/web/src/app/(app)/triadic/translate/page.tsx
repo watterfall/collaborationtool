@@ -10,7 +10,12 @@
 
 import { BRIDGE_ARTIFACT_KINDS } from '@collaborationtool/bridge-layer';
 
-import { HairlineRule, MonoDisc, StatusPill } from '@/components/design';
+import {
+  EmptyState,
+  HairlineRule,
+  MonoDisc,
+  StatusPill,
+} from '@/components/design';
 
 interface BridgeKindCopy {
   zh: string;
@@ -67,8 +72,8 @@ export default function TranslatePage() {
         </h2>
         <StatusPill
           status="proposed"
-          label="Wave D-4 骨架"
-          labelEn="Wave D-4 skeleton"
+          label="示例数据"
+          labelEn="Example data · live at Wave D-5"
           className="ml-auto"
         />
       </header>
@@ -210,24 +215,44 @@ export default function TranslatePage() {
           <span aria-hidden="true"> · </span>
           <span lang="en">Your Bridge artifacts</span>
         </h3>
-        <p
-          className="font-serif"
+        {/* Curated example artifact (illustrative, not seeded live data). */}
+        <p className="label-cap" style={{ color: 'var(--color-ink-3)' }}>
+          示例 · Example
+        </p>
+        <figure
+          className="m-0"
           style={{
-            color: 'var(--color-ink-3)',
-            fontSize: '15px',
-            lineHeight: 1.7,
-            fontStyle: 'italic',
+            borderLeft: '2px solid var(--color-accent-ox)',
+            background: 'var(--color-accent-ox-wash)',
+            padding: '14px 16px',
+            borderRadius: 'var(--radius-2)',
           }}
         >
-          <span lang="zh">
-            空。Wave D-5 dogfood gate target —— jili 30 天 ≥ 10 Bridge artifact，含至少 1 个 not-formalizable / broken 失败案例。
-          </span>
-          <br />
-          <span lang="en">
-            Empty. Wave D-5 target: ≥ 10 Bridge artifacts in 30 days,
-            including ≥ 1 not-formalizable / broken failure case.
-          </span>
-        </p>
+          <figcaption
+            className="label-cap"
+            style={{ color: 'var(--color-accent-ox)', marginBottom: '6px' }}
+          >
+            假设形式化 · hypothesis formalization
+          </figcaption>
+          <p
+            className="font-serif"
+            data-prose="bilingual"
+            style={{ color: 'var(--color-ink)', fontSize: '16px', lineHeight: 1.7 }}
+          >
+            toy model：错误率 = f(device, time)。三个可测参数：T1、串扰、温漂。
+          </p>
+          <p
+            className="font-mono"
+            style={{ color: 'var(--color-ink-3)', fontSize: '11px', marginTop: '6px' }}
+          >
+            outcome:formalizable · ← night:contradiction · → day:manuscript
+          </p>
+        </figure>
+
+        <EmptyState
+          message="还没有你自己的 Bridge artifact · No Bridge artifacts of your own yet."
+          messageEn="真数据在 Wave D-5 接入（目标：30 天 ≥ 10 条，含 ≥ 1 个失败案例）。Bridge 失败本身也是一等产出。"
+        />
       </section>
     </article>
   );
