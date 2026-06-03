@@ -52,6 +52,19 @@ export const zh = {
       ctaPrimary: '进工作室',
       ctaSecondary: '怎么装到自己电脑',
     },
+    productTour: {
+      heading: '看它怎么用',
+      sub: '从开一篇，到复现准备度实时打分 —— 下面都是真实界面，不是示意图。',
+      step1Caption:
+        '一个工作室：想法、原型、论文都在一处，按草稿 / 评审中 / 已归档分栏。',
+      step1Alt: '文档工作区 —— 我的论文列表',
+      step2Caption:
+        '开一篇：选主语言、双语模式、起手模板（空白 / 双语论文 / 文献综述）。',
+      step2Alt: '新建文档表单 —— 标题 / 主语言 / 起手模板',
+      step3Caption:
+        '写作时实时打分复现准备度 —— 证据、代码、人类复核、ORCID 签名、AI 审计逐项亮灯。',
+      step3Alt: '编辑器复现准备度面板',
+    },
     manifesto: {
       body: '科学最有创造力的部分，发生在论文之外。',
     },

@@ -52,6 +52,19 @@ export const en: LocaleDict = {
       ctaPrimary: 'Enter the studio',
       ctaSecondary: 'How to self-host',
     },
+    productTour: {
+      heading: 'See it in use',
+      sub: 'From starting a paper to a live reproducibility score — real screens below, not mockups.',
+      step1Caption:
+        'One studio: ideas, prototypes and papers in one place, split by draft / in-review / archived.',
+      step1Alt: 'Documents workspace — my papers list',
+      step2Caption:
+        'Start one: pick a primary language, bilingual mode, and a starter template (blank / bilingual paper / literature review).',
+      step2Alt: 'New-document form — title / primary language / starter template',
+      step3Caption:
+        'Reproducibility scored live as you write — evidence, code, human review, ORCID signature and AI audit each light up.',
+      step3Alt: 'Editor reproducibility-gate panel',
+    },
     manifesto: {
       body: 'The most creative part of science happens outside the paper.',
     },

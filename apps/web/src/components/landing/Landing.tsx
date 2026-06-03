@@ -17,6 +17,7 @@ import Link from 'next/link';
 
 import type { LocaleDict } from '@/lib/i18n/types';
 import { ProductFrame } from '@/components/design';
+import { ProductTour } from './ProductTour';
 import { NightArtifactCard } from './NightArtifactCard';
 import { BridgeArtifactCard } from './BridgeArtifactCard';
 import { LineageGraph } from './LineageGraph';
@@ -105,22 +106,10 @@ export function Landing({ t }: { t: LocaleDict }) {
         </div>
       </section>
 
-      {/* Manifesto transition (v8 C1) — single-line philosophical pull-quote
-          between Hero and Pillars. Rules above and below for editorial
-          treatment. Big italic serif 2xl→3xl on lg. */}
-      <section>
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-          <hr className="rule" />
-          <p
-            className="font-serif text-2xl italic leading-[1.35] sm:text-3xl"
-            style={{ color: 'var(--color-ink)' }}
-            data-prose="bilingual"
-          >
-            {manifesto.body}
-          </p>
-          <hr className="rule" />
-        </div>
-      </section>
+      {/* Product tour (v2 concrete-first) — 3 张真产品截图紧跟 hero，让陌生人
+          先看到工具本身，再遇到哲学。取代概念 facsimile specimens 作为头号
+          exhibit。manifesto pull-quote 下移到 Pillars 之后（"被赚到之后才出现"）。*/}
+      <ProductTour t={t} />
 
       {/* Pillars — v4: 3 个空间（想点子 / 做原型 / 写论文），删 v3 的
           4 个 ASCII 微图（实现路径写法）。grid 在 ≥md 是 3 列，让"三层"
@@ -155,6 +144,23 @@ export function Landing({ t }: { t: LocaleDict }) {
               desc={pillars.paper.desc}
             />
           </div>
+        </div>
+      </section>
+
+      {/* Manifesto transition — single-line philosophical pull-quote. v2:
+          下移到 Pillars 之后（concrete-first：访客看完工具 + 三空间才遇到
+          这句"论文之外"，读作已被说服的论点而非开篇抽象主张）。 */}
+      <section>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+          <hr className="rule" />
+          <p
+            className="font-serif text-2xl italic leading-[1.35] sm:text-3xl"
+            style={{ color: 'var(--color-ink)' }}
+            data-prose="bilingual"
+          >
+            {manifesto.body}
+          </p>
+          <hr className="rule" />
         </div>
       </section>
 
