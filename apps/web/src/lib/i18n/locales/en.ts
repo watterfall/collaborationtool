@@ -123,6 +123,42 @@ export const en: LocaleDict = {
       ],
       footnote: 'See README for the full comparison.',
     },
+    reformRadar: {
+      heading: 'What research systems are changing',
+      sub: 'The signal is clear: the next research collaboration system is not just a faster manuscript editor. Evidence, reproducibility, review, AI work and contribution need to be tracked, checked and credited.',
+      rows: [
+        {
+          signal: 'Open science is becoming monitored practice',
+          pressure:
+            'UNESCO and the EU are pushing measurable open science: data, code, methods and outputs should be findable, reusable and assessable.',
+          response:
+            'The studio treats claims, evidence, sources, reviews and contributions as traceable objects, not just text inside a final paper.',
+        },
+        {
+          signal: 'Reproducibility is becoming infrastructure',
+          pressure:
+            'NIH is elevating replication and reproducibility agency-wide. Failed paths, raw data and protocol details need to enter the scientific record.',
+          response:
+            'Authors bind evidence, code, data and methods while writing; maintenance scans later flag unsupported, outdated or contradicted work.',
+        },
+        {
+          signal: 'Peer review is overloaded',
+          pressure:
+            'Review invitations are harder to fill, a small pool carries too much unpaid labor, and quality and speed are both under pressure.',
+          response:
+            'Review becomes claim-level, with ORCID-signed verdicts and contribution records so review can be credited as research labor.',
+        },
+        {
+          signal: 'AI is entering science, but it must be auditable',
+          pressure:
+            'Generative AI is spreading across disciplines, while hallucination, opacity, privacy and uncertainty can amplify reproducibility risk.',
+          response:
+            'AI is a permissioned collaborator: model, provider, prompt, tool calls and approval chains are written into provenance.',
+        },
+      ],
+      footnote:
+        'Research baseline: plan0/research/2026-06-03-research-collaboration-systems.md.',
+    },
     specimens: {
       heading: 'Take a look',
       sub: 'A thinking sketch, a prototype table, a map of the creative process.',

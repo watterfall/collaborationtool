@@ -20,12 +20,14 @@ import { eq, inArray } from 'drizzle-orm';
 import { schema } from '@collaborationtool/drizzle';
 
 import { HairlineRule, MonoDisc, StatusPill } from '@/components/design';
+import { ReviewLifecycleActions } from '@/components/review/ReviewLifecycleActions';
 import { auth } from '@/lib/auth';
 import {
   aggregateLineage,
   type ClaimReviewVerdict,
 } from '@/lib/claim-review';
 import { getDb } from '@/lib/db';
+import { getPrincipalIdForUser } from '@/lib/principal';
 
 const VERDICT_LABEL: Record<
   ClaimReviewVerdict,
@@ -45,6 +47,7 @@ export default async function ClaimLineagePage({
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+  const principalId = await getPrincipalIdForUser(session.user.id);
 
   const { claimId } = await params;
 
@@ -104,6 +107,8 @@ export default async function ClaimLineagePage({
       id: r.id,
       verdict: r.verdict as ClaimReviewVerdict,
       reviewerOrcidId: r.reviewerOrcidId,
+      orcidSignedAt: r.orcidSignedAt,
+      signedPayloadJws: r.signedPayloadJws,
       isAiVerdict: r.isAiVerdict,
       withdrawnAt: r.withdrawnAt,
     })),
@@ -321,6 +326,17 @@ export default async function ClaimLineagePage({
                       <em>{r.withdrawnReason}</em>
                     </small>
                   </p>
+                ) : null}
+                {principalId === r.reviewerPrincipalId && !r.withdrawnAt ? (
+                  <ReviewLifecycleActions
+                    claimId={claim.id}
+                    reviewId={r.id}
+                    canSign={!r.orcidSignedAt && !r.signedPayloadJws}
+                    canWithdraw
+                    initiallySigned={Boolean(
+                      r.orcidSignedAt || r.signedPayloadJws,
+                    )}
+                  />
                 ) : null}
               </li>
             );

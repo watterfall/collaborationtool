@@ -7,6 +7,7 @@
 //
 // Filter URL params:
 //   ?documentId=<id>   scope to one paper
+//   ?claimId=<id>      direct readiness target; bypasses aging gate
 //   ?topic=<prefix>    Phase 5 stub — matches claim_id startsWith
 //   ?mineOnly=1        show only claims the caller has verdicted on
 //   ?excludeMine=1     hide claims the caller has verdicted on
@@ -69,6 +70,34 @@ export default async function ReviewerInboxPage({
   // Candidate claims — agent-created, broad scope. We over-fetch and
   // filter in JS via assembleInbox() so the same SoT predicates serve
   // tests + future caching layers.
+  const claimKeepStatuses = inArray(schema.claim.status, [
+    'ai-suggested',
+    'human-reviewed',
+    'approved',
+  ]);
+  // 'deprecated' and 'superseded' claims are excluded — the dogfood
+  // signal is "stale ai-suggested / human-reviewed / approved claim
+  // that nobody has reviewed". inArray with the keep-list is safer
+  // than a NOT IN (deprecated / superseded).
+  const candidateClaimWhere =
+    filter.claimId && filter.documentId
+      ? and(
+          eq(schema.claim.id, filter.claimId),
+          eq(schema.claim.documentOriginId, filter.documentId),
+          claimKeepStatuses,
+        )
+      : filter.claimId
+        ? and(eq(schema.claim.id, filter.claimId), claimKeepStatuses)
+        : filter.documentId
+          ? and(
+              eq(schema.claim.documentOriginId, filter.documentId),
+              claimKeepStatuses,
+            )
+          : and(
+              eq(schema.principal.kind, 'agent'),
+              claimKeepStatuses,
+            );
+
   const candidateClaimRows = await db
     .select({
       claimId: schema.claim.id,
@@ -80,16 +109,7 @@ export default async function ReviewerInboxPage({
     })
     .from(schema.claim)
     .innerJoin(schema.principal, eq(schema.principal.id, schema.claim.createdBy))
-    .where(
-      and(
-        eq(schema.principal.kind, 'agent'),
-        // 'deprecated' and 'superseded' claims are excluded — the dogfood
-        // signal is "stale ai-suggested / human-reviewed / approved claim
-        // that nobody has reviewed". inArray with the keep-list is
-        // safer than a NOT IN (deprecated / superseded).
-        inArray(schema.claim.status, ['ai-suggested', 'human-reviewed', 'approved']),
-      ),
-    )
+    .where(candidateClaimWhere)
     .orderBy(desc(schema.claim.createdAt))
     .limit(PAGE_SIZE * 4); // headroom — assembleInbox filters down
 
@@ -105,11 +125,14 @@ export default async function ReviewerInboxPage({
     claims.length > 0
       ? await db
           .select({
+            reviewId: schema.claimReview.id,
             claimId: schema.claimReview.claimId,
             verdict: schema.claimReview.verdict,
             reviewerPrincipalId: schema.claimReview.reviewerPrincipalId,
             reviewerOrcidId: schema.claimReview.reviewerOrcidId,
             isAiVerdict: schema.claimReview.isAiVerdict,
+            signedPayloadJws: schema.claimReview.signedPayloadJws,
+            orcidSignedAt: schema.claimReview.orcidSignedAt,
             withdrawnAt: schema.claimReview.withdrawnAt,
           })
           .from(schema.claimReview)
@@ -122,11 +145,14 @@ export default async function ReviewerInboxPage({
       : [];
 
   const reviews: InboxReviewSlim[] = reviewRows.map((r) => ({
+    reviewId: r.reviewId,
     claimId: r.claimId,
     verdict: r.verdict as ClaimReviewVerdict,
     reviewerPrincipalId: r.reviewerPrincipalId,
     reviewerOrcidId: r.reviewerOrcidId,
     isAiVerdict: r.isAiVerdict,
+    signedPayloadJws: r.signedPayloadJws,
+    orcidSignedAt: r.orcidSignedAt,
     withdrawnAt: r.withdrawnAt,
   }));
 
@@ -208,6 +234,7 @@ export default async function ReviewerInboxPage({
               <ClaimVerdictForm
                 claimId={e.claim.claimId}
                 hasExistingCallerVerdict={e.callerVerdict !== null}
+                existingReview={e.callerReview}
               />
             </li>
           ))}

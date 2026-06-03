@@ -13,6 +13,12 @@ const FORMATS = [
   { id: 'typst-source', label: 'Typst source', mime: 'text/plain', ext: 'typ' },
   { id: 'pdf', label: 'PDF (Typst)', mime: 'application/pdf', ext: 'pdf' },
   {
+    id: 'ai-context-pack',
+    label: 'AI context pack',
+    mime: 'application/json',
+    ext: 'ai-context-pack.json',
+  },
+  {
     id: 'docx',
     label: 'Word (.docx)',
     mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -180,8 +186,9 @@ export default function ExportDrawer({
             }}
           >
             HTML / JATS / Markdown / Word 走 @collaborationtool/render-myst；
-            Typst source / PDF 走 @collaborationtool/render-typst。PDF 需要服务器
-            安装 typst CLI（&gt;= 0.14）。Word 是 Phase 1.5 加入。
+            Typst source / PDF 走 @collaborationtool/render-typst。AI context
+            pack 是给 reviewer agent / 外部协作者的 JSON 知识包，包含 readiness
+            gate。PDF 需要服务器安装 typst CLI（&gt;= 0.14）。
           </p>
         </div>
       )}

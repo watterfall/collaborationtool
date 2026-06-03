@@ -11,11 +11,49 @@ import { describe, it } from 'node:test';
 import {
   ALLOWED_TRANSITIONS,
   FINDING_STATUSES,
+  parseMaintenanceFilter,
   validateTransition,
 } from '../src/lib/maintenance';
 
 const FIXED_NOW = new Date('2026-05-10T12:00:00Z');
 const ACTOR = 'principal:user-1';
+
+describe('parseMaintenanceFilter', () => {
+  it('parses status plus document / claim / finding targets', () => {
+    const f = parseMaintenanceFilter(
+      new URLSearchParams({
+        status: 'acknowledged',
+        documentId: 'doc:1',
+        claimId: 'claim:1',
+        findingId: 'finding:1',
+      }),
+    );
+    assert.equal(f.status, 'acknowledged');
+    assert.equal(f.documentId, 'doc:1');
+    assert.equal(f.claimId, 'claim:1');
+    assert.equal(f.findingId, 'finding:1');
+  });
+
+  it('drops invalid status and blank target params', () => {
+    const f = parseMaintenanceFilter(
+      new URLSearchParams({
+        status: 'reopened',
+        documentId: ' ',
+        claimId: '',
+      }),
+    );
+    assert.deepEqual(f, {});
+  });
+
+  it('accepts Next.js searchParams object shape', () => {
+    const f = parseMaintenanceFilter({
+      status: ['resolved', 'open'],
+      findingId: ['finding:target', 'finding:other'],
+    });
+    assert.equal(f.status, 'resolved');
+    assert.equal(f.findingId, 'finding:target');
+  });
+});
 
 describe('ALLOWED_TRANSITIONS matrix', () => {
   it('open → 3 targets; acknowledged → 2; terminal states lock', () => {

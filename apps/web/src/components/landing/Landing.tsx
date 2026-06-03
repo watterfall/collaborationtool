@@ -29,6 +29,7 @@ export function Landing({ t }: { t: LocaleDict }) {
   const attribution = t.landing.attribution;
   const manifesto = t.landing.manifesto;
   const diff = t.landing.differentiation;
+  const radar = t.landing.reformRadar;
   const specimens = t.landing.specimens;
   const arch = t.landing.architecture;
   const navL = t.landing.nav;
@@ -150,6 +151,45 @@ export function Landing({ t }: { t: LocaleDict }) {
             data-prose="bilingual"
           >
             {attribution.desc}
+          </p>
+        </div>
+      </section>
+
+      {/* Reform radar — evidence-backed problem map from the 2026-06-03
+          research baseline. This keeps the landing honest: external
+          research pressure on the left, platform mechanism on the right. */}
+      <section>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+          <header className="flex flex-col gap-2">
+            <p className="label-cap">{radar.heading}</p>
+            <h2
+              className="font-serif text-3xl font-medium"
+              style={{
+                color: 'var(--color-ink)',
+                letterSpacing: '-0.005em',
+              }}
+              data-prose="bilingual"
+            >
+              {radar.sub}
+            </h2>
+          </header>
+          <ol className="m-0 flex list-none flex-col p-0">
+            {radar.rows.map((row, i) => (
+              <RadarRow
+                key={row.signal}
+                index={i + 1}
+                signal={row.signal}
+                pressure={row.pressure}
+                response={row.response}
+              />
+            ))}
+          </ol>
+          <p
+            className="font-sans text-xs"
+            style={{ color: 'var(--color-ink-3)' }}
+            data-prose="bilingual"
+          >
+            {radar.footnote}
           </p>
         </div>
       </section>
@@ -403,5 +443,64 @@ function Pillar({
         {desc}
       </p>
     </article>
+  );
+}
+
+function RadarRow({
+  index,
+  signal,
+  pressure,
+  response,
+}: {
+  index: number;
+  signal: string;
+  pressure: string;
+  response: string;
+}) {
+  return (
+    <li
+      className="grid gap-x-6 gap-y-3 py-5 md:grid-cols-[42px_1fr]"
+      style={{ borderTop: '1px solid var(--color-hairline)' }}
+    >
+      <span
+        className="font-mono text-xs tabular-nums"
+        style={{
+          color: 'var(--color-ink-3)',
+          fontFeatureSettings: '"onum" 1',
+        }}
+        aria-hidden="true"
+      >
+        {String(index).padStart(2, '0')}
+      </span>
+      <div className="grid gap-3 md:grid-cols-[0.92fr_1fr] md:gap-8">
+        <div className="flex flex-col gap-2">
+          <h3
+            className="font-serif text-[19px] font-medium leading-[1.35]"
+            style={{ color: 'var(--color-ink)' }}
+            data-prose="bilingual"
+          >
+            {signal}
+          </h3>
+          <p
+            className="font-serif text-[15px] italic leading-[1.7]"
+            style={{ color: 'var(--color-ink-3)' }}
+            data-prose="bilingual"
+          >
+            {pressure}
+          </p>
+        </div>
+        <p
+          className="font-serif text-[15px] leading-[1.78]"
+          style={{
+            color: 'var(--color-ink)',
+            borderLeft: '1.5px solid var(--color-pencil)',
+            paddingLeft: '16px',
+          }}
+          data-prose="bilingual"
+        >
+          {response}
+        </p>
+      </div>
+    </li>
   );
 }

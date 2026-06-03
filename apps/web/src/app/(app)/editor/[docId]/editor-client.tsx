@@ -5,9 +5,11 @@ import { useEffect, useState } from 'react';
 import { Editor, type TipTapEditor } from '@collaborationtool/editor-core';
 
 import InlineAgentMenu from './components/InlineAgentMenu';
+import OpenLedgerPublishPanel from './components/OpenLedgerPublishPanel';
 
 interface EditorClientProps {
   documentId: string;
+  canPublishOpenLedger?: boolean;
 }
 
 interface SyncTokenResponse {
@@ -21,7 +23,10 @@ interface TemplateSeedResponse {
   content: unknown;
 }
 
-export default function EditorClient({ documentId }: EditorClientProps) {
+export default function EditorClient({
+  documentId,
+  canPublishOpenLedger = false,
+}: EditorClientProps) {
   const [bundle, setBundle] = useState<SyncTokenResponse | null>(null);
   const [seedContent, setSeedContent] = useState<unknown | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -110,6 +115,9 @@ export default function EditorClient({ documentId }: EditorClientProps) {
         seedContent={seedContent}
         onEditorReady={setEditor}
       />
+      {canPublishOpenLedger && (
+        <OpenLedgerPublishPanel documentId={documentId} editor={editor} />
+      )}
       <p
         style={{
           fontFamily: 'var(--font-sans)',

@@ -1,6 +1,6 @@
 // Phase 2 W7 ADR-0011 §2.5: Evidence Map dependency graph endpoint.
 //
-// GET /api/document/<docId>/evidence-map
+// GET /api/document/<docId>/evidence-map[?claimId=<id>]
 //   → { claims, evidences, claimLinks, sources, crossDocReuse }
 //
 // Returns ALL claims/evidence/links **owned-by-or-mentioned-in** the
@@ -22,7 +22,7 @@ import { getDb } from '@/lib/db';
 import { getPrincipalIdForUser } from '@/lib/principal';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   ctx: { params: Promise<{ docId: string }> },
 ): Promise<NextResponse> {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -52,12 +52,18 @@ export async function GET(
       { status: 403 },
     );
   }
+  const claimIdParam = new URL(request.url).searchParams
+    .get('claimId')
+    ?.trim();
 
   // Step 1: claims originating in this document.
-  const docClaims = await db
+  const allDocClaims = await db
     .select()
     .from(schema.claim)
     .where(eq(schema.claim.documentOriginId, documentId));
+  const docClaims = claimIdParam
+    ? allDocClaims.filter((claim) => claim.id === claimIdParam)
+    : allDocClaims;
 
   // Step 2: evidence supporting any of those claims (regardless of
   // origin doc — cross-doc evidence reuse is a feature, not a bug).

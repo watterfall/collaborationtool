@@ -20,7 +20,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import Link from 'next/link';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 
 import { schema } from '@collaborationtool/drizzle';
 
@@ -35,6 +35,7 @@ import { auth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import {
   FINDING_STATUSES,
+  parseMaintenanceFilter,
   validateTransition,
   severityToPillStatus,
   type FindingStatus,
@@ -69,7 +70,7 @@ const SEVERITY_LABEL_EN: Record<string, string> = {
 export default async function MaintenancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
@@ -81,23 +82,33 @@ export default async function MaintenancePage({
   }
 
   const sp = await searchParams;
-  const activeStatus =
-    sp.status &&
-    (STATUSES as readonly string[]).includes(sp.status)
-      ? (sp.status as Status)
-      : 'open';
+  const filter = parseMaintenanceFilter(sp);
+  const hasDirectScope = Boolean(
+    filter.findingId || filter.claimId || filter.documentId,
+  );
+  const activeStatus = filter.status ?? 'open';
 
   const db = getDb();
+  const conditions = [eq(schema.maintenanceFinding.vaultPrincipalId, principalId)];
+  if (filter.status) {
+    conditions.push(eq(schema.maintenanceFinding.status, filter.status));
+  } else if (!hasDirectScope) {
+    conditions.push(eq(schema.maintenanceFinding.status, activeStatus));
+  }
+  if (filter.documentId) {
+    conditions.push(eq(schema.maintenanceFinding.documentId, filter.documentId));
+  }
+  if (filter.claimId) {
+    conditions.push(eq(schema.maintenanceFinding.claimId, filter.claimId));
+  }
+  if (filter.findingId) {
+    conditions.push(eq(schema.maintenanceFinding.id, filter.findingId));
+  }
 
   const rows = await db
     .select()
     .from(schema.maintenanceFinding)
-    .where(
-      and(
-        eq(schema.maintenanceFinding.vaultPrincipalId, principalId),
-        inArray(schema.maintenanceFinding.status, [activeStatus]),
-      ),
-    )
+    .where(and(...conditions))
     .orderBy(
       sql`CASE ${schema.maintenanceFinding.severity}
             WHEN 'high' THEN 0
@@ -165,7 +176,9 @@ export default async function MaintenancePage({
         }}
       >
         {STATUSES.map((s) => {
-          const active = s === activeStatus;
+          const active = filter.status
+            ? s === filter.status
+            : !hasDirectScope && s === activeStatus;
           const n = c[s];
           return (
             <Link
@@ -198,6 +211,39 @@ export default async function MaintenancePage({
           );
         })}
       </nav>
+
+      {hasDirectScope ? (
+        <p
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '8px',
+            alignItems: 'baseline',
+            marginBottom: '16px',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '12px',
+            color: 'var(--color-ink-3)',
+          }}
+        >
+          <span>
+            定位范围 · Focus:{' '}
+            <code style={{ fontFamily: 'var(--font-mono)' }}>
+              {formatFilterScope(filter)}
+            </code>
+          </span>
+          <Link
+            href="/maintenance?status=open"
+            style={{
+              color: 'var(--color-ink)',
+              borderBottom: '1px solid var(--color-pencil)',
+              paddingBottom: '1px',
+              textDecoration: 'none',
+            }}
+          >
+            清除 · Clear
+          </Link>
+        </p>
+      ) : null}
 
       {rows.length === 0 ? (
         <p
@@ -368,6 +414,13 @@ const STATUS_LABEL: Record<Status, string> = {
   resolved: '已修复',
   dismissed: '已忽略',
 };
+
+function formatFilterScope(filter: ReturnType<typeof parseMaintenanceFilter>): string {
+  if (filter.findingId) return `finding:${filter.findingId}`;
+  if (filter.claimId) return `claim:${filter.claimId}`;
+  if (filter.documentId) return `document:${filter.documentId}`;
+  return 'status';
+}
 
 function FindingActions({
   findingId,

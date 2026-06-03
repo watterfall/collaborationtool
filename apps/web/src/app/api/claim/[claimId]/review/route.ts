@@ -219,6 +219,8 @@ export async function GET(
       id: r.id,
       verdict: r.verdict as ClaimReviewVerdict,
       reviewerOrcidId: r.reviewerOrcidId,
+      orcidSignedAt: r.orcidSignedAt,
+      signedPayloadJws: r.signedPayloadJws,
       isAiVerdict: r.isAiVerdict,
       withdrawnAt: r.withdrawnAt,
     })),

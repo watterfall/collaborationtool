@@ -25,8 +25,12 @@ import { NextResponse } from 'next/server';
 import { schema } from '@collaborationtool/drizzle';
 
 import { auth } from '@/lib/auth';
-import { validateApplySignature } from '@/lib/claim-review';
+import {
+  resolveReviewSignatureInput,
+  validateApplySignature,
+} from '@/lib/claim-review';
 import { getDb } from '@/lib/db';
+import { getOrcidIdentityForUser } from '@/lib/orcid-lookup';
 import { getPrincipalIdForUser } from '@/lib/principal';
 
 interface SignBody {
@@ -68,6 +72,12 @@ export async function POST(
   if (!principalId) {
     return NextResponse.json({ error: 'no-principal' }, { status: 403 });
   }
+  const linkedIdentity = await getOrcidIdentityForUser(session.user.id);
+  const signatureInput = resolveReviewSignatureInput({
+    linkedIdentity,
+    clientOrcidId: orcidIdParam,
+    clientSignedPayloadJws: orcidIdToken,
+  });
 
   const db = getDb();
 
@@ -96,8 +106,8 @@ export async function POST(
   const validation = validateApplySignature({
     row,
     callerPrincipalId: principalId,
-    callerOrcidId: orcidIdParam,
-    signedPayloadJws: orcidIdToken,
+    callerOrcidId: signatureInput.callerOrcidId,
+    signedPayloadJws: signatureInput.signedPayloadJws,
     signatureAlgorithm: 'RS256',
   });
   if (!validation.ok) {

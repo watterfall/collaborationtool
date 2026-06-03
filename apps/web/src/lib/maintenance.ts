@@ -15,6 +15,38 @@ export type FindingStatus = (typeof FINDING_STATUSES)[number];
 
 export type TransitionTarget = Exclude<FindingStatus, 'open'>;
 
+export interface MaintenanceFilter {
+  status?: FindingStatus;
+  documentId?: string;
+  claimId?: string;
+  findingId?: string;
+}
+
+export function parseMaintenanceFilter(
+  params: URLSearchParams | Record<string, string | string[] | undefined>,
+): MaintenanceFilter {
+  const get = (key: string): string | null => {
+    if (params instanceof URLSearchParams) {
+      return params.get(key);
+    }
+    const raw = params[key];
+    if (Array.isArray(raw)) return raw[0] ?? null;
+    return raw ?? null;
+  };
+  const filter: MaintenanceFilter = {};
+  const status = get('status');
+  if (status && (FINDING_STATUSES as readonly string[]).includes(status)) {
+    filter.status = status as FindingStatus;
+  }
+  for (const key of ['documentId', 'claimId', 'findingId'] as const) {
+    const value = get(key);
+    if (value && value.trim()) {
+      filter[key] = value.trim();
+    }
+  }
+  return filter;
+}
+
 export const ALLOWED_TRANSITIONS: Readonly<
   Record<FindingStatus, readonly TransitionTarget[]>
 > = {

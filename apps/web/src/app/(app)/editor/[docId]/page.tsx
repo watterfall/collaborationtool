@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import { schema } from '@collaborationtool/drizzle';
 import {
@@ -12,10 +12,13 @@ import {
 
 import { auth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
+import { readEvidenceSourceKind } from '@/lib/evidence-map';
 import { getPrincipalIdForUser } from '@/lib/principal';
+import { assembleResearchReadiness } from '@/lib/research-readiness';
 
 import EditorClient from './editor-client';
 import ExportDrawer from './components/ExportDrawer';
+import { ResearchReadinessPanel } from './components/ResearchReadinessPanel';
 import RevisionInbox from './components/RevisionInbox';
 import ShareDialog from './components/ShareDialog';
 
@@ -85,6 +88,97 @@ export default async function EditorPage({
     );
   }
 
+  const readinessClaims = await db
+    .select({
+      claimId: schema.claim.id,
+      claimText: schema.claim.text,
+    })
+    .from(schema.claim)
+    .where(eq(schema.claim.documentOriginId, doc.id));
+  const readinessClaimIds = readinessClaims.map((claim) => claim.claimId);
+
+  const [readinessEvidences, readinessReviews, readinessFindings] =
+    await Promise.all([
+      readinessClaimIds.length > 0
+        ? db
+            .select({
+              supportsClaimId: schema.evidence.supportsClaimId,
+              citationId: schema.evidence.citationId,
+            })
+            .from(schema.evidence)
+            .where(
+              inArray(schema.evidence.supportsClaimId, readinessClaimIds),
+            )
+        : [],
+      readinessClaimIds.length > 0
+        ? db
+            .select({
+              claimId: schema.claimReview.claimId,
+              isAiVerdict: schema.claimReview.isAiVerdict,
+              withdrawnAt: schema.claimReview.withdrawnAt,
+              reviewerOrcidId: schema.claimReview.reviewerOrcidId,
+              orcidSignedAt: schema.claimReview.orcidSignedAt,
+              signedPayloadJws: schema.claimReview.signedPayloadJws,
+            })
+            .from(schema.claimReview)
+            .where(
+              inArray(schema.claimReview.claimId, readinessClaimIds),
+            )
+        : [],
+      db
+        .select({
+          findingId: schema.maintenanceFinding.id,
+          claimId: schema.maintenanceFinding.claimId,
+          kind: schema.maintenanceFinding.kind,
+          severity: schema.maintenanceFinding.severity,
+          status: schema.maintenanceFinding.status,
+          summary: schema.maintenanceFinding.summary,
+        })
+        .from(schema.maintenanceFinding)
+        .where(
+          and(
+            eq(schema.maintenanceFinding.documentId, doc.id),
+            eq(schema.maintenanceFinding.vaultPrincipalId, principalId),
+          ),
+        ),
+    ]);
+  const readinessCitationIds = [
+    ...new Set(
+      readinessEvidences
+        .map((evidence) => evidence.citationId)
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+  const readinessCitationRows =
+    readinessCitationIds.length > 0
+      ? await db
+          .select({
+            citationId: schema.citation.id,
+            kind: schema.citation.kind,
+            cslJson: schema.citation.cslJson,
+          })
+          .from(schema.citation)
+          .where(inArray(schema.citation.id, readinessCitationIds))
+      : [];
+  const sourceKindByCitationId = new Map(
+    readinessCitationRows.map((citation) => [
+      citation.citationId,
+      readEvidenceSourceKind(citation.kind, citation.cslJson),
+    ]),
+  );
+
+  const researchReadiness = assembleResearchReadiness({
+    claims: readinessClaims,
+    evidences: readinessEvidences.map((evidence) => ({
+      supportsClaimId: evidence.supportsClaimId,
+      sourceKind: evidence.citationId
+        ? (sourceKindByCitationId.get(evidence.citationId) ?? null)
+        : null,
+    })),
+    reviews: readinessReviews,
+    findings: readinessFindings,
+  });
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <header className="mb-6 flex items-start justify-between">
@@ -94,12 +188,22 @@ export default async function EditorPage({
             {doc.primaryLanguage} · {doc.bilingualMode} · /{doc.slug}
           </p>
         </div>
-        {ctx.documentCapabilities.has('capability.grant') && (
-          <ShareDialog documentId={doc.id} />
-        )}
+        <div className="flex flex-col items-end gap-2">
+          {ctx.documentCapabilities.has('capability.grant') && (
+            <ShareDialog documentId={doc.id} />
+          )}
+        </div>
       </header>
 
-      <EditorClient documentId={doc.id} />
+      <ResearchReadinessPanel
+        documentId={doc.id}
+        summary={researchReadiness}
+      />
+
+      <EditorClient
+        documentId={doc.id}
+        canPublishOpenLedger={ctx.documentCapabilities.has('block.commit')}
+      />
 
       {/*
         Phase 4 W6.1：旧 AgentPanel 折叠侧边栏被 InlineAgentMenu (⌘K

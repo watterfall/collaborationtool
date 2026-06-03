@@ -11,17 +11,37 @@ import { authSchema } from '@collaborationtool/drizzle';
 
 import { getDb } from './db';
 
-export const getOrcidIdForUser = cache(async (userId: string): Promise<string | null> => {
-  const db = getDb();
-  const rows = await db
-    .select({ accountId: authSchema.account.accountId })
-    .from(authSchema.account)
-    .where(
-      and(
-        eq(authSchema.account.userId, userId),
-        eq(authSchema.account.providerId, 'orcid'),
-      ),
-    )
-    .limit(1);
-  return rows[0]?.accountId ?? null;
-});
+export interface LinkedOrcidIdentity {
+  orcidId: string;
+  idToken: string | null;
+}
+
+export const getOrcidIdentityForUser = cache(
+  async (userId: string): Promise<LinkedOrcidIdentity | null> => {
+    const db = getDb();
+    const rows = await db
+      .select({
+        accountId: authSchema.account.accountId,
+        idToken: authSchema.account.idToken,
+      })
+      .from(authSchema.account)
+      .where(
+        and(
+          eq(authSchema.account.userId, userId),
+          eq(authSchema.account.providerId, 'orcid'),
+        ),
+      )
+      .limit(1);
+    const row = rows[0];
+    return row
+      ? { orcidId: row.accountId, idToken: row.idToken ?? null }
+      : null;
+  },
+);
+
+export const getOrcidIdForUser = cache(
+  async (userId: string): Promise<string | null> => {
+    const identity = await getOrcidIdentityForUser(userId);
+    return identity?.orcidId ?? null;
+  },
+);

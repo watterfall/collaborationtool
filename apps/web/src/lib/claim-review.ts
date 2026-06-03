@@ -140,6 +140,23 @@ export type ApplySignatureValidation =
     }
   | { ok: false; reason: ApplySignatureRejectReason };
 
+export interface LinkedReviewSignatureIdentity {
+  orcidId: string;
+  idToken: string | null;
+}
+
+export function resolveReviewSignatureInput(args: {
+  linkedIdentity: LinkedReviewSignatureIdentity | null;
+  clientOrcidId: string | null;
+  clientSignedPayloadJws: string;
+}): { callerOrcidId: string | null; signedPayloadJws: string } {
+  return {
+    callerOrcidId: args.linkedIdentity?.orcidId ?? args.clientOrcidId,
+    signedPayloadJws:
+      args.linkedIdentity?.idToken ?? args.clientSignedPayloadJws,
+  };
+}
+
 export function validateApplySignature(
   input: ApplySignatureInput,
   now: Date = new Date(),
@@ -224,6 +241,8 @@ export interface LineageReviewRow {
   id: string;
   verdict: ClaimReviewVerdict;
   reviewerOrcidId: string | null;
+  orcidSignedAt: Date | null;
+  signedPayloadJws: string | null;
   isAiVerdict: boolean;
   withdrawnAt: Date | null;
 }
@@ -270,8 +289,17 @@ export function aggregateLineage(rows: LineageReviewRow[]): LineageAggregate {
         out.refines += 1;
         break;
     }
-    if (r.reviewerOrcidId) out.orcidSignedCount += 1;
+    if (
+      r.reviewerOrcidId &&
+      (r.orcidSignedAt !== null || hasText(r.signedPayloadJws))
+    ) {
+      out.orcidSignedCount += 1;
+    }
     if (r.isAiVerdict) out.aiVerdictCount += 1;
   }
   return out;
+}
+
+function hasText(value: string | null): boolean {
+  return value !== null && value.trim().length > 0;
 }
