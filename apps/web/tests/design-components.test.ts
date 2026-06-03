@@ -34,6 +34,16 @@ import {
   Icon,
   LineGlyph,
   ProductFrame,
+  Field,
+  TextInput,
+  TextArea,
+  Select,
+  HairlineList,
+  ListRow,
+  PageShell,
+  PageHeader,
+  SectionHeader,
+  EmptyState,
 } from '../src/components/design';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -624,6 +634,141 @@ describe('design/ProductFrame', () => {
 });
 
 // ---------------------------------------------------------------------------
+// v2 Phase 1 — form / list / page foundation
+
+describe('design/Field', () => {
+  it('renders label-cap with htmlFor association + required marker', () => {
+    const el = Field({
+      label: 'provider id',
+      htmlFor: 'providerId',
+      required: true,
+      children: null,
+    }) as ReactElementLike;
+    const labels = findAll(el, (n) => n.type === 'label');
+    assert.equal(nth(labels, 0).props['htmlFor'], 'providerId');
+    assert.match(classNameOf(nth(labels, 0)), /label-cap/);
+    const req = findAll(el, (n) => /field-required/.test(classNameOf(n)));
+    assert.equal(req.length, 1);
+  });
+
+  it('renders error (role=alert) with id, suppressing hint', () => {
+    const el = Field({
+      label: 'x',
+      htmlFor: 'x',
+      hint: 'a hint',
+      error: 'bad value',
+      children: null,
+    }) as ReactElementLike;
+    const errs = findAll(el, (n) => /field-error/.test(classNameOf(n)));
+    assert.equal(errs.length, 1);
+    assert.equal(nth(errs, 0).props['id'], 'x-error');
+    assert.equal(nth(errs, 0).props['role'], 'alert');
+    assert.equal(findAll(el, (n) => /field-hint/.test(classNameOf(n))).length, 0);
+  });
+});
+
+describe('design/FormControls', () => {
+  it('TextInput passes through name/data-testid/aria + sets tone', () => {
+    const el = TextInput({
+      name: 'modelId',
+      'data-testid': 'model-input',
+      tone: 'mono',
+    } as never) as ReactElementLike;
+    assert.equal(el.type, 'input');
+    assert.equal(el.props['name'], 'modelId');
+    assert.equal(el.props['data-testid'], 'model-input');
+    assert.equal(el.props['data-tone'], 'mono');
+    assert.match(classNameOf(el), /form-control/);
+  });
+
+  it('invalid sets aria-invalid; TextArea defaults to serif tone', () => {
+    const inv = TextInput({ invalid: true } as never) as ReactElementLike;
+    assert.equal(inv.props['aria-invalid'], true);
+    const ta = TextArea({} as never) as ReactElementLike;
+    assert.equal(ta.type, 'textarea');
+    assert.equal(ta.props['data-tone'], 'serif');
+  });
+
+  it('Select renders options + select class', () => {
+    const el = Select({ name: 'wireFormat', children: null } as never) as ReactElementLike;
+    assert.equal(el.type, 'select');
+    assert.match(classNameOf(el), /form-control-select/);
+    assert.equal(el.props['name'], 'wireFormat');
+  });
+});
+
+describe('design/HairlineList + ListRow', () => {
+  it('HairlineList renders the requested tag with hairline-list class', () => {
+    const ul = HairlineList({ children: null }) as ReactElementLike;
+    const ol = HairlineList({ as: 'ol', children: null }) as ReactElementLike;
+    assert.equal(ul.type, 'ul');
+    assert.equal(ol.type, 'ol');
+    assert.match(classNameOf(ul), /hairline-list/);
+  });
+
+  it('ListRow flex mode renders title/meta/trailing', () => {
+    const el = ListRow({
+      title: 'claude-sonnet',
+      meta: 'anthropic',
+      trailing: 'pill',
+    }) as ReactElementLike;
+    assert.equal(el.type, 'li');
+    assert.equal(findAll(el, (n) => /list-row-title\b/.test(classNameOf(n))).length, 1);
+    assert.equal(findAll(el, (n) => /list-row-trailing/.test(classNameOf(n))).length, 1);
+  });
+
+  it('ListRow grid mode sets gridTemplateColumns + wraps in link when href', () => {
+    const el = ListRow({
+      cols: '40px 1fr 120px',
+      href: '/editor/x',
+      children: null,
+    }) as ReactElementLike;
+    const grid = findAll(el, (n) => /list-row-grid/.test(classNameOf(n)));
+    const gridStyle = nth(grid, 0).props.style as Record<string, unknown> | undefined;
+    assert.equal(
+      gridStyle ? gridStyle['gridTemplateColumns'] : undefined,
+      '40px 1fr 120px',
+    );
+    const links = findAll(el, (n) => /list-row-link/.test(classNameOf(n)));
+    assert.equal(links.length, 1);
+  });
+});
+
+describe('design/PageShell + PageHeader + EmptyState', () => {
+  it('PageShell maps width token to a static max-w class', () => {
+    const def = PageShell({ children: null }) as ReactElementLike;
+    const wide = PageShell({ width: 'wide', children: null }) as ReactElementLike;
+    assert.match(classNameOf(def), /max-w-3xl/);
+    assert.match(classNameOf(wide), /max-w-6xl/);
+    assert.match(classNameOf(def), /mx-auto/);
+  });
+
+  it('PageHeader renders serif H1 with italic en counterpart + thick rule', () => {
+    const el = PageHeader({ title: '模型', titleEn: 'Models', meta: 'x' }) as ReactElementLike;
+    const h1 = findAll(el, (n) => n.type === 'h1');
+    assert.equal(h1.length, 1);
+    assert.equal(findAll(el, (n) => /page-header-title-en/.test(classNameOf(n))).length, 1);
+    assert.equal(findAll(el, (n) => /rule-thick/.test(classNameOf(n))).length, 1);
+  });
+
+  it('SectionHeader renders cap + optional H2', () => {
+    const el = SectionHeader({ cap: 'ADD PREF', title: '添加' }) as ReactElementLike;
+    assert.equal(findAll(el, (n) => /label-cap/.test(classNameOf(n))).length, 1);
+    assert.equal(findAll(el, (n) => n.type === 'h2').length, 1);
+  });
+
+  it('EmptyState renders bilingual message + optional action', () => {
+    const el = EmptyState({
+      message: '还没有论文',
+      action: 'cta',
+    }) as ReactElementLike;
+    assert.equal(el.props['role'], 'status');
+    assert.equal(findAll(el, (n) => /empty-state-message/.test(classNameOf(n))).length, 1);
+    assert.equal(findAll(el, (n) => /empty-state-action/.test(classNameOf(n))).length, 1);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Module shape — barrel exports the named components.
 
 describe('design/index — barrel export shape', () => {
@@ -641,6 +786,16 @@ describe('design/index — barrel export shape', () => {
       'Icon',
       'LineGlyph',
       'ProductFrame',
+      'Field',
+      'TextInput',
+      'TextArea',
+      'Select',
+      'HairlineList',
+      'ListRow',
+      'PageShell',
+      'PageHeader',
+      'SectionHeader',
+      'EmptyState',
     ]) {
       assert.equal(
         typeof (mod as Record<string, unknown>)[name],
@@ -668,6 +823,12 @@ describe('design/* — token discipline (Design.md §11)', () => {
     'Icon.tsx',
     'LineGlyph.tsx',
     'ProductFrame.tsx',
+    'Field.tsx',
+    'FormControls.tsx',
+    'HairlineList.tsx',
+    'PageShell.tsx',
+    'PageHeader.tsx',
+    'EmptyState.tsx',
   ];
 
   // Hardcoded hex is the loudest violation. Hairline-rule SVG uses
