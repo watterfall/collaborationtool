@@ -42,9 +42,11 @@
    — Council 评审驱动的 Phase 4 W6-W10 + Phase 5 范围调整（Proposed），含
    砍 / 推 Phase 6+ 清单 + ADR 影响表 + 9 项 dogfood gate +
    §11 Design.md 对齐章节
-5. [`plan0/Design.md`](./plan0/Design.md) — 设计 SoT（2026-05-11 v1）：
-   tokens（颜色 / 字体 / 间距 / 半径 / 描边）+ 9 surface 准则 + reject
-   criteria 13 条 + AI-as-collaborator pattern + provenance reveal 动效。
+5. [`plan0/Design.md`](./plan0/Design.md) — 设计 SoT（2026-06-03 **v2**：warmth +
+   concretization）：tokens（颜色 / 字体 / 间距 / 半径 / 描边 + v2 暖色 / 无阴影立体 /
+   motion / accent wash）+ 9 surface 准则 + **reject criteria 16 条** +
+   AI-as-collaborator pattern + provenance reveal 动效 + ProductFrame/Icon/LineGlyph。
+   rationale 见 [`plan0/design-notes/2026-06-03-warmth-concretization.md`](./plan0/design-notes/2026-06-03-warmth-concretization.md)。
    **动到 `apps/web/src/` 前必读；reject criteria 是 commit gate**
 6. [`wiki/graph/README.md`](./wiki/graph/README.md) — graphify 跑出的项目
    知识图谱导览（plan0/ + code/ 两份 `graph.html`）。**新会话先看 god
@@ -140,12 +142,14 @@ P4(3): W1 plugin install backend — capability prompt + sandbox descriptor + 13
 
 ### 4.6 Design.md commit gate（动 `apps/web/src/` 时）
 
-提 commit 前自查 Design.md §11 reject criteria 13 条，**新增不能为正**：
+提 commit 前自查 Design.md §11 reject criteria **16 条**（v2），**新增不能为正**：
 
 ```bash
 # 不能新增的字符串（grep diff staged 文件）
 git diff --staged apps/web/src | grep -E "bg-blue-(500|600|700)|rounded-(lg|xl|2xl|full)|bg-zinc-(50|100|200)|shadow-(sm|md|lg|xl)|#3B82F6|#2563EB|#0EA5E9"
-# 命中即不通过；改用 Design.md tokens（var(--color-paper) / var(--color-ink) / var(--color-accent-ink) / .rule / .pill-* / button-primary / button-ghost）
+# v2 新增：禁任何 blur radius > 0 的 box-shadow（只允许硬边 --elev-lift）
+git diff --staged apps/web/src | grep -E "box-shadow:\s*[^;]*[1-9][0-9]*px\s+[1-9]"
+# 命中即不通过；改用 Design.md tokens（var(--color-paper) / var(--color-ink) / var(--color-accent-ink) / var(--color-warm-wash) / .rule / .pill-* / .elev-lift / .surface-raised / button-primary / button-ghost）
 ```
 
 例外仅头像 / pill 999px 圆形 + ORCID 官方绿。

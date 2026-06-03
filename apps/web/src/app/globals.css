@@ -30,6 +30,25 @@
   --color-accent-ox: #7b2d26;      /* human / author */
   --color-accent-moss: #3f5b3a;    /* community / applied / fork */
 
+  /* --- Design.md v2 (2026-06-03) warmth + concretization --------------------
+   * 升温但守 editorial：饱和度 <60%，暖色仅 section 暖带（reject #15），
+   * 立体只用硬边双 hairline（无 blur，reject #14）。 */
+
+  /* warm wash — 唯一"升温"出口，从 paper 家族派生 (HSL ~38° <40% sat)。
+     仅用于 section 暖带 / 示例 callout / 截图 mat，绝不做全局 page 底色。 */
+  --color-warm-wash: #f6ede0;
+  --color-warm-edge: #e3d3b8;
+
+  /* elevation-by-paper — 语义化的层级底色（= paper 家族别名），配硬边 lift。 */
+  --color-surface-0: #fbfaf7;      /* page */
+  --color-surface-1: #f2eee4;      /* raised: cards / artifact frames / screenshot mat */
+  --color-surface-2: #e9e3d4;      /* highest: focused / active */
+
+  /* accent washes — 极低 alpha 填色，按 actor 轻染段落/卡片（一屏一家族）。 */
+  --color-accent-ink-wash: rgba(31, 58, 95, 0.06);
+  --color-accent-ox-wash: rgba(123, 45, 38, 0.06);
+  --color-accent-moss-wash: rgba(63, 91, 58, 0.06);
+
   /* legacy aliases — kept so any unmigrated component still resolves to
      editorial palette instead of the previous zinc tokens. Remove once
      audit confirms zero references. */
@@ -65,6 +84,19 @@
   --space-6: 32px;
   --space-8: 56px;
   --space-12: 80px;
+
+  /* motion tokens — Design.md v2 §4.4. Promotes the scattered 120/180ms
+     literals + the §9 provenance reveal curve to named tokens. 240ms is the
+     §10 hard cap; no spring / no bounce. prefers-reduced-motion neutralizes. */
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 240ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+
+  /* elevation without shadow — the ONLY allowed "shadow": a hard-edged double
+     hairline (no blur radius → passes reject #14). Letterpress / printed-card
+     physicality, stays 100% editorial. Apply via the .elev-lift helper below. */
+  --elev-lift: 0 1px 0 0 var(--color-hairline), 0 0 0 1px var(--color-hairline);
 }
 
 /* Dark variant — see Design.md §12.4. v1 is light-only; tokens stay on
@@ -80,6 +112,12 @@
   --color-ink: #1a1714;
   --color-ink-2: #4a443c;
   --color-ink-3: #8a8276;
+  /* v2 warmth/surface tokens — light-only v1, same values to avoid flash. */
+  --color-warm-wash: #f6ede0;
+  --color-warm-edge: #e3d3b8;
+  --color-surface-0: #fbfaf7;
+  --color-surface-1: #f2eee4;
+  --color-surface-2: #e9e3d4;
   color-scheme: light;
 }
 
@@ -175,6 +213,105 @@ h1 {
   line-height: 1;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+/* --- Design.md v2 warmth/elevation primitives -----------------------------
+ * Token-driven helpers so components stay zero-hex. */
+
+/* Elevation lift — hard-edged double hairline (Design.md v2 §2.4). The only
+   permitted "shadow": no blur radius (reject #14). Letterpress physicality. */
+.elev-lift {
+  box-shadow: var(--elev-lift);
+}
+
+/* Warm band — sectional warmth (Design.md v2 §2.3). NEVER the global page bg
+   (reject #15); only section bands / callouts / screenshot mats. */
+.warm-band {
+  background: var(--color-warm-wash);
+}
+
+/* Specimen / screenshot mat — raised surface used by ProductFrame. */
+.surface-raised {
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-2);
+  box-shadow: var(--elev-lift);
+}
+
+/* Line-art (Design.md v2 §5.10/§5.11) — Icon + LineGlyph render as block,
+   inherit color so accent tokens tint them; stroke set on the element. */
+.line-icon,
+.line-glyph {
+  display: inline-block;
+  vertical-align: middle;
+  color: inherit;
+}
+
+/* ProductFrame (Design.md v2 §5.9) — real screenshot in a raised paper mat. */
+.product-frame {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.product-frame-mat {
+  position: relative;
+  padding: 10px;
+  overflow: hidden;
+}
+.product-frame-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-1);
+}
+/* In-layout provenance tick (Design.md #8 — in layout, never popup). */
+.product-frame-tick {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: var(--color-paper);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
+}
+.product-frame-tick-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-ink-3);
+}
+.product-frame-tick[data-kind='agent'] .product-frame-tick-dot {
+  background: var(--color-accent-ink);
+}
+.product-frame-tick[data-kind='human'] .product-frame-tick-dot {
+  background: var(--color-accent-ox);
+}
+.product-frame-tick[data-kind='community'] .product-frame-tick-dot {
+  background: var(--color-accent-moss);
+}
+.product-frame-cap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 2px;
+}
+.product-frame-cap-zh {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-ink-2);
+  font-feature-settings: 'onum' 1, 'kern' 1, 'palt' 1, 'pkna' 1;
+}
+.product-frame-cap-en {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--color-ink-3);
 }
 

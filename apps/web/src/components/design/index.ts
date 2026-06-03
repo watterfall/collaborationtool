@@ -37,3 +37,13 @@ export type {
 
 export { HairlineRule } from './HairlineRule';
 export type { HairlineRuleProps, HairlineWeight } from './HairlineRule';
+
+// --- Design.md v2 (warmth + concretization) ------------------------------
+export { Icon } from './Icon';
+export type { IconProps, IconName, IconSize } from './Icon';
+
+export { LineGlyph } from './LineGlyph';
+export type { LineGlyphProps } from './LineGlyph';
+
+export { ProductFrame } from './ProductFrame';
+export type { ProductFrameProps } from './ProductFrame';

@@ -31,6 +31,9 @@ import {
   BlockHoverRail,
   MarginaliaEntry,
   HairlineRule,
+  Icon,
+  LineGlyph,
+  ProductFrame,
 } from '../src/components/design';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -537,10 +540,94 @@ describe('design/HairlineRule', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Module shape — barrel exports the eight named components.
+// v2 §5.10 Icon
+
+describe('design/Icon', () => {
+  it('renders an svg with line-art grammar (currentColor, no fill, round caps)', () => {
+    const el = Icon({ name: 'idea' }) as ReactElementLike;
+    assert.equal(el.type, 'svg');
+    assert.equal(el.props['stroke'], 'currentColor');
+    assert.equal(el.props['fill'], 'none');
+    assert.equal(el.props['strokeWidth'], 1.4);
+    assert.equal(el.props['strokeLinecap'], 'round');
+    assert.equal(el.props['data-icon'], 'idea');
+  });
+
+  it('default is aria-hidden; ariaLabel makes it an img role', () => {
+    const dec = Icon({ name: 'paper' }) as ReactElementLike;
+    const lab = Icon({ name: 'paper', ariaLabel: '论文 · paper' }) as ReactElementLike;
+    assert.equal(dec.props['aria-hidden'], true);
+    assert.equal(lab.props['aria-hidden'], undefined);
+    assert.equal(lab.props['role'], 'img');
+    assert.equal(lab.props['aria-label'], '论文 · paper');
+  });
+
+  it('size maps to px (sm 16 / md 20 / lg 24)', () => {
+    assert.equal((Icon({ name: 'plus', size: 'sm' }) as ReactElementLike).props['width'], 16);
+    assert.equal((Icon({ name: 'plus', size: 'lg' }) as ReactElementLike).props['width'], 24);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// v2 §5.11 LineGlyph
+
+describe('design/LineGlyph', () => {
+  it('wraps children in a line-art svg', () => {
+    const el = LineGlyph({
+      width: 120,
+      height: 40,
+      viewBox: '0 0 120 40',
+      children: null,
+    }) as ReactElementLike;
+    assert.equal(el.type, 'svg');
+    assert.equal(el.props['stroke'], 'currentColor');
+    assert.equal(el.props['fill'], 'none');
+    assert.equal(classNameOf(el).includes('line-glyph'), true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// v2 §5.9 ProductFrame
+
+describe('design/ProductFrame', () => {
+  it('renders a figure with a raised mat + bilingual caption', () => {
+    const el = ProductFrame({
+      src: '/screens/x.png',
+      alt: 'demo',
+      width: 1000,
+      height: 600,
+      caption: '复现准备度实时打分',
+      captionEn: 'Reproducibility, scored live',
+    }) as ReactElementLike;
+    assert.equal(el.type, 'figure');
+    const mats = findAll(el, (n) => /surface-raised/.test(classNameOf(n)));
+    assert.equal(mats.length >= 1, true);
+    const capZh = findAll(el, (n) => /product-frame-cap-zh/.test(classNameOf(n)));
+    assert.equal(nth(capZh, 0).props.children, '复现准备度实时打分');
+  });
+
+  it('renders an in-layout provenance tick with the actor kind', () => {
+    const el = ProductFrame({
+      src: '/screens/x.png',
+      alt: 'demo',
+      width: 1000,
+      height: 600,
+      provenanceLabel: 'AI · agent',
+      provenanceKind: 'agent',
+    }) as ReactElementLike;
+    const ticks = findAll(
+      el,
+      (n) => /product-frame-tick\b/.test(classNameOf(n)) && n.props['data-kind'] === 'agent',
+    );
+    assert.equal(ticks.length, 1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Module shape — barrel exports the named components.
 
 describe('design/index — barrel export shape', () => {
-  it('exports all 8 components as functions', async () => {
+  it('exports all components as functions', async () => {
     const mod = await import('../src/components/design');
     for (const name of [
       'Button',
@@ -551,6 +638,9 @@ describe('design/index — barrel export shape', () => {
       'BlockHoverRail',
       'MarginaliaEntry',
       'HairlineRule',
+      'Icon',
+      'LineGlyph',
+      'ProductFrame',
     ]) {
       assert.equal(
         typeof (mod as Record<string, unknown>)[name],
@@ -575,6 +665,9 @@ describe('design/* — token discipline (Design.md §11)', () => {
     'BlockHoverRail.tsx',
     'MarginaliaEntry.tsx',
     'HairlineRule.tsx',
+    'Icon.tsx',
+    'LineGlyph.tsx',
+    'ProductFrame.tsx',
   ];
 
   // Hardcoded hex is the loudest violation. Hairline-rule SVG uses

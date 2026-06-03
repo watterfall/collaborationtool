@@ -19,6 +19,13 @@
 warm-paper 背景 · 体面的 serif · hairline rule 不要圆角填充框 · 单一沉静
 accent · provenance 是布局不是 popup · 中英都是一等公民。
 
+> **v2（2026-06-03）warmth + concretization**：在不丢 editorial 灵魂的前提下
+> **升温、变具体**——加暖色 section 暖带、无阴影立体（硬边双 hairline）、
+> motion token、统一 line-art 图标/插画 grammar，且**用真产品截图（ProductFrame）
+> 替代抽象 specimen**。"concrete-first"：先给产品、再给哲学。详见 §2.3–§2.5 /
+> §4.4 / §5.9–§5.11 / §11（reject 13→16）/
+> [`design-notes/2026-06-03-warmth-concretization.md`](./design-notes/2026-06-03-warmth-concretization.md)。
+
 ---
 
 ## 1 · 设计原则（决策时优先级）
@@ -79,6 +86,46 @@ canonical 路径）。
 - 彩虹 status pill（红/黄/绿/蓝/紫并排）
 - pure black `#000` / pure white `#FFF`
 - 任何 saturation > 60% 的颜色
+
+### 2.3 暖色 wash（v2 · "升温"唯一出口）
+
+triad 明文禁装饰 → 暖意此前无合法出口。加**一个低饱和暖色 wash**，从 paper
+家族派生（非新色相，HSL ~38° · <40% sat，安全在 60% 上限下）：
+
+| token | hex | 用途 |
+|---|---|---|
+| `--color-warm-wash` | `#F6EDE0` | section 暖带 / 示例 callout / 截图 mat 底（paper-2↔3 之间 +amber） |
+| `--color-warm-edge` | `#E3D3B8` | hairline 强度的暖描边 |
+
+**天花板（reject #15）**：warm token **绝不做全局 page 底色**——page 永远是
+`--paper`；暖色只做 sectional。防止滑向"米黄 SaaS"。
+
+### 2.4 无阴影立体（v2 · depth without shadow）
+
+reject 禁 `shadow-*` 与模糊 box-shadow。把 layered-paper 配方收口成命名 token：
+
+| token | 值 | 用途 |
+|---|---|---|
+| `--color-surface-0` | `= --paper` | page |
+| `--color-surface-1` | `= --paper-2` | raised：卡片 / artifact frame / 截图 mat |
+| `--color-surface-2` | `= --paper-3` | highest：focused / active |
+| `--elev-lift` | `0 1px 0 0 hairline, 0 0 0 1px hairline` | **硬边双 hairline**（无 blur radius） |
+
+`--elev-lift` 是 letterpress/印刷卡片质感，**无 blur** → 过 reject #14。这是"不那么
+扁/更具体"的最大单点收益，且 100% editorial。helper：`.elev-lift` / `.surface-raised`。
+
+### 2.5 Accent wash（v2 · 轻填色）
+
+triad 此前只做描边/文字。加**极低 alpha 填色**，按 actor 轻染段落/卡片：
+
+| token | 值 | 语义 |
+|---|---|---|
+| `--color-accent-ink-wash` | `rgba(31,58,95,0.06)` | AI / agent |
+| `--color-accent-ox-wash` | `rgba(123,45,38,0.06)` | human / 作者 |
+| `--color-accent-moss-wash` | `rgba(63,91,58,0.06)` | community / applied |
+
+**约束（§11 放松项）**：一屏只用一个 accent **家族**；wash 只做轻填、绝不主导面积；
+仍禁一屏三色竞争。
 
 ---
 
@@ -171,6 +218,20 @@ CJK 标点必须半角化前/后压缩：「」 。， 不写成 `"".`
 | `--border-rule-thick` | `1.5px solid var(--pencil)` | section 收束线 |
 | `--focus-ring` | `2px solid var(--accent-ink)` outline | 焦点环（不要 box-shadow blur） |
 
+### 4.4 Motion tokens（v2）
+
+把散落的 `120ms`/`180ms` 字面量 + §9 provenance reveal 曲线收口成 token，
+让 motion 一致可调。**240ms 是 §10 硬上限；无 spring / 无 bounce。**
+
+| token | 值 | 用途 |
+|---|---|---|
+| `--motion-fast` | `120ms` | 颜色/边框 hover（button / link） |
+| `--motion-base` | `180ms` | 卡片/rail 状态过渡 |
+| `--motion-slow` | `240ms` | provenance reveal（上限） |
+| `--ease-out` | `cubic-bezier(0.2, 0, 0, 1)` | 通用缓动（§9 曲线泛化） |
+
+`@media (prefers-reduced-motion: reduce)` 全部中和（已在 globals.css）。
+
 ---
 
 ## 5 · 组件清单
@@ -234,6 +295,35 @@ caption-cap accent-color actor + 时间，2 行 italic / cjk 描述，下方 pil
 
 `<hr class="rule">` = 1px hairline。`<hr class="rule-thick">` = 1.5px
 pencil。**这是默认分隔器。**禁止 `<div class="card">` 卡片包裹。
+
+### 5.9 ProductFrame（v2 · abstract→concrete 头号杠杆）
+
+`components/design/ProductFrame.tsx`。把**真产品截图**框进 `.surface-raised`
+（surface-1 + hairline + 硬边 `--elev-lift`）标本 mat，配 serif/label-cap caption
++ 可选 **in-layout provenance tick**（守 #8：布局内、非 popup）。
+
+```
+<figure.product-frame>
+  <div.product-frame-mat.surface-raised> <Image/> [tick] </div>
+  <figcaption> zh serif + en italic-小 </figcaption>
+```
+
+**reject #16**：只用真截图，禁插画/3D 产品 mockup。截图过期当 P2（provenance 价值
+观——截图必须诚实反映当前产品）。
+
+### 5.10 Icon（v2 · 本地 line-icon，非 emoji 非依赖）
+
+`components/design/Icon.tsx`。一套本地 line icon：24×24 viewBox，
+`stroke=currentColor` / `stroke-width 1.4` / round caps / `fill=none`。颜色随容器
+`color`（token）继承——accent-ink 元素里的 icon 自动染蓝。**不装 Phosphor**（避免
+运行时依赖 + tree-shake 风险，合 moratorium 极简）；**禁 emoji**（reject #4）。
+
+### 5.11 LineGlyph（v2 · line-art grammar）
+
+`components/design/LineGlyph.tsx`。ad-hoc 图示（lineage 箭头 / bridge 边 / 草图）的
+统一 stroke 语言 wrapper：currentColor / 1.25–1.5 width / round caps / fill none /
+**禁 feTurbulence 抖动**（§13 ban 不变）。节点上色靠包一层 `color: var(--accent-*)`，
+**绝不硬编码 hex**。
 
 ---
 
@@ -382,11 +472,20 @@ offset，再考虑变颜色。
 6. data table（DataGrid 风），不是 hairline list
 7. 一行只有 CJK 或只有 Latin 而对应另一语言区域有翻译
 8. provenance 出现在 popup / tooltip 而不是布局里
+   — **v2 澄清**：citation lookup（CitationPopover）可用 popover；文档**自身编辑的
+   provenance** 仍 in-layout。
 9. landing hero 用 stock photo / illustrated 3D
-10. dark mode 用 slate（`#0F172A`）；当前阶段 light only，dark 留 v2
+10. dark mode 用 slate（`#0F172A`）；当前阶段 light only，dark 留 v2（warm-deep，非 slate）
 11. 字号低于 11px、行高低于 1.4
 12. 焦点态用模糊 box-shadow 圈不用实线 outline
 13. 任何 keystroke → 屏幕反馈 > 100ms 的输入交互
+14. **（v2）任何 blur radius > 0 的 `box-shadow`**——只允许硬边 `--elev-lift`
+    （commit gate 扫 `box-shadow:\s*[^;]*[1-9][0-9]*px\s+[1-9]`）
+15. **（v2）warm token 用作全局 page 底色**——暖色只做 sectional 暖带，page 永远 `--paper`
+16. **（v2）插画/3D 产品 mockup 冒充截图**——ProductFrame 只用真截图
+
+> **v2 放松项**：旧规则"accent 绝不装饰 / 一屏不超一个" → 改为
+> **"一屏一个 accent 家族；accent wash（§2.5）可做轻填、绝不主导面积；仍禁一屏三色竞争"**。
 
 ---
 
@@ -442,7 +541,7 @@ dark 类下的 token 值 `TODO v2` 占位即可。Reject criteria #10 的"slate"
 | `Kalam` / `Caveat` 手写字体 | 全局 chrome | **不用**——chrome 用 sans，正文用 serif |
 | `tape` / `coffee` ring 装饰 | landing 角落 | **不用**——只在 docs list 里偶尔 1 处 `--paper-3` 圆形 stain 作 visual |
 | `sketch` 1.5px wob border | 通用 | 普通 `1.25px solid var(--pencil)`，**filter:url(#wob) 删掉** |
-| icon | 手画 stroke glyph | Phosphor `bold` 1.4px stroke |
+| icon | 手画 stroke glyph | **v2：本地 SVG sprite**（`components/design/Icon.tsx`，1.4px stroke / round caps）——**不装 Phosphor**（避免运行时依赖；line-art grammar 见 §5.10/§5.11） |
 
 ### Phase 1 做不到 / 推迟到 Phase 2 的
 
@@ -465,8 +564,9 @@ dark 类下的 token 值 `TODO v2` 占位即可。Reject criteria #10 的"slate"
 
 - 不写 dark mode（reject #10 提的"warm-deep"v2 再说）
 - 不引入 shadcn/ui（与本设计的 design vocabulary 互斥）
-- 不引入 Framer Motion / GSAP（180ms ease 用 CSS 即可）
-- 不做 illustrated icon set（Phosphor `bold` 即可）
+- 不引入 Framer Motion / GSAP（180ms ease 用 CSS 即可；v2 motion 走 §4.4 token）
+- ~~不做 illustrated icon set（Phosphor `bold` 即可）~~ → **v2：做本地 line-icon
+  sprite（Icon/LineGlyph），但仍不装 Phosphor 等依赖、仍禁 emoji**
 - 不做 hero gradient / glow / blur effect
 - 不做 marketing animation（particle / scroll-jacking）
 
@@ -496,6 +596,13 @@ pnpm web:dev → http://localhost:3000
 
 ## 16 · 来源 / 修订
 
+- 2026-06-03 **v2（warmth + concretization）**：所有者反馈"太哲学、太抽象/太冷"。
+  加 §2.3 暖色 wash + §2.4 无阴影立体 + §2.5 accent wash + §4.4 motion token +
+  §5.9 ProductFrame / §5.10 Icon / §5.11 LineGlyph；reject criteria 13→16
+  （+模糊阴影 / +暖色天花板 / +只用真截图；放松 accent 装饰限制）；§13 icon 行
+  Phosphor→本地 sprite。rationale + 被否方案见
+  [`design-notes/2026-06-03-warmth-concretization.md`](./design-notes/2026-06-03-warmth-concretization.md)。
+  **非新编号 ADR**（ADR moratorium，CLAUDE.md §5.3）——本次以 Design.md v2 + design note 为载体。
 - 2026-05-11 v1：从 Claude Design bundle `TOywn3TlXABHckELmx7iLw`
   提炼。Editor A 作为默认实现路径。Phase 1 必做项目落地。
 - 上游线框：`/tmp/claude/cdesign-paper/extracted/.../project/Wireframes.html`

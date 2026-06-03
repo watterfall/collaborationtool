@@ -16,7 +16,7 @@ import * as React from 'react';
 import Link from 'next/link';
 
 import type { LocaleDict } from '@/lib/i18n/types';
-import { TriadicMockup } from './TriadicMockup';
+import { ProductFrame } from '@/components/design';
 import { NightArtifactCard } from './NightArtifactCard';
 import { BridgeArtifactCard } from './BridgeArtifactCard';
 import { LineageGraph } from './LineageGraph';
@@ -81,9 +81,27 @@ export function Landing({ t }: { t: LocaleDict }) {
             </a>
           </div>
         </div>
-        {/* 右半 — TriadicMockup */}
+        {/* 右半 — v2 concrete-first: 真产品截图（ProductFrame）替代抽象
+            triadic mockup。warm-band 暖带 + .surface-raised 硬边立体 =
+            Design.md v2 §2.3/§2.4 视觉语言证明。TriadicMockup 模块保留
+            （Phase 2 内容重做时再决定去留）。 */}
         <div className="lg:pt-2">
-          <TriadicMockup t={t} />
+          <div
+            className="warm-band p-4 sm:p-6"
+            style={{ borderRadius: 'var(--radius-2)' }}
+          >
+            <ProductFrame
+              src="/screens/editor-readiness.png"
+              alt="编辑器复现准备度面板 · Editor reproducibility-gate panel"
+              width={1300}
+              height={880}
+              caption="写作时实时打分复现准备度 — 证据、代码、复核都在面板上。"
+              captionEn="Reproducibility, scored live as you write."
+              provenanceLabel="AI · agent"
+              provenanceKind="agent"
+              priority
+            />
+          </div>
         </div>
       </section>
 
