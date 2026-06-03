@@ -22,7 +22,50 @@ import {
 } from '@collaborationtool/discovery-graph';
 import { BRIDGE_ARTIFACT_KINDS } from '@collaborationtool/bridge-layer';
 
-import { HairlineRule } from '@/components/design';
+import { HairlineRule, LineGlyph } from '@/components/design';
+
+// Concrete worked example (the QEC error-model story reused from the landing
+// lineage) — turns the abstract "three equal outputs" into something a
+// stranger can read. Curated illustrative content, NOT seeded live data
+// (real artifacts wire in at Wave D-5 dogfood).
+interface WorkedStep {
+  layer: 'night' | 'bridge' | 'day';
+  cap: string;
+  body: string;
+  kindZh: string;
+  accentVar: string;
+  washVar: string;
+  edgeMode?: string;
+}
+
+const WORKED_EXAMPLE: ReadonlyArray<WorkedStep> = [
+  {
+    layer: 'night',
+    cap: 'NIGHT · 想法 / idea',
+    body: 'Google 2024 在 NISQ 上测到 0.8% 错误率，但理论极限是 1%。会不会错误率不是常数？',
+    kindZh: '矛盾观察 · contradiction',
+    accentVar: 'var(--color-accent-ink)',
+    washVar: 'var(--color-accent-ink-wash)',
+    edgeMode: 'metaphor-bridge · 想法变原型',
+  },
+  {
+    layer: 'bridge',
+    cap: 'BRIDGE · 原型 / prototype',
+    body: 'toy model：错误率 = f(device, time)。三个可测参数：T1、串扰、温漂。',
+    kindZh: '假设形式化 · hypothesis sketch',
+    accentVar: 'var(--color-accent-ox)',
+    washVar: 'var(--color-accent-ox-wash)',
+    edgeMode: 'hypothesis-output · 原型变论文',
+  },
+  {
+    layer: 'day',
+    cap: 'DAY · 论文 / paper',
+    body: 'We propose a device-dependent error model with three measurable parameters…',
+    kindZh: '论文草稿 · manuscript draft',
+    accentVar: 'var(--color-accent-moss)',
+    washVar: 'var(--color-accent-moss-wash)',
+  },
+];
 
 interface LayerSection {
   layer: 'night' | 'bridge' | 'day';
@@ -76,6 +119,87 @@ const LAYERS: ReadonlyArray<LayerSection> = [
 export default function TriadicOverview() {
   return (
     <article className="flex flex-col gap-10">
+      {/* Worked example (v2 concrete-first) — a real lineage story before the
+          abstract model, color-coded by layer (Night ink / Bridge ox / Day
+          moss) with gentle accent-wash fills + LineGlyph connectors. */}
+      <section aria-labelledby="example-heading" className="flex flex-col gap-4">
+        <header className="flex flex-col gap-1">
+          <p className="label-cap">一个真实例子 · A worked example</p>
+          <h2
+            id="example-heading"
+            className="font-serif"
+            style={{ color: 'var(--color-ink)', fontSize: '20px', lineHeight: 1.35 }}
+          >
+            <span lang="zh">从一个矛盾，到一篇论文</span>
+            <span aria-hidden="true"> · </span>
+            <span lang="en" style={{ fontStyle: 'italic' }}>
+              From one contradiction to a paper
+            </span>
+          </h2>
+        </header>
+        <ol className="m-0 flex list-none flex-col p-0">
+          {WORKED_EXAMPLE.map((s) => (
+            <li key={s.layer} className="flex flex-col">
+              <div
+                style={{
+                  borderLeft: `2px solid ${s.accentVar}`,
+                  background: s.washVar,
+                  padding: '14px 16px',
+                  borderRadius: 'var(--radius-2)',
+                }}
+              >
+                <p
+                  className="label-cap"
+                  style={{ color: s.accentVar, marginBottom: '6px' }}
+                >
+                  {s.cap}
+                </p>
+                <p
+                  className="font-serif"
+                  data-prose="bilingual"
+                  style={{ color: 'var(--color-ink)', fontSize: '16px', lineHeight: 1.7 }}
+                >
+                  {s.body}
+                </p>
+                <p
+                  className="font-mono"
+                  style={{ color: 'var(--color-ink-3)', fontSize: '11px', marginTop: '6px' }}
+                >
+                  {s.kindZh}
+                </p>
+              </div>
+              {s.edgeMode ? (
+                <div
+                  className="flex items-center gap-2"
+                  style={{ padding: '8px 0 8px 16px', color: 'var(--color-ink-3)' }}
+                >
+                  <LineGlyph width={16} height={22} viewBox="0 0 16 22" ariaLabel="转化为 · transforms to">
+                    <path d="M8 2v15M3 12l5 5 5-5" />
+                  </LineGlyph>
+                  <span className="font-mono" style={{ fontSize: '11px' }}>
+                    {s.edgeMode}
+                  </span>
+                </div>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+        <p
+          className="font-serif"
+          data-prose="bilingual"
+          style={{
+            color: 'var(--color-ink-2)',
+            fontSize: '14px',
+            lineHeight: 1.7,
+            fontStyle: 'italic',
+          }}
+        >
+          三段产出等价 —— 矛盾、原型、论文都可独立 archive、attribution、被引用。下面是这套系统的结构。
+        </p>
+      </section>
+
+      <HairlineRule weight="thick" />
+
       {/* Three layers — equal-prominent hairline blocks */}
       <section aria-labelledby="layers-heading" className="flex flex-col gap-8">
         <h2
