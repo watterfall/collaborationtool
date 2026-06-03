@@ -535,6 +535,61 @@ h1 {
   margin-top: 4px;
 }
 
+/* Template radio fieldset (docs/new) + form error banner — token-driven. */
+.template-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-2);
+}
+.template-fieldset legend {
+  padding: 0 4px;
+}
+.template-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-1);
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--ease-out);
+}
+.template-option:hover {
+  background: var(--color-paper-2);
+}
+.template-option:has(.template-radio:checked) {
+  border-color: var(--color-accent-ink);
+  background: var(--color-accent-ink-wash);
+}
+.template-radio {
+  margin-top: 3px;
+  accent-color: var(--color-accent-ink);
+}
+.template-option-label {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-ink);
+}
+.template-option-desc {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-ink-3);
+}
+.form-banner-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 2px solid var(--color-accent-ox);
+  background: var(--color-accent-ox-wash);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-accent-ox);
+}
+
 /* Editorial buttons — primary (ink fill) + ghost (pencil border) +
    link (underlined inline anchor). No transitions on background blurs;
    transitions on color/border only. Sizes (sm/md/lg) override height +

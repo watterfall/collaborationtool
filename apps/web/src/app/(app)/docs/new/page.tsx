@@ -8,6 +8,14 @@ import {
   materialiseRoleBundle,
 } from '@collaborationtool/permissions';
 
+import {
+  Button,
+  Field,
+  PageHeader,
+  PageShell,
+  Select,
+  TextInput,
+} from '@/components/design';
 import { auth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { getPrincipalIdForUser } from '@/lib/principal';
@@ -84,83 +92,65 @@ export default function NewDocumentPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   return (
-    <div className="mx-auto max-w-xl px-6 py-10">
-      <h1 className="mb-6 text-3xl font-medium">新建文档 · New document</h1>
+    <PageShell width="prose">
+      <PageHeader title="新建文档" titleEn="New document" />
 
-      <form action={createDocument} className="flex flex-col gap-4">
+      <form action={createDocument} className="flex flex-col gap-5">
         <ErrorBanner searchParams={searchParams} />
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-zinc-700">标题 / Title</span>
-          <input
+        <Field label="标题 / Title" htmlFor="title" required>
+          <TextInput
+            id="title"
             name="title"
+            tone="serif"
             required
             maxLength={200}
             placeholder="例如：跨语种论文协作系统"
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none"
           />
-        </label>
+        </Field>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-zinc-700">主语言 / Primary language</span>
-          <select
-            name="language"
-            defaultValue="zh-Hans"
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none"
-          >
+        <Field label="主语言 / Primary language" htmlFor="language">
+          <Select id="language" name="language" defaultValue="zh-Hans">
             <option value="zh-Hans">中文（简体） · zh-Hans</option>
             <option value="zh-Hant">中文（繁体） · zh-Hant</option>
             <option value="en">English · en</option>
-          </select>
-        </label>
+          </Select>
+        </Field>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-zinc-700">双语模式 / Bilingual mode</span>
-          <select
-            name="bilingualMode"
-            defaultValue="mono"
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none"
-          >
+        <Field label="双语模式 / Bilingual mode" htmlFor="bilingualMode">
+          <Select id="bilingualMode" name="bilingualMode" defaultValue="mono">
             <option value="mono">单一语言 / mono</option>
             <option value="parallel">中英对照 / parallel</option>
             <option value="mixed">中英混排 / mixed</option>
-          </select>
-        </label>
+          </Select>
+        </Field>
 
-        <fieldset className="flex flex-col gap-2 rounded-md border border-zinc-200 p-3">
-          <legend className="px-1 text-sm text-zinc-700">
-            起手模板 / Starter template
-          </legend>
-          {DOC_TEMPLATES.map((tpl, idx) => (
-            <label
-              key={tpl.id}
-              className="flex cursor-pointer items-start gap-3 rounded-md border border-transparent p-2 hover:bg-zinc-50 has-[:checked]:border-zinc-900 has-[:checked]:bg-zinc-50"
-            >
-              <input
-                type="radio"
-                name="template"
-                value={tpl.id}
-                defaultChecked={idx === 0}
-                className="mt-1"
-              />
-              <span className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium text-zinc-900">
-                  {tpl.label}
+        <fieldset className="template-fieldset">
+          <legend className="label-cap">起手模板 / Starter template</legend>
+          <div className="flex flex-col gap-2">
+            {DOC_TEMPLATES.map((tpl, idx) => (
+              <label key={tpl.id} className="template-option">
+                <input
+                  type="radio"
+                  name="template"
+                  value={tpl.id}
+                  defaultChecked={idx === 0}
+                  className="template-radio"
+                />
+                <span className="flex flex-col gap-0.5">
+                  <span className="template-option-label">{tpl.label}</span>
+                  <span className="template-option-desc">{tpl.description}</span>
                 </span>
-                <span className="text-xs text-zinc-600">{tpl.description}</span>
-              </span>
-            </label>
-          ))}
+              </label>
+            ))}
+          </div>
         </fieldset>
 
-        <button
-          type="submit"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm text-white hover:bg-zinc-800"
-        >
-          创建 / Create
-        </button>
+        <Button variant="primary" type="submit" className="self-start">
+          创建 · Create
+        </Button>
       </form>
-    </div>
+    </PageShell>
   );
 }
 
@@ -172,10 +162,8 @@ async function ErrorBanner({
   const { error } = await searchParams;
   if (!error) return null;
   return (
-    <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-      {error === 'title-required'
-        ? '请填写标题。'
-        : `Error: ${error}`}
+    <p className="form-banner-error" role="alert">
+      {error === 'title-required' ? '请填写标题 · Title is required.' : `Error: ${error}`}
     </p>
   );
 }
