@@ -880,6 +880,31 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  packages/vault-host:
+    dependencies:
+      '@collaborationtool/doc-store':
+        specifier: workspace:*
+        version: link:../doc-store
+      '@collaborationtool/identity':
+        specifier: workspace:*
+        version: link:../identity
+      '@collaborationtool/vault-fs':
+        specifier: workspace:*
+        version: link:../vault-fs
+      yjs:
+        specifier: ^13.6.21
+        version: 13.6.30
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.18
+      tsx:
+        specifier: ^4.19.2
+        version: 4.21.0
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   plugins/citation-agent:
     dependencies:
       '@anthropic-ai/sdk':
