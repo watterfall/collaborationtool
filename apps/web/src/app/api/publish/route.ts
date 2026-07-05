@@ -35,6 +35,7 @@ import {
   buildPrincipalOpenContentSignatureVerifier,
   persistPrincipalEd25519PublicKeyIfNeeded,
 } from '@/lib/open-content-signature-store';
+import { signatureRejectDetail } from '@/lib/open-content-signature';
 import { getPrincipalIdForUser } from '@/lib/principal';
 import { validateContentForKind, validatePublish } from '@/lib/publish';
 
@@ -115,7 +116,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     signatureVerifier: signatureVerifier.verifier,
   });
   if (!validation.ok) {
-    return NextResponse.json({ error: validation.reason }, { status: 400 });
+    const detail = signatureRejectDetail(validation.reason);
+    return NextResponse.json(
+      detail ? { error: validation.reason, detail } : { error: validation.reason },
+      { status: 400 },
+    );
   }
 
   // ---------- Step 5: INSERT (entity row + Merkle log row in one tx) ----------
