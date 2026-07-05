@@ -16,7 +16,8 @@ import * as React from 'react';
 import Link from 'next/link';
 
 import type { LocaleDict } from '@/lib/i18n/types';
-import { TriadicMockup } from './TriadicMockup';
+import { ProductFrame } from '@/components/design';
+import { ProductTour } from './ProductTour';
 import { NightArtifactCard } from './NightArtifactCard';
 import { BridgeArtifactCard } from './BridgeArtifactCard';
 import { LineageGraph } from './LineageGraph';
@@ -29,6 +30,7 @@ export function Landing({ t }: { t: LocaleDict }) {
   const attribution = t.landing.attribution;
   const manifesto = t.landing.manifesto;
   const diff = t.landing.differentiation;
+  const radar = t.landing.reformRadar;
   const specimens = t.landing.specimens;
   const arch = t.landing.architecture;
   const navL = t.landing.nav;
@@ -80,28 +82,34 @@ export function Landing({ t }: { t: LocaleDict }) {
             </a>
           </div>
         </div>
-        {/* 右半 — TriadicMockup */}
+        {/* 右半 — v2 concrete-first: 真产品截图（ProductFrame）替代抽象
+            triadic mockup。warm-band 暖带 + .surface-raised 硬边立体 =
+            Design.md v2 §2.3/§2.4 视觉语言证明。TriadicMockup 模块保留
+            （Phase 2 内容重做时再决定去留）。 */}
         <div className="lg:pt-2">
-          <TriadicMockup t={t} />
+          <div
+            className="warm-band p-4 sm:p-6"
+            style={{ borderRadius: 'var(--radius-2)' }}
+          >
+            <ProductFrame
+              src="/screens/editor-readiness.png"
+              alt="编辑器复现准备度面板 · Editor reproducibility-gate panel"
+              width={1300}
+              height={880}
+              caption="写作时实时打分复现准备度 — 证据、代码、复核都在面板上。"
+              captionEn="Reproducibility, scored live as you write."
+              provenanceLabel="AI · agent"
+              provenanceKind="agent"
+              priority
+            />
+          </div>
         </div>
       </section>
 
-      {/* Manifesto transition (v8 C1) — single-line philosophical pull-quote
-          between Hero and Pillars. Rules above and below for editorial
-          treatment. Big italic serif 2xl→3xl on lg. */}
-      <section>
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-          <hr className="rule" />
-          <p
-            className="font-serif text-2xl italic leading-[1.35] sm:text-3xl"
-            style={{ color: 'var(--color-ink)' }}
-            data-prose="bilingual"
-          >
-            {manifesto.body}
-          </p>
-          <hr className="rule" />
-        </div>
-      </section>
+      {/* Product tour (v2 concrete-first) — 3 张真产品截图紧跟 hero，让陌生人
+          先看到工具本身，再遇到哲学。取代概念 facsimile specimens 作为头号
+          exhibit。manifesto pull-quote 下移到 Pillars 之后（"被赚到之后才出现"）。*/}
+      <ProductTour t={t} />
 
       {/* Pillars — v4: 3 个空间（想点子 / 做原型 / 写论文），删 v3 的
           4 个 ASCII 微图（实现路径写法）。grid 在 ≥md 是 3 列，让"三层"
@@ -139,6 +147,23 @@ export function Landing({ t }: { t: LocaleDict }) {
         </div>
       </section>
 
+      {/* Manifesto transition — single-line philosophical pull-quote. v2:
+          下移到 Pillars 之后（concrete-first：访客看完工具 + 三空间才遇到
+          这句"论文之外"，读作已被说服的论点而非开篇抽象主张）。 */}
+      <section>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+          <hr className="rule" />
+          <p
+            className="font-serif text-2xl italic leading-[1.35] sm:text-3xl"
+            style={{ color: 'var(--color-ink)' }}
+            data-prose="bilingual"
+          >
+            {manifesto.body}
+          </p>
+          <hr className="rule" />
+        </div>
+      </section>
+
       {/* Attribution — v4 新节，反 first-author. 独立 visual 节，
           不并入 pillars grid（spec §3.3 第 4 节）。 */}
       <section>
@@ -150,6 +175,45 @@ export function Landing({ t }: { t: LocaleDict }) {
             data-prose="bilingual"
           >
             {attribution.desc}
+          </p>
+        </div>
+      </section>
+
+      {/* Reform radar — evidence-backed problem map from the 2026-06-03
+          research baseline. This keeps the landing honest: external
+          research pressure on the left, platform mechanism on the right. */}
+      <section>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+          <header className="flex flex-col gap-2">
+            <p className="label-cap">{radar.heading}</p>
+            <h2
+              className="font-serif text-3xl font-medium"
+              style={{
+                color: 'var(--color-ink)',
+                letterSpacing: '-0.005em',
+              }}
+              data-prose="bilingual"
+            >
+              {radar.sub}
+            </h2>
+          </header>
+          <ol className="m-0 flex list-none flex-col p-0">
+            {radar.rows.map((row, i) => (
+              <RadarRow
+                key={row.signal}
+                index={i + 1}
+                signal={row.signal}
+                pressure={row.pressure}
+                response={row.response}
+              />
+            ))}
+          </ol>
+          <p
+            className="font-sans text-xs"
+            style={{ color: 'var(--color-ink-3)' }}
+            data-prose="bilingual"
+          >
+            {radar.footnote}
           </p>
         </div>
       </section>
@@ -403,5 +467,64 @@ function Pillar({
         {desc}
       </p>
     </article>
+  );
+}
+
+function RadarRow({
+  index,
+  signal,
+  pressure,
+  response,
+}: {
+  index: number;
+  signal: string;
+  pressure: string;
+  response: string;
+}) {
+  return (
+    <li
+      className="grid gap-x-6 gap-y-3 py-5 md:grid-cols-[42px_1fr]"
+      style={{ borderTop: '1px solid var(--color-hairline)' }}
+    >
+      <span
+        className="font-mono text-xs tabular-nums"
+        style={{
+          color: 'var(--color-ink-3)',
+          fontFeatureSettings: '"onum" 1',
+        }}
+        aria-hidden="true"
+      >
+        {String(index).padStart(2, '0')}
+      </span>
+      <div className="grid gap-3 md:grid-cols-[0.92fr_1fr] md:gap-8">
+        <div className="flex flex-col gap-2">
+          <h3
+            className="font-serif text-[19px] font-medium leading-[1.35]"
+            style={{ color: 'var(--color-ink)' }}
+            data-prose="bilingual"
+          >
+            {signal}
+          </h3>
+          <p
+            className="font-serif text-[15px] italic leading-[1.7]"
+            style={{ color: 'var(--color-ink-3)' }}
+            data-prose="bilingual"
+          >
+            {pressure}
+          </p>
+        </div>
+        <p
+          className="font-serif text-[15px] leading-[1.78]"
+          style={{
+            color: 'var(--color-ink)',
+            borderLeft: '1.5px solid var(--color-pencil)',
+            paddingLeft: '16px',
+          }}
+          data-prose="bilingual"
+        >
+          {response}
+        </p>
+      </div>
+    </li>
   );
 }

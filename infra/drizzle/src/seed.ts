@@ -14,8 +14,27 @@
 // local dev / CI / round-trip tests only.
 
 import { v7 as uuidv7 } from 'uuid';
+import { desc, eq } from 'drizzle-orm';
 
-import { openDatabase, schema } from './client';
+import {
+  buildDemoEntry,
+  DEMO_OPEN_DATASET_CONTENT,
+  DEMO_OPEN_DATASET_ID,
+  DEMO_OPEN_QUESTION_CONTENT,
+  DEMO_OPEN_QUESTION_ID,
+  DEMO_OPEN_REVIEW_CONTENT,
+  DEMO_OPEN_REVIEW_ID,
+  DEMO_OPEN_SIGNER_PRINCIPAL_ID,
+  DEMO_OPEN_SIGNER_PUBLIC_KEY,
+  DEMO_OPEN_SIGNER_SECRET_HEX,
+  DEMO_REVIEWER_PRINCIPAL_ID,
+  DEMO_REVIEWER_PUBLIC_KEY,
+  DEMO_REVIEWER_SECRET_HEX,
+  DEMO_REVIEWER_USER_ID,
+  DEMO_SHARE_SNAPSHOT_CONTENT,
+  DEMO_SHARE_SNAPSHOT_ID,
+} from './open-content-demo-fixtures';
+import { openDatabase, schema, type Database } from './client';
 
 export interface SeedIds {
   servicePrincipalId: string;
@@ -25,6 +44,10 @@ export interface SeedIds {
   citationAgentPrincipalId: string;
   citationLookupPromptTemplateId: string;
   demoDocumentId: string;
+  demoReviewerPrincipalId: string;
+  demoOpenQuestionId: string;
+  demoOpenDatasetId: string;
+  demoShareSnapshotPermalink: string;
 }
 
 // Stable IDs so seed is idempotent.
@@ -56,6 +79,14 @@ export async function seed(databaseUrl?: string): Promise<SeedIds> {
           kind: 'user',
           displayName: 'Demo User',
           userId: DEMO_USER_USER_ID,
+          ed25519PublicKey: DEMO_OPEN_SIGNER_PUBLIC_KEY,
+        },
+        {
+          id: DEMO_REVIEWER_PRINCIPAL_ID,
+          kind: 'user',
+          displayName: 'Demo Reviewer',
+          userId: DEMO_REVIEWER_USER_ID,
+          ed25519PublicKey: DEMO_REVIEWER_PUBLIC_KEY,
         },
         {
           id: CITATION_AGENT_PRINCIPAL_ID,
@@ -71,6 +102,18 @@ export async function seed(databaseUrl?: string): Promise<SeedIds> {
         },
       ])
       .onConflictDoNothing({ target: schema.principal.id });
+
+    // Older local databases may already have the demo principals from a
+    // previous seed run. Keep their public keys current so open-content
+    // verification is strict instead of falling back to unsigned demos.
+    await db
+      .update(schema.principal)
+      .set({ ed25519PublicKey: DEMO_OPEN_SIGNER_PUBLIC_KEY })
+      .where(eq(schema.principal.id, DEMO_OPEN_SIGNER_PRINCIPAL_ID));
+    await db
+      .update(schema.principal)
+      .set({ ed25519PublicKey: DEMO_REVIEWER_PUBLIC_KEY })
+      .where(eq(schema.principal.id, DEMO_REVIEWER_PRINCIPAL_ID));
 
     // ----- Agent (depends on its own principal existing) -----
     await db
@@ -141,6 +184,8 @@ export async function seed(databaseUrl?: string): Promise<SeedIds> {
       })
       .onConflictDoNothing({ target: schema.document.id });
 
+    await seedOpenContentDemo(db);
+
     return {
       servicePrincipalId: SERVICE_PRINCIPAL_ID,
       demoUserPrincipalId: DEMO_USER_PRINCIPAL_ID,
@@ -149,10 +194,200 @@ export async function seed(databaseUrl?: string): Promise<SeedIds> {
       citationAgentPrincipalId: CITATION_AGENT_PRINCIPAL_ID,
       citationLookupPromptTemplateId: CITATION_LOOKUP_PROMPT_TEMPLATE_ID,
       demoDocumentId: DEMO_DOCUMENT_ID,
+      demoReviewerPrincipalId: DEMO_REVIEWER_PRINCIPAL_ID,
+      demoOpenQuestionId: DEMO_OPEN_QUESTION_ID,
+      demoOpenDatasetId: DEMO_OPEN_DATASET_ID,
+      demoShareSnapshotPermalink: DEMO_SHARE_SNAPSHOT_CONTENT.permalinkHash,
     };
   } finally {
     await close();
   }
+}
+
+async function seedOpenContentDemo(db: Database): Promise<void> {
+  await seedDemoOpenQuestion(db);
+  await seedDemoOpenReview(db);
+  await seedDemoOpenDataset(db);
+  await seedDemoShareSnapshot(db);
+}
+
+async function seedDemoOpenQuestion(db: Database): Promise<void> {
+  const existing = await db
+    .select({ id: schema.openQuestion.id })
+    .from(schema.openQuestion)
+    .where(eq(schema.openQuestion.id, DEMO_OPEN_QUESTION_ID))
+    .limit(1);
+  if (existing.length > 0) return;
+
+  const entry = buildDemoEntry({
+    entityKind: 'open_question',
+    entityId: DEMO_OPEN_QUESTION_ID,
+    merkleEntryId: 'merkle:demo-question',
+    payload: DEMO_OPEN_QUESTION_CONTENT,
+    signerPrincipalId: DEMO_OPEN_SIGNER_PRINCIPAL_ID,
+    secretKeyHex: DEMO_OPEN_SIGNER_SECRET_HEX,
+    prevEntryId: await loadLatestMerkleEntryId(db),
+  });
+
+  await db.transaction(async (tx) => {
+    await tx.insert(schema.provenanceMerkleLog).values({
+      id: entry.merkleEntry.id,
+      prevEntryId: entry.merkleEntry.prevEntryId,
+      entityKind: entry.merkleEntry.entityKind,
+      entityId: entry.merkleEntry.entityId,
+      contentHash: entry.merkleEntry.contentHash,
+      signedJws: entry.merkleEntry.signedJws,
+      signerPrincipalId: entry.merkleEntry.signerPrincipalId,
+    });
+    await tx.insert(schema.openQuestion).values({
+      id: DEMO_OPEN_QUESTION_ID,
+      askerPrincipalId: DEMO_OPEN_SIGNER_PRINCIPAL_ID,
+      askerOrcidId: '0000-0002-1825-0097',
+      questionMd: DEMO_OPEN_QUESTION_CONTENT.questionMd,
+      domainTags: [...DEMO_OPEN_QUESTION_CONTENT.domainTags],
+      signedPayloadJws: entry.signedJws,
+      merkleLogEntryId: entry.merkleEntry.id,
+    });
+  });
+}
+
+async function seedDemoOpenReview(db: Database): Promise<void> {
+  const existing = await db
+    .select({ id: schema.openPeerReview.id })
+    .from(schema.openPeerReview)
+    .where(eq(schema.openPeerReview.id, DEMO_OPEN_REVIEW_ID))
+    .limit(1);
+  if (existing.length > 0) return;
+
+  const entry = buildDemoEntry({
+    entityKind: 'open_peer_review',
+    entityId: DEMO_OPEN_REVIEW_ID,
+    merkleEntryId: 'merkle:demo-review',
+    payload: DEMO_OPEN_REVIEW_CONTENT,
+    signerPrincipalId: DEMO_REVIEWER_PRINCIPAL_ID,
+    secretKeyHex: DEMO_REVIEWER_SECRET_HEX,
+    prevEntryId: await loadLatestMerkleEntryId(db),
+  });
+
+  await db.transaction(async (tx) => {
+    await tx.insert(schema.provenanceMerkleLog).values({
+      id: entry.merkleEntry.id,
+      prevEntryId: entry.merkleEntry.prevEntryId,
+      entityKind: entry.merkleEntry.entityKind,
+      entityId: entry.merkleEntry.entityId,
+      contentHash: entry.merkleEntry.contentHash,
+      signedJws: entry.merkleEntry.signedJws,
+      signerPrincipalId: entry.merkleEntry.signerPrincipalId,
+    });
+    await tx.insert(schema.openPeerReview).values({
+      id: DEMO_OPEN_REVIEW_ID,
+      reviewerPrincipalId: DEMO_REVIEWER_PRINCIPAL_ID,
+      reviewerOrcidId: DEMO_OPEN_REVIEW_CONTENT.reviewerOrcidId,
+      targetKind: 'question',
+      targetId: DEMO_OPEN_QUESTION_ID,
+      verdict: 'refines',
+      bodyMd: DEMO_OPEN_REVIEW_CONTENT.bodyMd,
+      evidenceRefs: [...DEMO_OPEN_REVIEW_CONTENT.evidenceRefs],
+      signedPayloadJws: entry.signedJws,
+      merkleLogEntryId: entry.merkleEntry.id,
+    });
+  });
+}
+
+async function seedDemoOpenDataset(db: Database): Promise<void> {
+  const existing = await db
+    .select({ id: schema.openDataset.id })
+    .from(schema.openDataset)
+    .where(eq(schema.openDataset.id, DEMO_OPEN_DATASET_ID))
+    .limit(1);
+  if (existing.length > 0) return;
+
+  const entry = buildDemoEntry({
+    entityKind: 'open_dataset',
+    entityId: DEMO_OPEN_DATASET_ID,
+    merkleEntryId: 'merkle:demo-dataset',
+    payload: DEMO_OPEN_DATASET_CONTENT,
+    signerPrincipalId: DEMO_OPEN_SIGNER_PRINCIPAL_ID,
+    secretKeyHex: DEMO_OPEN_SIGNER_SECRET_HEX,
+    prevEntryId: await loadLatestMerkleEntryId(db),
+  });
+
+  await db.transaction(async (tx) => {
+    await tx.insert(schema.provenanceMerkleLog).values({
+      id: entry.merkleEntry.id,
+      prevEntryId: entry.merkleEntry.prevEntryId,
+      entityKind: entry.merkleEntry.entityKind,
+      entityId: entry.merkleEntry.entityId,
+      contentHash: entry.merkleEntry.contentHash,
+      signedJws: entry.merkleEntry.signedJws,
+      signerPrincipalId: entry.merkleEntry.signerPrincipalId,
+    });
+    await tx.insert(schema.openDataset).values({
+      id: DEMO_OPEN_DATASET_ID,
+      contributorPrincipalId: DEMO_OPEN_SIGNER_PRINCIPAL_ID,
+      datasetDoi: DEMO_OPEN_DATASET_CONTENT.datasetDoi,
+      title: DEMO_OPEN_DATASET_CONTENT.title,
+      descriptionMd: DEMO_OPEN_DATASET_CONTENT.descriptionMd,
+      blobStorageRef: DEMO_OPEN_DATASET_CONTENT.blobStorageRef,
+      sizeBytes: BigInt(DEMO_OPEN_DATASET_CONTENT.sizeBytes),
+      licenseSpdx: DEMO_OPEN_DATASET_CONTENT.licenseSpdx,
+      signedPayloadJws: entry.signedJws,
+      merkleLogEntryId: entry.merkleEntry.id,
+    });
+  });
+}
+
+async function seedDemoShareSnapshot(db: Database): Promise<void> {
+  const existing = await db
+    .select({ id: schema.shareSnapshot.id })
+    .from(schema.shareSnapshot)
+    .where(eq(schema.shareSnapshot.id, DEMO_SHARE_SNAPSHOT_ID))
+    .limit(1);
+  if (existing.length > 0) return;
+
+  const entry = buildDemoEntry({
+    entityKind: 'share_snapshot',
+    entityId: DEMO_SHARE_SNAPSHOT_ID,
+    merkleEntryId: 'merkle:demo-snapshot',
+    payload: DEMO_SHARE_SNAPSHOT_CONTENT,
+    signerPrincipalId: DEMO_OPEN_SIGNER_PRINCIPAL_ID,
+    secretKeyHex: DEMO_OPEN_SIGNER_SECRET_HEX,
+    prevEntryId: await loadLatestMerkleEntryId(db),
+  });
+
+  await db.transaction(async (tx) => {
+    await tx.insert(schema.provenanceMerkleLog).values({
+      id: entry.merkleEntry.id,
+      prevEntryId: entry.merkleEntry.prevEntryId,
+      entityKind: entry.merkleEntry.entityKind,
+      entityId: entry.merkleEntry.entityId,
+      contentHash: entry.merkleEntry.contentHash,
+      signedJws: entry.merkleEntry.signedJws,
+      signerPrincipalId: entry.merkleEntry.signerPrincipalId,
+    });
+    await tx.insert(schema.shareSnapshot).values({
+      id: DEMO_SHARE_SNAPSHOT_ID,
+      sourcePrincipalId: DEMO_OPEN_SIGNER_PRINCIPAL_ID,
+      markdownContent: DEMO_SHARE_SNAPSHOT_CONTENT.markdownContent,
+      yjsBinary: Buffer.from(
+        DEMO_SHARE_SNAPSHOT_CONTENT.yjsBinaryBase64,
+        'base64',
+      ),
+      kind: DEMO_SHARE_SNAPSHOT_CONTENT.kind,
+      permalinkHash: DEMO_SHARE_SNAPSHOT_CONTENT.permalinkHash,
+      signedPayloadJws: entry.signedJws,
+      merkleLogEntryId: entry.merkleEntry.id,
+    });
+  });
+}
+
+async function loadLatestMerkleEntryId(db: Database): Promise<string | null> {
+  const rows = await db
+    .select({ id: schema.provenanceMerkleLog.id })
+    .from(schema.provenanceMerkleLog)
+    .orderBy(desc(schema.provenanceMerkleLog.entrySeq))
+    .limit(1);
+  return rows[0]?.id ?? null;
 }
 
 // Helper for tests / fixtures: create a fresh user principal pair.

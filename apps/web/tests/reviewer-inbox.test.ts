@@ -1,6 +1,7 @@
 // Phase 5 Wave B B5 — pure tests for the Reviewer Inbox helpers.
 
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import {
@@ -13,6 +14,10 @@ import {
 
 const CALLER = 'principal:reviewer-1';
 const FIXED_NOW = new Date('2026-05-12T10:00:00Z');
+const REVIEWER_INBOX_PAGE_SOURCE = readFileSync(
+  new URL('../src/app/(app)/reviewer-inbox/page.tsx', import.meta.url),
+  'utf8',
+);
 
 function claim(
   overrides: Partial<InboxClaimRow> & { claimId: string },
@@ -30,6 +35,7 @@ function review(
   overrides: Partial<InboxReviewSlim> & { claimId: string; verdict: InboxReviewSlim['verdict'] },
 ): InboxReviewSlim {
   return {
+    reviewId: `review:${overrides.claimId}`,
     reviewerPrincipalId: 'principal:other-reviewer',
     reviewerOrcidId: null,
     isAiVerdict: false,
@@ -43,14 +49,16 @@ describe('parseInboxFilter', () => {
     assert.deepEqual(parseInboxFilter(new URLSearchParams()), {});
   });
 
-  it('parses documentId / topic / mineOnly / excludeMine', () => {
+  it('parses documentId / claimId / topic / mineOnly / excludeMine', () => {
     const p = new URLSearchParams({
       documentId: 'doc:abc',
+      claimId: 'claim:abc',
       topic: 'climate',
       mineOnly: '1',
     });
     const f = parseInboxFilter(p);
     assert.equal(f.documentId, 'doc:abc');
+    assert.equal(f.claimId, 'claim:abc');
     assert.equal(f.topicPrefix, 'climate');
     assert.equal(f.mineOnly, true);
     assert.equal(f.excludeMine, undefined);
@@ -161,6 +169,8 @@ describe('assembleInbox — default open-for-review view', () => {
     );
     assert.equal(entries.length, 1);
     assert.equal(entries[0]!.callerVerdict, 'refines');
+    assert.equal(entries[0]!.callerReview?.reviewId, 'review:c1');
+    assert.equal(entries[0]!.callerReview?.isSigned, false);
   });
 
   it('REVIEWER_INBOX_OPEN_AGING_DAYS constant is 7 (ADR-0016 §2.7)', () => {
@@ -184,6 +194,34 @@ describe('assembleInbox — filter constraints', () => {
     assert.equal(entries[0]!.claim.claimId, 'c2');
   });
 
+  it('documentId filter bypasses aging for active document review requests', () => {
+    const fresh = claim({
+      claimId: 'fresh-doc-claim',
+      documentOriginId: 'doc:b',
+      createdAt: new Date(FIXED_NOW.getTime() - 1 * 24 * 60 * 60 * 1000),
+    });
+    const entries = assembleInbox(
+      [fresh],
+      [],
+      CALLER,
+      { documentId: 'doc:b' },
+      FIXED_NOW,
+    );
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0]!.claim.claimId, 'fresh-doc-claim');
+  });
+
+  it('documentId filter still hides claims with an endorsing human verdict', () => {
+    const entries = assembleInbox(
+      [claim({ claimId: 'reviewed', documentOriginId: 'doc:b' })],
+      [review({ claimId: 'reviewed', verdict: 'endorses' })],
+      CALLER,
+      { documentId: 'doc:b' },
+      FIXED_NOW,
+    );
+    assert.equal(entries.length, 0);
+  });
+
   it('topicPrefix filter matches claim_id prefix (Phase 5 stub)', () => {
     const entries = assembleInbox(
       [
@@ -197,6 +235,35 @@ describe('assembleInbox — filter constraints', () => {
     );
     assert.equal(entries.length, 1);
     assert.equal(entries[0]!.claim.claimId, 'climate:c1');
+  });
+
+  it('claimId filter targets one claim exactly and bypasses aging gate', () => {
+    const fresh = claim({
+      claimId: 'target',
+      createdAt: new Date(FIXED_NOW.getTime() - 1 * 24 * 60 * 60 * 1000),
+    });
+    const entries = assembleInbox(
+      [fresh, claim({ claimId: 'other' })],
+      [],
+      CALLER,
+      { claimId: 'target' },
+      FIXED_NOW,
+    );
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0]!.claim.claimId, 'target');
+    assert.equal(entries[0]!.agingDays, 1);
+  });
+
+  it('claimId direct review target shows current state even after human endorsement', () => {
+    const entries = assembleInbox(
+      [claim({ claimId: 'target' })],
+      [review({ claimId: 'target', verdict: 'endorses' })],
+      CALLER,
+      { claimId: 'target' },
+      FIXED_NOW,
+    );
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0]!.hasEndorsingHuman, true);
   });
 
   it('mineOnly bypasses aging + endorsement gates (shows caller verdicts)', () => {
@@ -213,6 +280,24 @@ describe('assembleInbox — filter constraints', () => {
     );
     assert.equal(entries.length, 1);
     assert.equal(entries[0]!.callerVerdict, 'endorses');
+  });
+
+  it('callerReview marks ORCID-signed verdicts', () => {
+    const entries = assembleInbox(
+      [claim({ claimId: 'c1' })],
+      [
+        review({
+          claimId: 'c1',
+          verdict: 'refines',
+          reviewerPrincipalId: CALLER,
+          orcidSignedAt: new Date('2026-05-12T09:00:00Z'),
+        }),
+      ],
+      CALLER,
+      {},
+      FIXED_NOW,
+    );
+    assert.equal(entries[0]!.callerReview?.isSigned, true);
   });
 
   it('excludeMine drops claims the caller has verdicted on', () => {
@@ -236,6 +321,19 @@ describe('assembleInbox — filter constraints', () => {
     // human verdict (would hide anyway). c2 → no caller verdict, shows.
     const ids = entries.map((e) => e.claim.claimId);
     assert.deepEqual(ids, ['c2']);
+  });
+});
+
+describe('ReviewerInboxPage — candidate query contract', () => {
+  it('loads document-scoped claims before JS inbox assembly', () => {
+    assert.match(
+      REVIEWER_INBOX_PAGE_SOURCE,
+      /filter\.documentId[\s\S]+eq\(schema\.claim\.documentOriginId, filter\.documentId\)/,
+    );
+    assert.match(
+      REVIEWER_INBOX_PAGE_SOURCE,
+      /eq\(schema\.principal\.kind, 'agent'\)[\s\S]+claimKeepStatuses/,
+    );
   });
 });
 

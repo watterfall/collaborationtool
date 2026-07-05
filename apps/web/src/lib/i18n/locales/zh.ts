@@ -52,6 +52,19 @@ export const zh = {
       ctaPrimary: '进工作室',
       ctaSecondary: '怎么装到自己电脑',
     },
+    productTour: {
+      heading: '看它怎么用',
+      sub: '从开一篇，到复现准备度实时打分 —— 下面都是真实界面，不是示意图。',
+      step1Caption:
+        '一个工作室：想法、原型、论文都在一处，按草稿 / 评审中 / 已归档分栏。',
+      step1Alt: '文档工作区 —— 我的论文列表',
+      step2Caption:
+        '开一篇：选主语言、双语模式、起手模板（空白 / 双语论文 / 文献综述）。',
+      step2Alt: '新建文档表单 —— 标题 / 主语言 / 起手模板',
+      step3Caption:
+        '写作时实时打分复现准备度 —— 证据、代码、人类复核、ORCID 签名、AI 审计逐项亮灯。',
+      step3Alt: '编辑器复现准备度面板',
+    },
     manifesto: {
       body: '科学最有创造力的部分，发生在论文之外。',
     },
@@ -122,6 +135,42 @@ export const zh = {
         },
       ],
       footnote: '详细对比见 README。',
+    },
+    reformRadar: {
+      heading: '科研系统正在改什么',
+      sub: '调研结论很清楚：未来的科研协作不是更快地写完一篇论文，而是让证据、复现、评审、AI 和贡献都能被追踪、复核、归功。',
+      rows: [
+        {
+          signal: '开放科学从政策走向监测',
+          pressure:
+            'UNESCO / EU 都在推动可衡量的开放科学：数据、代码、方法和研究输出要能被找到、复用、评估。',
+          response:
+            '工作室把 claim、evidence、source、review、contribution 都做成可追踪对象，不只把论文当最终文件。',
+        },
+        {
+          signal: '复现变成基础设施',
+          pressure:
+            'NIH 把 replication / reproducibility 提到全机构层面。失败路径、原始数据、协议细节都需要进入科学记录。',
+          response:
+            '写作时就绑定证据、代码、数据和方法；maintenance scan 后续持续标记 unsupported / outdated / contradicted。',
+        },
+        {
+          signal: '同行评审负担过载',
+          pressure:
+            '审稿邀请越来越难被接受，少数研究者承担过多无偿劳动，评审质量和速度同时承压。',
+          response:
+            '把评审拆到 claim 级别，支持 ORCID 签名 verdict 和贡献记录，让评审成为可归功的科研劳动。',
+        },
+        {
+          signal: 'AI 进入科研，但必须可审计',
+          pressure:
+            '生成式 AI 已进入几乎所有学科，但幻觉、黑箱、隐私和不确定性会放大不可复现风险。',
+          response:
+            'AI 是受权限约束的协作者：model、provider、prompt、tool call、approval chain 全部进入 provenance。',
+        },
+      ],
+      footnote:
+        '调研基线见 plan0/research/2026-06-03-research-collaboration-systems.md。',
     },
     specimens: {
       heading: '看一眼',

@@ -37,3 +37,37 @@ export type {
 
 export { HairlineRule } from './HairlineRule';
 export type { HairlineRuleProps, HairlineWeight } from './HairlineRule';
+
+// --- Design.md v2 (warmth + concretization) ------------------------------
+export { Icon } from './Icon';
+export type { IconProps, IconName, IconSize } from './Icon';
+
+export { LineGlyph } from './LineGlyph';
+export type { LineGlyphProps } from './LineGlyph';
+
+export { ProductFrame } from './ProductFrame';
+export type { ProductFrameProps } from './ProductFrame';
+
+// --- Design.md v2 form / list / page foundation (Phase 1) -----------------
+export { Field } from './Field';
+export type { FieldProps } from './Field';
+
+export { TextInput, TextArea, Select } from './FormControls';
+export type {
+  TextInputProps,
+  TextAreaProps,
+  SelectProps,
+  FormControlTone,
+} from './FormControls';
+
+export { HairlineList, ListRow } from './HairlineList';
+export type { HairlineListProps, ListRowProps } from './HairlineList';
+
+export { PageShell } from './PageShell';
+export type { PageShellProps, PageWidth } from './PageShell';
+
+export { PageHeader, SectionHeader } from './PageHeader';
+export type { PageHeaderProps, SectionHeaderProps } from './PageHeader';
+
+export { EmptyState } from './EmptyState';
+export type { EmptyStateProps } from './EmptyState';

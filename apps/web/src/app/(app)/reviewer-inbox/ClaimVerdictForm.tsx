@@ -9,12 +9,18 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import { Button } from '@/components/design';
+import { ReviewLifecycleActions } from '@/components/review/ReviewLifecycleActions';
 
 export interface ClaimVerdictFormProps {
   claimId: string;
   hasExistingCallerVerdict: boolean;
+  existingReview?: {
+    reviewId: string;
+    isSigned: boolean;
+  } | null;
 }
 
 type Verdict = 'endorses' | 'challenges' | 'refines';
@@ -32,43 +38,72 @@ const VERDICT_OPTIONS: Array<{
 export function ClaimVerdictForm({
   claimId,
   hasExistingCallerVerdict,
+  existingReview = null,
 }: ClaimVerdictFormProps) {
   const router = useRouter();
   const [verdict, setVerdict] = useState<Verdict>('endorses');
   const [body, setBody] = useState('');
   const [evidenceText, setEvidenceText] = useState('');
+  const [submittedReviewId, setSubmittedReviewId] = useState<string | null>(
+    null,
+  );
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
 
   if (hasExistingCallerVerdict) {
     // Already verdicted — UI nudges the reviewer to lineage page rather
     // than offering a second submit (withdraw + resubmit is the only
     // edit path per ADR-0016 §2.4).
     return (
-      <p>
-        <small>
-          <em>
-            <span lang="zh">你已对该 claim 出过判断；如需更改请走撤回 + 重提</span>
-            <span aria-hidden="true"> · </span>
-            <span lang="en">
-              You already verdicted; to change it, withdraw + resubmit
-            </span>
-          </em>
-        </small>
-      </p>
+      <div>
+        <p>
+          <small>
+            <em>
+              <span lang="zh">你已对该 claim 出过判断；可去 lineage 查看完整血统</span>
+              <span aria-hidden="true"> · </span>
+              <span lang="en">
+                You already verdicted; inspect the full lineage
+              </span>
+            </em>
+          </small>
+        </p>
+        <br />
+        <Link
+          href={`/claim/${encodeURIComponent(claimId)}/lineage`}
+          className="text-sm underline-offset-4 hover:underline"
+        >
+          lineage · 评审血统
+        </Link>
+        {existingReview ? (
+          <ReviewLifecycleActions
+            claimId={claimId}
+            reviewId={existingReview.reviewId}
+            canSign={!existingReview.isSigned}
+            canWithdraw
+            initiallySigned={existingReview.isSigned}
+          />
+        ) : null}
+      </div>
     );
   }
 
-  if (submitted) {
+  if (submittedReviewId) {
     return (
-      <p>
-        <small>
-          <span lang="zh">已提交，等待 ORCID 签名步骤</span>
-          <span aria-hidden="true"> · </span>
-          <span lang="en">Submitted — proceed to ORCID sign step</span>
-        </small>
-      </p>
+      <div>
+        <p>
+          <small>
+            <span lang="zh">已提交，可继续 ORCID 签名或撤回</span>
+            <span aria-hidden="true"> · </span>
+            <span lang="en">Submitted — ORCID sign or withdraw next</span>
+          </small>
+        </p>
+        <ReviewLifecycleActions
+          claimId={claimId}
+          reviewId={submittedReviewId}
+          canSign
+          canWithdraw
+        />
+      </div>
     );
   }
 
@@ -101,7 +136,14 @@ export function ClaimVerdictForm({
           setError(data.error ?? `HTTP ${res.status}`);
           return;
         }
-        setSubmitted(true);
+        const data = (await res.json().catch(() => ({}))) as {
+          reviewId?: unknown;
+        };
+        if (typeof data.reviewId !== 'string') {
+          setError('missing-review-id');
+          return;
+        }
+        setSubmittedReviewId(data.reviewId);
         router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));

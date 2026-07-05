@@ -6,6 +6,11 @@ packages:
   - 'plugins/*'
   - 'infra/drizzle'
   - 'tests/e2e'
+allowBuilds:
+  better-sqlite3: false
+  esbuild: true
+  leveldown: true
+  sharp: true
 
 # `apps/sync-gateway` matches `apps/*` and is therefore included
 # automatically; `apps/prototypes/*` is the nested glob for Phase 0

@@ -10,3 +10,4 @@
 export * from './_shared';
 export * from './canonical-payload';
 export * from './merkle-log';
+export * from './public-provenance';

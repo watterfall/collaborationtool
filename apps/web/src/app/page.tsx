@@ -63,6 +63,13 @@ export default async function LandingPage() {
             style={{ color: 'var(--color-ink-2)' }}
           >
             <a
+              href="/open"
+              className="underline-offset-4 hover:underline"
+              style={{ color: 'var(--color-ink-2)' }}
+            >
+              Open ledger · 开放账本
+            </a>
+            <a
               href="/login"
               className="underline-offset-4 hover:underline"
               style={{ color: 'var(--color-ink-2)' }}

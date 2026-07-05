@@ -10,7 +10,12 @@
 
 import { NIGHT_ARTIFACT_KINDS } from '@collaborationtool/discovery-graph';
 
-import { HairlineRule, MonoDisc, StatusPill } from '@/components/design';
+import {
+  EmptyState,
+  HairlineRule,
+  MonoDisc,
+  StatusPill,
+} from '@/components/design';
 
 interface NightKindCopy {
   zh: string;
@@ -76,8 +81,8 @@ export default function DiscoverPage() {
         </h2>
         <StatusPill
           status="proposed"
-          label="Wave D-4 骨架"
-          labelEn="Wave D-4 skeleton"
+          label="示例数据"
+          labelEn="Example data · live at Wave D-5"
           className="ml-auto"
         />
       </header>
@@ -219,24 +224,45 @@ export default function DiscoverPage() {
           <span aria-hidden="true"> · </span>
           <span lang="en">Your Night artifacts</span>
         </h3>
-        <p
-          className="font-serif"
+        {/* Curated example artifact (illustrative, not seeded live data) so
+            the surface shows what a Night artifact looks like. */}
+        <p className="label-cap" style={{ color: 'var(--color-ink-3)' }}>
+          示例 · Example
+        </p>
+        <figure
+          className="m-0"
           style={{
-            color: 'var(--color-ink-3)',
-            fontSize: '15px',
-            lineHeight: 1.7,
-            fontStyle: 'italic',
+            borderLeft: '2px solid var(--color-accent-ink)',
+            background: 'var(--color-accent-ink-wash)',
+            padding: '14px 16px',
+            borderRadius: 'var(--radius-2)',
           }}
         >
-          <span lang="zh">
-            空。Wave D-5 dogfood gate 时连真数据 —— jili 30 天 ≥ 50 Night artifact。
-          </span>
-          <br />
-          <span lang="en">
-            Empty. Real data wires in at Wave D-5 dogfood — target: ≥ 50
-            Night artifacts in 30 days.
-          </span>
-        </p>
+          <figcaption
+            className="label-cap"
+            style={{ color: 'var(--color-accent-ink)', marginBottom: '6px' }}
+          >
+            矛盾观察 · contradiction
+          </figcaption>
+          <p
+            className="font-serif"
+            data-prose="bilingual"
+            style={{ color: 'var(--color-ink)', fontSize: '16px', lineHeight: 1.7 }}
+          >
+            Google 2024 在 NISQ 上测到 0.8% 错误率，但理论极限是 1%。会不会错误率不是常数？
+          </p>
+          <p
+            className="font-mono"
+            style={{ color: 'var(--color-ink-3)', fontSize: '11px', marginTop: '6px' }}
+          >
+            mode:contradiction · visibility:private · → bridge:hypothesis-output
+          </p>
+        </figure>
+
+        <EmptyState
+          message="还没有你自己的 Night artifact · No Night artifacts of your own yet."
+          messageEn="真数据在 Wave D-5 dogfood 接入（目标：30 天 ≥ 50 条）。上面是一条示例。"
+        />
       </section>
     </article>
   );

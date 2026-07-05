@@ -405,6 +405,12 @@ importers:
 
   infra/drizzle:
     dependencies:
+      '@collaborationtool/identity':
+        specifier: workspace:*
+        version: link:../../packages/identity
+      '@collaborationtool/open-content':
+        specifier: workspace:*
+        version: link:../../packages/open-content
       '@collaborationtool/schema':
         specifier: workspace:*
         version: link:../../packages/schema

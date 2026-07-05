@@ -81,6 +81,9 @@ export const principal = pgTable(
     agentId: text('agent_id'),
     sharedLinkId: text('shared_link_id'),
     orgId: text('org_id'),
+    // ADR-0018 open-content signing. Text shape is `ed25519:<64 hex>`.
+    // Nullable so existing principals and non-user principals can migrate.
+    ed25519PublicKey: text('ed25519_public_key'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .default(sql`now()`),
@@ -91,6 +94,9 @@ export const principal = pgTable(
     userIdIdx: index('principal_user_id_idx').on(t.userId),
     agentIdIdx: index('principal_agent_id_idx').on(t.agentId),
     orgIdIdx: index('principal_org_id_idx').on(t.orgId),
+    ed25519PublicKeyUniq: uniqueIndex('principal_ed25519_public_key_uniq').on(
+      t.ed25519PublicKey,
+    ),
   }),
 );
 

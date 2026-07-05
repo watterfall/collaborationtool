@@ -8,6 +8,7 @@ import { describe, it } from 'node:test';
 import {
   CLAIM_REVIEW_VERDICTS,
   aggregateLineage,
+  resolveReviewSignatureInput,
   validateApplySignature,
   validateSubmitClaimReview,
   validateWithdraw,
@@ -166,6 +167,53 @@ describe('validateSubmitClaimReview — rejections', () => {
     assert.equal(r.ok, false);
     if (r.ok) return;
     assert.equal(r.reason, 'invalid-evidence-ref-id');
+  });
+});
+
+describe('resolveReviewSignatureInput', () => {
+  it('prefers server-linked ORCID identity over client fallback fields', () => {
+    const resolved = resolveReviewSignatureInput({
+      linkedIdentity: {
+        orcidId: '0000-0002-1825-0097',
+        idToken: 'server.id.token',
+      },
+      clientOrcidId: '0000-0000-0000-0000',
+      clientSignedPayloadJws: 'client.id.token',
+    });
+
+    assert.deepEqual(resolved, {
+      callerOrcidId: '0000-0002-1825-0097',
+      signedPayloadJws: 'server.id.token',
+    });
+  });
+
+  it('falls back to client fields when no linked ORCID account exists', () => {
+    const resolved = resolveReviewSignatureInput({
+      linkedIdentity: null,
+      clientOrcidId: '0000-0002-1825-0097',
+      clientSignedPayloadJws: 'client.id.token',
+    });
+
+    assert.deepEqual(resolved, {
+      callerOrcidId: '0000-0002-1825-0097',
+      signedPayloadJws: 'client.id.token',
+    });
+  });
+
+  it('falls back to client JWS when linked account lacks id_token', () => {
+    const resolved = resolveReviewSignatureInput({
+      linkedIdentity: {
+        orcidId: '0000-0002-1825-0097',
+        idToken: null,
+      },
+      clientOrcidId: null,
+      clientSignedPayloadJws: 'client.id.token',
+    });
+
+    assert.deepEqual(resolved, {
+      callerOrcidId: '0000-0002-1825-0097',
+      signedPayloadJws: 'client.id.token',
+    });
   });
 });
 
@@ -357,6 +405,8 @@ describe('aggregateLineage', () => {
   ): LineageReviewRow {
     return {
       reviewerOrcidId: null,
+      orcidSignedAt: null,
+      signedPayloadJws: null,
       isAiVerdict: false,
       withdrawnAt: null,
       ...overrides,
@@ -392,11 +442,26 @@ describe('aggregateLineage', () => {
     assert.equal(agg.withdrawnCount, 1);
   });
 
-  it('orcidSignedCount + aiVerdictCount independent of withdrawal', () => {
+  it('orcidSignedCount requires an active ORCID signature, not just an ORCID id', () => {
     const agg = aggregateLineage([
-      row({ id: 'a', verdict: 'endorses', reviewerOrcidId: '0000-0001-0000-0000' }),
+      row({
+        id: 'a',
+        verdict: 'endorses',
+        reviewerOrcidId: '0000-0001-0000-0000',
+        orcidSignedAt: new Date('2026-06-03T10:00:00Z'),
+      }),
       row({ id: 'b', verdict: 'refines', isAiVerdict: true }),
-      row({ id: 'c', verdict: 'endorses', reviewerOrcidId: '0000-0002-0000-0000' }),
+      row({
+        id: 'c',
+        verdict: 'endorses',
+        reviewerOrcidId: '0000-0002-0000-0000',
+      }),
+      row({
+        id: 'd',
+        verdict: 'endorses',
+        reviewerOrcidId: '0000-0003-0000-0000',
+        signedPayloadJws: 'jws.payload.signature',
+      }),
     ]);
     assert.equal(agg.orcidSignedCount, 2);
     assert.equal(agg.aiVerdictCount, 1);

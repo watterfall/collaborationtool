@@ -13,7 +13,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --test --import tsx tests/*.test.ts"
+    "test": "node --test --import tsx tests/*.test.ts",
+    "verify:provenance": "tsx bin/verify-public-provenance.ts"
   },
   "dependencies": {
     "@collaborationtool/identity": "workspace:*",

@@ -141,6 +141,44 @@ describe('landing — v4 pillars (3 spaces) + attribution', () => {
   });
 });
 
+describe('landing — research reform radar', () => {
+  it('has 4 evidence-backed reform rows in both locales', () => {
+    assert.equal(zh.landing.reformRadar.rows.length, 4);
+    assert.equal(en.landing.reformRadar.rows.length, 4);
+  });
+
+  it('names the load-bearing research-system pressures', () => {
+    const zhSignals = zh.landing.reformRadar.rows
+      .map((r) => `${r.signal} ${r.pressure} ${r.response}`)
+      .join('\n');
+    const enSignals = en.landing.reformRadar.rows
+      .map((r) => `${r.signal} ${r.pressure} ${r.response}`)
+      .join('\n');
+    assert.match(zhSignals, /开放科学/);
+    assert.match(zhSignals, /复现|reproducibility/i);
+    assert.match(zhSignals, /同行评审|评审/);
+    assert.match(zhSignals, /AI|provenance/i);
+    assert.match(enSignals, /open science/i);
+    assert.match(enSignals, /reproducibility/i);
+    assert.match(enSignals, /peer review/i);
+    assert.match(enSignals, /AI|provenance/i);
+  });
+
+  it('Landing.tsx renders the reform radar before specimens', () => {
+    const src = readFileSync(
+      path.join(repoWebSrc, 'components/landing/Landing.tsx'),
+      'utf8',
+    );
+    assert.match(src, /const radar = t\.landing\.reformRadar/);
+    assert.match(src, /function RadarRow/);
+    assert.ok(
+      src.indexOf('Reform radar') <
+        src.indexOf('Specimens — v4'),
+      'reform radar section should appear before specimen examples',
+    );
+  });
+});
+
 describe('landing — Landing component module shape', () => {
   it('exports a Landing function', async () => {
     const mod = await import('../src/components/landing/Landing');

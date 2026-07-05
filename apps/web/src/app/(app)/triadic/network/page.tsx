@@ -46,8 +46,8 @@ export default function NetworkPage() {
         </h2>
         <StatusPill
           status="proposed"
-          label="Wave D-4 骨架"
-          labelEn="Wave D-4 skeleton"
+          label="示例数据"
+          labelEn="Example data · live at Wave D-5"
           className="ml-auto"
         />
       </header>

@@ -26,6 +26,7 @@ import {
 } from '@collaborationtool/render-typst';
 
 import { auth } from '@/lib/auth';
+import { buildAiContextPack } from '@/lib/ai-context-pack';
 import { getDb } from '@/lib/db';
 import {
   anonDistinctId,
@@ -295,19 +296,42 @@ export async function GET(
             .from(schema.citation)
             .where(inArray(schema.citation.id, citationIds))
         : [];
-      const pack = {
-        $schema: 'https://collaborationtool.example.com/schema/ai-context-pack/v1',
-        doc: { id: doc.id, title, slug: doc.slug, primaryLanguage: lang },
+      const reviews = claimIds.length
+        ? await db
+            .select()
+            .from(schema.claimReview)
+            .where(inArray(schema.claimReview.claimId, claimIds))
+        : [];
+      const maintenanceFindings = await db
+        .select()
+        .from(schema.maintenanceFinding)
+        .where(
+          and(
+            eq(schema.maintenanceFinding.documentId, doc.id),
+            eq(schema.maintenanceFinding.vaultPrincipalId, principalId),
+          ),
+        );
+      const pack = buildAiContextPack({
+        doc: {
+          id: doc.id,
+          title,
+          slug: doc.slug,
+          primaryLanguage: lang,
+          bilingualMode: doc.bilingualMode,
+        },
         claims,
         evidences,
         claimLinks,
         sources,
-        generatedAt: new Date().toISOString(),
-      };
+        reviews,
+        maintenanceFindings,
+      });
       observeOk({
         claimCount: claims.length,
         evidenceCount: evidences.length,
         sourceCount: sources.length,
+        reviewCount: reviews.length,
+        readinessStatus: pack.readiness.status,
       });
       return new Response(JSON.stringify(pack, null, 2), {
         status: 200,

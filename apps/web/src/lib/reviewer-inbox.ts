@@ -19,6 +19,9 @@ import type { ClaimReviewVerdict } from './claim-review';
 export interface ReviewerInboxFilter {
   /** Scope to a specific document. */
   documentId?: string;
+  /** Directly open one claim for review. Bypasses the default aging gate
+   * so document-level readiness actions can land on the exact work item. */
+  claimId?: string;
   /** Scope to a topic tag (Phase 6 will plumb claim.topic; Phase 5
    * accepts the param but treats it as a literal claim_id prefix
    * match — good enough to dogfood without new schema). */
@@ -50,6 +53,8 @@ export function parseInboxFilter(
   const filter: ReviewerInboxFilter = {};
   const documentId = get('documentId');
   if (documentId && documentId.trim()) filter.documentId = documentId.trim();
+  const claimId = get('claimId');
+  if (claimId && claimId.trim()) filter.claimId = claimId.trim();
   const topicPrefix = get('topic');
   if (topicPrefix && topicPrefix.trim()) {
     filter.topicPrefix = topicPrefix.trim();
@@ -74,18 +79,28 @@ export interface InboxClaimRow {
 }
 
 export interface InboxReviewSlim {
+  reviewId: string;
   claimId: string;
   verdict: ClaimReviewVerdict;
   reviewerPrincipalId: string;
   reviewerOrcidId: string | null;
   isAiVerdict: boolean;
+  signedPayloadJws?: string | null;
+  orcidSignedAt?: Date | null;
   withdrawnAt: Date | null;
+}
+
+export interface InboxCallerReview {
+  reviewId: string;
+  verdict: ClaimReviewVerdict;
+  isSigned: boolean;
 }
 
 export interface InboxEntry {
   claim: InboxClaimRow;
   hasEndorsingHuman: boolean;
   callerVerdict: ClaimReviewVerdict | null;
+  callerReview: InboxCallerReview | null;
   agingDays: number;
 }
 
@@ -113,33 +128,54 @@ export function assembleInbox(
       (r) =>
         r.verdict === 'endorses' && !r.isAiVerdict && r.withdrawnAt === null,
     );
-    const callerVerdict =
+    const callerReviewRow =
       rs.find(
         (r) =>
           r.reviewerPrincipalId === callerPrincipalId && r.withdrawnAt === null,
-      )?.verdict ?? null;
+      ) ?? null;
+    const callerReview = callerReviewRow
+      ? {
+          reviewId: callerReviewRow.reviewId,
+          verdict: callerReviewRow.verdict,
+          isSigned:
+            callerReviewRow.orcidSignedAt != null ||
+            hasText(callerReviewRow.signedPayloadJws ?? null),
+        }
+      : null;
+    const callerVerdict = callerReview?.verdict ?? null;
     const agingDays = Math.floor(
       (now.getTime() - c.createdAt.getTime()) / (24 * 60 * 60 * 1000),
     );
 
     // Apply filter constraints.
     if (filter.documentId && c.documentOriginId !== filter.documentId) continue;
+    if (filter.claimId && c.claimId !== filter.claimId) continue;
     if (filter.topicPrefix && !c.claimId.startsWith(filter.topicPrefix)) continue;
     if (filter.mineOnly && callerVerdict === null) continue;
     if (filter.excludeMine && callerVerdict !== null) continue;
 
     // Default Inbox view: claim has no endorsing human verdict AND
     // aging >= OPEN_AGING_DAYS. mineOnly view bypasses both gates so
-    // the reviewer can see their own active verdicts.
-    if (!filter.mineOnly) {
+    // the reviewer can see their own active verdicts. claimId also
+    // bypasses the gates: readiness actions are direct review requests,
+    // not passive backlog discovery. documentId keeps the human
+    // endorsement gate but bypasses aging so a paper-level review
+    // request can surface fresh claims immediately.
+    if (!filter.mineOnly && !filter.claimId) {
       if (hasEndorsingHuman) continue;
-      if (agingDays < REVIEWER_INBOX_OPEN_AGING_DAYS) continue;
+      if (
+        !filter.documentId &&
+        agingDays < REVIEWER_INBOX_OPEN_AGING_DAYS
+      ) {
+        continue;
+      }
     }
 
     out.push({
       claim: c,
       hasEndorsingHuman,
       callerVerdict,
+      callerReview,
       agingDays,
     });
   }
@@ -148,4 +184,8 @@ export function assembleInbox(
   // and acts"; newest claims sort under them.
   out.sort((a, b) => b.agingDays - a.agingDays);
   return out;
+}
+
+function hasText(value: string | null): boolean {
+  return value !== null && value.trim().length > 0;
 }
