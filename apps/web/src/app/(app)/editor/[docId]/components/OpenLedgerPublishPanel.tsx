@@ -30,6 +30,9 @@ export default function OpenLedgerPublishPanel({
   const [state, setState] = useState<PublishState>('idle');
   const [message, setMessage] = useState('');
   const [result, setResult] = useState<PublishResult | null>(null);
+  const [signatureOpen, setSignatureOpen] = useState(false);
+  const [signaturePublicKey, setSignaturePublicKey] = useState('');
+  const [signedPayloadJws, setSignedPayloadJws] = useState('');
 
   const [questionMd, setQuestionMd] = useState('');
   const [domainTags, setDomainTags] = useState('');
@@ -64,7 +67,15 @@ export default function OpenLedgerPublishPanel({
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        ...body,
+        ...(signaturePublicKey.trim()
+          ? { signaturePublicKey: signaturePublicKey.trim() }
+          : {}),
+        ...(signedPayloadJws.trim()
+          ? { signedPayloadJws: signedPayloadJws.trim() }
+          : {}),
+      }),
     });
     const payload = (await response.json().catch(() => null)) as
       | (Partial<PublishResult> & { error?: string; detail?: string })
@@ -238,6 +249,14 @@ export default function OpenLedgerPublishPanel({
             placeholder="reproducibility, methods"
             mono
           />
+          <SignatureMaterial
+            open={signatureOpen}
+            onToggle={() => setSignatureOpen((value) => !value)}
+            publicKey={signaturePublicKey}
+            onPublicKeyChange={setSignaturePublicKey}
+            signature={signedPayloadJws}
+            onSignatureChange={setSignedPayloadJws}
+          />
           <SubmitRow
             state={state}
             result={result}
@@ -295,6 +314,14 @@ export default function OpenLedgerPublishPanel({
             placeholder="10.5281/zenodo..."
             mono
           />
+          <SignatureMaterial
+            open={signatureOpen}
+            onToggle={() => setSignatureOpen((value) => !value)}
+            publicKey={signaturePublicKey}
+            onPublicKeyChange={setSignaturePublicKey}
+            signature={signedPayloadJws}
+            onSignatureChange={setSignedPayloadJws}
+          />
           <SubmitRow
             state={state}
             result={result}
@@ -348,6 +375,14 @@ export default function OpenLedgerPublishPanel({
             placeholder="10.1101/..."
             mono
           />
+          <SignatureMaterial
+            open={signatureOpen}
+            onToggle={() => setSignatureOpen((value) => !value)}
+            publicKey={signaturePublicKey}
+            onPublicKeyChange={setSignaturePublicKey}
+            signature={signedPayloadJws}
+            onSignatureChange={setSignedPayloadJws}
+          />
           <SubmitRow
             state={state}
             result={result}
@@ -357,6 +392,53 @@ export default function OpenLedgerPublishPanel({
         </form>
       )}
     </section>
+  );
+}
+
+function SignatureMaterial({
+  open,
+  onToggle,
+  publicKey,
+  onPublicKeyChange,
+  signature,
+  onSignatureChange,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  publicKey: string;
+  onPublicKeyChange: (value: string) => void;
+  signature: string;
+  onSignatureChange: (value: string) => void;
+}) {
+  return (
+    <div
+      style={{
+        borderTop: '1px dashed var(--color-hairline)',
+        paddingTop: '10px',
+      }}
+      data-testid="open-ledger-signature-material"
+    >
+      <Button variant="link" size="sm" onClick={onToggle}>
+        {open ? '隐藏签名材料 · Hide signature' : '签名材料 · Signature'}
+      </Button>
+      {open && (
+        <div className="mt-2 grid gap-3">
+          <LedgerInput
+            label="ED25519 PUBLIC KEY · 公钥"
+            value={publicKey}
+            onChange={onPublicKeyChange}
+            placeholder="ed25519:..."
+            mono
+          />
+          <LedgerTextarea
+            label="DETACHED SIGNATURE · 内容签名"
+            value={signature}
+            onChange={onSignatureChange}
+            rows={3}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 

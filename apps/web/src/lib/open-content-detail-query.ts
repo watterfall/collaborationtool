@@ -13,6 +13,13 @@ import {
   assembleOpenContentFeed,
   type OpenFeedItem,
 } from '@/lib/open-content-feed';
+import type { OpenContentProvenanceSummary } from '@/lib/open-content-provenance';
+import {
+  loadOpenDatasetProvenanceSummary,
+  loadOpenQuestionProvenanceSummary,
+  loadOpenReviewProvenanceSummary,
+  loadOpenSnapshotProvenanceSummary,
+} from '@/lib/open-content-provenance-query';
 import { getDb } from '@/lib/db';
 
 export interface OpenReviewDetail {
@@ -23,6 +30,7 @@ export interface OpenReviewDetail {
   evidenceRefs: string[];
   signed: boolean;
   merkleLogEntryId: string;
+  provenance: OpenContentProvenanceSummary;
   createdAt: Date;
 }
 
@@ -43,18 +51,21 @@ interface OpenReviewRow {
 export interface OpenQuestionDetail {
   item: OpenFeedItem;
   questionMd: string;
+  provenance: OpenContentProvenanceSummary;
   reviews: OpenReviewDetail[];
 }
 
 export interface OpenDatasetDetail {
   item: OpenFeedItem;
   descriptionMd: string;
+  provenance: OpenContentProvenanceSummary;
   reviews: OpenReviewDetail[];
 }
 
 export interface OpenSnapshotDetail {
   item: OpenFeedItem;
   markdownContent: string;
+  provenance: OpenContentProvenanceSummary;
   reviews: OpenReviewDetail[];
 }
 
@@ -118,8 +129,15 @@ async function loadOpenQuestionDetail(
     reviews: reviewRows,
   });
   const item = feed.items[0];
+  const provenance = await loadOpenQuestionProvenanceSummary(question.id);
+  const reviews = await toReviewDetails(reviewRows);
   return item
-    ? { item, questionMd: question.questionMd, reviews: reviewRows.map(toReviewDetail) }
+    ? {
+        item,
+        questionMd: question.questionMd,
+        provenance,
+        reviews,
+      }
     : null;
 }
 
@@ -155,8 +173,15 @@ async function loadOpenDatasetDetail(
     reviews: reviewRows,
   });
   const item = feed.items[0];
+  const provenance = await loadOpenDatasetProvenanceSummary(dataset.id);
+  const reviews = await toReviewDetails(reviewRows);
   return item
-    ? { item, descriptionMd: dataset.descriptionMd, reviews: reviewRows.map(toReviewDetail) }
+    ? {
+        item,
+        descriptionMd: dataset.descriptionMd,
+        provenance,
+        reviews,
+      }
     : null;
 }
 
@@ -192,11 +217,14 @@ async function loadOpenSnapshotDetail(
     reviews: reviewRows,
   });
   const item = feed.items[0];
+  const provenance = await loadOpenSnapshotProvenanceSummary(snapshot.permalinkHash);
+  const reviews = await toReviewDetails(reviewRows);
   return item
     ? {
         item,
         markdownContent: snapshot.markdownContent,
-        reviews: reviewRows.map(toReviewDetail),
+        provenance,
+        reviews,
       }
     : null;
 }
@@ -232,7 +260,12 @@ async function loadReviewRows(
   return rows.filter((row): row is OpenReviewRow => row.withdrawnAt === null);
 }
 
-function toReviewDetail(row: OpenReviewRow): OpenReviewDetail {
+async function toReviewDetails(rows: OpenReviewRow[]): Promise<OpenReviewDetail[]> {
+  return Promise.all(rows.map(toReviewDetail));
+}
+
+async function toReviewDetail(row: OpenReviewRow): Promise<OpenReviewDetail> {
+  const provenance = await loadOpenReviewProvenanceSummary(row.id);
   return {
     id: row.id,
     reviewerOrcidId: row.reviewerOrcidId,
@@ -241,6 +274,7 @@ function toReviewDetail(row: OpenReviewRow): OpenReviewDetail {
     evidenceRefs: [...row.evidenceRefs],
     signed: row.signedPayloadJws.trim().length > 0,
     merkleLogEntryId: row.merkleLogEntryId,
+    provenance,
     createdAt: row.createdAt,
   };
 }

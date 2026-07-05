@@ -12,13 +12,17 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { schema } from '@collaborationtool/drizzle';
 
-import { resolveReviewSignatureInput } from '@/lib/claim-review';
 import {
-  devOpenLedgerSignatureVerifier,
   loadDocumentOpenPublishContext,
   publishRejectStatus,
+  resolveOpenContentSignatureInput,
 } from '@/lib/document-open-publish';
 import { buildOpenQuestionPublishContent } from '@/lib/open-content-feed';
+import {
+  allowOpenContentDevSignatureFallback,
+  buildPrincipalOpenContentSignatureVerifier,
+  persistPrincipalEd25519PublicKeyIfNeeded,
+} from '@/lib/open-content-signature-store';
 import { getOrcidIdentityForUser } from '@/lib/orcid-lookup';
 import { validatePublish } from '@/lib/publish';
 
@@ -28,6 +32,7 @@ interface PublishQuestionBody {
   signedPayloadJws?: unknown;
   orcidIdToken?: unknown;
   orcidIdParam?: unknown;
+  signaturePublicKey?: unknown;
 }
 
 const ORCID_ID_RE = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/;
@@ -65,14 +70,14 @@ export async function POST(
   if (clientOrcidId && !ORCID_ID_RE.test(clientOrcidId)) {
     return NextResponse.json({ error: 'invalid-orcid-id' }, { status: 400 });
   }
-  const signatureInput = resolveReviewSignatureInput({
+  const signatureInput = resolveOpenContentSignatureInput({
     linkedIdentity,
     clientOrcidId,
     clientSignedPayloadJws:
-      typeof body.orcidIdToken === 'string'
-        ? body.orcidIdToken
-        : typeof body.signedPayloadJws === 'string'
-          ? body.signedPayloadJws
+      typeof body.signedPayloadJws === 'string'
+        ? body.signedPayloadJws
+        : typeof body.orcidIdToken === 'string'
+          ? body.orcidIdToken
           : '',
   });
   if (!signatureInput.callerOrcidId) {
@@ -86,6 +91,13 @@ export async function POST(
     .limit(1);
   const questionId = uuidv7();
   const merkleEntryId = uuidv7();
+  const signatureVerifier = await buildPrincipalOpenContentSignatureVerifier({
+    db,
+    principalId,
+    submittedPublicKey: body.signaturePublicKey,
+    scope: 'document-open-question',
+    allowDevFallback: allowOpenContentDevSignatureFallback(),
+  });
   const validation = validatePublish({
     kind: 'open_question',
     entityId: questionId,
@@ -95,7 +107,7 @@ export async function POST(
     signerPrincipalId: principalId,
     prevMerkleEntryId: prevRows[0]?.id ?? null,
     merkleEntryId,
-    signatureVerifier: devOpenLedgerSignatureVerifier('document-open-question'),
+    signatureVerifier: signatureVerifier.verifier,
   });
   if (!validation.ok) {
     return NextResponse.json(
@@ -106,6 +118,11 @@ export async function POST(
 
   try {
     await db.transaction(async (tx) => {
+      await persistPrincipalEd25519PublicKeyIfNeeded(
+        tx,
+        principalId,
+        signatureVerifier.publicKeyToPersist,
+      );
       await tx.insert(schema.provenanceMerkleLog).values({
         id: validation.payload.merkleEntry.id,
         prevEntryId: validation.payload.merkleEntry.prevEntryId,

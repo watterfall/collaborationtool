@@ -122,11 +122,19 @@ export function publishRejectStatus(reason: PublishRejectReason): number {
   return 400;
 }
 
-export function devOpenLedgerSignatureVerifier(scope: string) {
-  return () => {
-    console.warn(
-      `[${scope}] signature verifier in dev fallback — strict ORCID/JWS verification is a follow-up gate`,
-    );
-    return true;
+export interface OpenContentLinkedIdentity {
+  orcidId: string;
+  idToken: string | null;
+}
+
+export function resolveOpenContentSignatureInput(args: {
+  linkedIdentity: OpenContentLinkedIdentity | null;
+  clientOrcidId: string | null;
+  clientSignedPayloadJws: string;
+}): { callerOrcidId: string | null; signedPayloadJws: string } {
+  const clientSignature = args.clientSignedPayloadJws.trim();
+  return {
+    callerOrcidId: args.linkedIdentity?.orcidId ?? args.clientOrcidId,
+    signedPayloadJws: clientSignature || args.linkedIdentity?.idToken || '',
   };
 }

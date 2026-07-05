@@ -29,9 +29,12 @@ export default async function OpenSnapshotDetailPage({
   if (result.unavailable) return <PublicRecordUnavailable />;
   if (!result.record) return <RecordNotFound />;
 
-  const { item, markdownContent, reviews } = result.record;
+  const { item, markdownContent, provenance, reviews } = result.record;
   return (
-    <OpenRecordLayout item={item} side={<RecordSideMeta item={item} />}>
+    <OpenRecordLayout
+      item={item}
+      side={<RecordSideMeta item={item} provenance={provenance} />}
+    >
       <MarkdownPane content={markdownContent} />
       <ReviewThread reviews={reviews} />
     </OpenRecordLayout>

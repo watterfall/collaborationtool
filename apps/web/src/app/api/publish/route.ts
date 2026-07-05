@@ -17,15 +17,11 @@
 //   { error: 'reason-slug', detail?: string }
 //
 // Signature verification:
-//   The route loads the signer's ed25519 public key (TODO: PG column
-//   added in a future migration; until then a stub returns null and
-//   the verifier passes through in dev mode — see TODO inline). When
-//   the column lands, the verifier wraps `@collaborationtool/identity`
-//   verify with the looked-up public key.
-//
-// Phase 6 W2 P2 scope: signature verifier passes when public key
-// missing (dev fallback) but logs a warning. Phase 6 W3+ migration
-// 0017 adds principal.ed25519_public_key and route flips to strict.
+//   The route prefers the signer's stored principal.ed25519_public_key.
+//   A first submitted signaturePublicKey is accepted only when it
+//   verifies the canonical payload and is then persisted in the same
+//   transaction as the Merkle/entity write. Development builds may use
+//   an explicit fallback while existing local clients catch up.
 
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
@@ -34,6 +30,11 @@ import { schema } from '@collaborationtool/drizzle';
 
 import { auth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
+import {
+  allowOpenContentDevSignatureFallback,
+  buildPrincipalOpenContentSignatureVerifier,
+  persistPrincipalEd25519PublicKeyIfNeeded,
+} from '@/lib/open-content-signature-store';
 import { getPrincipalIdForUser } from '@/lib/principal';
 import { validateContentForKind, validatePublish } from '@/lib/publish';
 
@@ -43,6 +44,7 @@ interface PublishBody {
   content?: unknown;
   contentHashHex?: unknown;
   signedJws?: unknown;
+  signaturePublicKey?: unknown;
   merkleEntryId?: unknown;
   prevMerkleEntryId?: unknown;
 }
@@ -64,6 +66,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!principalId) {
     return NextResponse.json({ error: 'no-principal' }, { status: 403 });
   }
+  const db = getDb();
 
   // ---------- Step 1: validate body shape per entity kind ----------
   if (typeof body.kind !== 'string') {
@@ -80,23 +83,18 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   // ---------- Step 2: build signature verifier ----------
-  //
-  // TODO (Phase 6 W3+ migration 0017): SELECT ed25519_public_key
-  //   FROM principal WHERE id = principalId. For now use a permissive
-  //   stub that always returns true with a console.warn — Phase 6 W2
-  //   demo flow only. Strict verify wired when the column lands.
-  const signatureVerifier = (_jws: string, _payload: unknown): boolean => {
-    console.warn(
-      '[publish] signature verifier in dev fallback — Phase 6 W3+ migration 0017 adds principal.ed25519_public_key',
-    );
-    return true;
-  };
+  const signatureVerifier = await buildPrincipalOpenContentSignatureVerifier({
+    db,
+    principalId,
+    submittedPublicKey: body.signaturePublicKey,
+    scope: 'publish',
+    allowDevFallback: allowOpenContentDevSignatureFallback(),
+  });
 
   // ---------- Step 3: load latest Merkle entry id for prev pointer ----------
   // Note: caller may supply prevMerkleEntryId explicitly; we accept it
   // but for a fresh log (no rows yet) callers SHOULD pass null and
   // server confirms the log is empty (genesis row).
-  const db = getDb();
   const callerPrev =
     body.prevMerkleEntryId === null || body.prevMerkleEntryId === undefined
       ? null
@@ -114,7 +112,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     signerPrincipalId: principalId,
     prevMerkleEntryId: callerPrev,
     merkleEntryId: typeof body.merkleEntryId === 'string' ? body.merkleEntryId : '',
-    signatureVerifier,
+    signatureVerifier: signatureVerifier.verifier,
   });
   if (!validation.ok) {
     return NextResponse.json({ error: validation.reason }, { status: 400 });
@@ -125,6 +123,12 @@ export async function POST(request: Request): Promise<NextResponse> {
   // entity_id) rolls back the Merkle entry too.
   try {
     await db.transaction(async (tx) => {
+      await persistPrincipalEd25519PublicKeyIfNeeded(
+        tx,
+        principalId,
+        signatureVerifier.publicKeyToPersist,
+      );
+
       // §5a: insert Merkle log entry first (entity FKs into it)
       await tx.insert(schema.provenanceMerkleLog).values({
         id: validation.payload.merkleEntry.id,

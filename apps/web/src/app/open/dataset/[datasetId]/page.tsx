@@ -29,9 +29,12 @@ export default async function OpenDatasetDetailPage({
   if (result.unavailable) return <PublicRecordUnavailable />;
   if (!result.record) return <RecordNotFound />;
 
-  const { item, descriptionMd, reviews } = result.record;
+  const { item, descriptionMd, provenance, reviews } = result.record;
   return (
-    <OpenRecordLayout item={item} side={<RecordSideMeta item={item} />}>
+    <OpenRecordLayout
+      item={item}
+      side={<RecordSideMeta item={item} provenance={provenance} />}
+    >
       <MarkdownPane content={descriptionMd} />
       <ReviewThread reviews={reviews} />
     </OpenRecordLayout>

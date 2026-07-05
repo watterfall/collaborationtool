@@ -14,10 +14,18 @@ import { schema } from '@collaborationtool/drizzle';
 
 import { auth } from '@/lib/auth';
 import {
+  publishRejectStatus,
+  resolveOpenContentSignatureInput,
+} from '@/lib/document-open-publish';
+import {
   buildOpenQuestionAnswerContent,
   validateOpenQuestionAnswer,
 } from '@/lib/open-content-feed';
-import { resolveReviewSignatureInput } from '@/lib/claim-review';
+import {
+  allowOpenContentDevSignatureFallback,
+  buildPrincipalOpenContentSignatureVerifier,
+  persistPrincipalEd25519PublicKeyIfNeeded,
+} from '@/lib/open-content-signature-store';
 import { getDb } from '@/lib/db';
 import { getOrcidIdentityForUser } from '@/lib/orcid-lookup';
 import { getPrincipalIdForUser } from '@/lib/principal';
@@ -30,6 +38,7 @@ interface AnswerBody {
   signedPayloadJws?: unknown;
   orcidIdToken?: unknown;
   orcidIdParam?: unknown;
+  signaturePublicKey?: unknown;
 }
 
 const ORCID_ID_RE = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/;
@@ -67,14 +76,14 @@ export async function POST(
     return NextResponse.json({ error: 'invalid-orcid-id' }, { status: 400 });
   }
 
-  const signatureInput = resolveReviewSignatureInput({
+  const signatureInput = resolveOpenContentSignatureInput({
     linkedIdentity,
     clientOrcidId,
     clientSignedPayloadJws:
-      typeof body.orcidIdToken === 'string'
-        ? body.orcidIdToken
-        : typeof body.signedPayloadJws === 'string'
-          ? body.signedPayloadJws
+      typeof body.signedPayloadJws === 'string'
+        ? body.signedPayloadJws
+        : typeof body.orcidIdToken === 'string'
+          ? body.orcidIdToken
           : '',
   });
 
@@ -128,6 +137,13 @@ export async function POST(
   const prevMerkleEntryId = prevRows[0]?.id ?? null;
   const reviewId = uuidv7();
   const merkleEntryId = uuidv7();
+  const signatureVerifier = await buildPrincipalOpenContentSignatureVerifier({
+    db,
+    principalId,
+    submittedPublicKey: body.signaturePublicKey,
+    scope: 'open-question-answer',
+    allowDevFallback: allowOpenContentDevSignatureFallback(),
+  });
 
   const validation = validatePublish({
     kind: 'open_peer_review',
@@ -138,25 +154,22 @@ export async function POST(
     signerPrincipalId: principalId,
     prevMerkleEntryId,
     merkleEntryId,
-    signatureVerifier: () => {
-      console.warn(
-        '[open-question-answer] signature verifier in dev fallback — strict ORCID/JWS verification is a follow-up gate',
-      );
-      return true;
-    },
+    signatureVerifier: signatureVerifier.verifier,
   });
   if (!validation.ok) {
-    const status =
-      validation.reason === 'empty-signed-jws'
-        ? 412
-        : validation.reason === 'signature-verify-failed'
-          ? 403
-          : 400;
-    return NextResponse.json({ error: validation.reason }, { status });
+    return NextResponse.json(
+      { error: validation.reason },
+      { status: publishRejectStatus(validation.reason) },
+    );
   }
 
   try {
     await db.transaction(async (tx) => {
+      await persistPrincipalEd25519PublicKeyIfNeeded(
+        tx,
+        principalId,
+        signatureVerifier.publicKeyToPersist,
+      );
       await tx.insert(schema.provenanceMerkleLog).values({
         id: validation.payload.merkleEntry.id,
         prevEntryId: validation.payload.merkleEntry.prevEntryId,

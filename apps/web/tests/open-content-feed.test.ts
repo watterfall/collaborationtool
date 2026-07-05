@@ -299,9 +299,53 @@ describe('open content public surfaces', () => {
     );
     assert.doesNotMatch(src, /yjsBinary:/);
     assert.doesNotMatch(src, /blobStorageRef:/);
+    assert.match(src, /loadOpenQuestionProvenanceSummary/);
+    assert.match(src, /OpenContentProvenanceSummary/);
     assert.match(src, /loadOpenQuestionDetailSafely/);
     assert.match(src, /loadOpenDatasetDetailSafely/);
     assert.match(src, /loadOpenSnapshotDetailSafely/);
+  });
+
+  it('public provenance helper verifies hidden payload without leaking it through detail loader', () => {
+    const src = readFileSync(
+      path.join(repoWebSrc, 'lib/open-content-provenance-query.ts'),
+      'utf8',
+    );
+    assert.match(src, /assessOpenContentProvenance/);
+    assert.match(src, /loadOpenReviewProvenanceSummary/);
+    assert.match(src, /loadOpenQuestionVerificationBundle/);
+    assert.match(src, /verificationMode: 'public-replayable'/);
+    assert.match(src, /verificationMode: 'server-summary-only'/);
+    assert.match(src, /redactedFields: \['blobStorageRef'\]/);
+    assert.match(src, /redactedFields: \['yjsBinaryBase64'\]/);
+    assert.match(src, /schema\.provenanceMerkleLog\.contentHash/);
+    assert.match(src, /schema\.principal\.ed25519PublicKey/);
+    assert.match(src, /schema\.openPeerReview\.evidenceRefs/);
+    assert.match(src, /schema\.openDataset\.blobStorageRef/);
+    assert.match(src, /schema\.shareSnapshot\.yjsBinary/);
+  });
+
+  it('public provenance API exposes record and review summaries without auth', () => {
+    const src = readFileSync(
+      path.join(
+        repoWebSrc,
+        'app/api/open-content/provenance/[kind]/[id]/route.ts',
+      ),
+      'utf8',
+    );
+    assert.match(src, /loadOpenQuestionDetailSafely/);
+    assert.match(src, /loadOpenDatasetDetailSafely/);
+    assert.match(src, /loadOpenSnapshotDetailSafely/);
+    assert.match(src, /loadOpenQuestionVerificationBundle/);
+    assert.match(src, /loadOpenReviewVerificationBundle/);
+    assert.match(src, /OpenContentVerificationBundle/);
+    assert.match(src, /reviewerOrcidId/);
+    assert.match(src, /packageName: '@collaborationtool\/open-content'/);
+    assert.match(src, /verify:provenance <file-or-url>/);
+    assert.match(src, /publicReplayableKinds/);
+    assert.match(src, /serverSummaryOnlyKinds/);
+    assert.match(src, /generatedAt/);
+    assert.doesNotMatch(src, /auth\.api\.getSession/);
   });
 
   it('open question detail page mounts the ORCID answer form', () => {
@@ -311,6 +355,7 @@ describe('open content public surfaces', () => {
     );
     assert.match(src, /AnswerOpenQuestionForm/);
     assert.match(src, /loadOpenQuestionDetailSafely/);
+    assert.match(src, /RecordSideMeta item=\{item\} provenance=\{provenance\}/);
   });
 
   it('answer route writes a Merkle-linked open peer review with auth', () => {
@@ -321,6 +366,9 @@ describe('open content public surfaces', () => {
     assert.match(src, /auth\.api\.getSession/);
     assert.match(src, /validateOpenQuestionAnswer/);
     assert.match(src, /buildOpenQuestionAnswerContent/);
+    assert.match(src, /buildPrincipalOpenContentSignatureVerifier/);
+    assert.match(src, /persistPrincipalEd25519PublicKeyIfNeeded/);
+    assert.match(src, /signaturePublicKey/);
     assert.match(src, /schema\.provenanceMerkleLog/);
     assert.match(src, /schema\.openPeerReview/);
     assert.match(src, /contentHashHex/);
@@ -338,6 +386,9 @@ describe('open content public surfaces', () => {
     assert.match(src, /fetch\(`\/api\/open-question\/\$\{questionId\}\/answer`/);
     assert.match(src, /JSON\.stringify/);
     assert.match(src, /evidenceRefs: refs/);
+    assert.match(src, /signaturePublicKey/);
+    assert.match(src, /signedPayloadJws/);
+    assert.match(src, /answer-signature-material/);
   });
 
   it('document open-question route publishes Merkle-linked questions from editor docs', () => {
@@ -350,6 +401,9 @@ describe('open content public surfaces', () => {
       'utf8',
     );
     assert.match(src, /buildOpenQuestionPublishContent/);
+    assert.match(src, /buildPrincipalOpenContentSignatureVerifier/);
+    assert.match(src, /persistPrincipalEd25519PublicKeyIfNeeded/);
+    assert.match(src, /signaturePublicKey/);
     assert.match(src, /loadDocumentOpenPublishContext/);
     assert.match(helperSrc, /loadPrincipalContext/);
     assert.match(helperSrc, /block\.commit/);
@@ -373,12 +427,18 @@ describe('open content public surfaces', () => {
       'utf8',
     );
     assert.match(datasetSrc, /buildOpenDatasetPublishContent/);
+    assert.match(datasetSrc, /buildPrincipalOpenContentSignatureVerifier/);
+    assert.match(datasetSrc, /persistPrincipalEd25519PublicKeyIfNeeded/);
+    assert.match(datasetSrc, /signaturePublicKey/);
     assert.match(datasetSrc, /schema\.provenanceMerkleLog/);
     assert.match(datasetSrc, /schema\.openDataset/);
     assert.match(datasetSrc, /contentHashHex/);
     assert.match(datasetSrc, /\/open\/dataset/);
 
     assert.match(snapshotSrc, /buildShareSnapshotPublishContent/);
+    assert.match(snapshotSrc, /buildPrincipalOpenContentSignatureVerifier/);
+    assert.match(snapshotSrc, /persistPrincipalEd25519PublicKeyIfNeeded/);
+    assert.match(snapshotSrc, /signaturePublicKey/);
     assert.match(snapshotSrc, /schema\.provenanceMerkleLog/);
     assert.match(snapshotSrc, /schema\.shareSnapshot/);
     assert.match(snapshotSrc, /permalinkHash/);
@@ -408,8 +468,32 @@ describe('open content public surfaces', () => {
     assert.match(panelSrc, /\/api\/document\/\$\{documentId\}\/open-dataset/);
     assert.match(panelSrc, /\/api\/document\/\$\{documentId\}\/share-snapshot/);
     assert.match(panelSrc, /open-ledger-publish-panel/);
+    assert.match(panelSrc, /open-ledger-signature-material/);
+    assert.match(panelSrc, /signaturePublicKey/);
+    assert.match(panelSrc, /signedPayloadJws/);
     assert.match(panelSrc, /pmDocToMarkdown/);
     assert.match(panelSrc, /Published to ledger/);
+  });
+
+  it('public record sidebar exposes verifiable provenance status', () => {
+    const src = readFileSync(
+      path.join(repoWebSrc, 'app/open/record-ui.tsx'),
+      'utf8',
+    );
+    assert.match(src, /provenanceStatusLabel/);
+    assert.match(src, /content hash/);
+    assert.match(src, /public key/);
+    assert.match(src, /review\.provenance\.contentHashHex/);
+    assert.match(src, /review\.provenance\.publicKeyFingerprint/);
+    assert.match(src, /provenanceApiHref/);
+    assert.match(src, /\/api\/open-content\/provenance\/\$\{item\.kind\}/);
+    assert.match(src, /Provenance JSON/);
+    assert.match(src, /verification packet/);
+    assert.match(src, /verify:provenance provenance\.json/);
+    assert.match(src, /Download JSON/);
+    assert.match(src, /Open JSON/);
+    assert.match(src, /download=\{\`\$\{item\.kind\}-\$\{item\.id\}-provenance\.json`\}/);
+    assert.match(src, /Canonical content, Merkle entry and Ed25519 signature verify/);
   });
 });
 

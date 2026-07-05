@@ -30,9 +30,12 @@ export default async function OpenQuestionDetailPage({
   if (result.unavailable) return <PublicRecordUnavailable />;
   if (!result.record) return <RecordNotFound />;
 
-  const { item, questionMd, reviews } = result.record;
+  const { item, questionMd, provenance, reviews } = result.record;
   return (
-    <OpenRecordLayout item={item} side={<RecordSideMeta item={item} />}>
+    <OpenRecordLayout
+      item={item}
+      side={<RecordSideMeta item={item} provenance={provenance} />}
+    >
       <MarkdownPane content={questionMd} />
       {item.status === 'open' ? (
         <AnswerOpenQuestionForm questionId={item.id} />

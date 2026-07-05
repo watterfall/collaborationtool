@@ -4,6 +4,10 @@ import * as React from 'react';
 import { HeaderControls } from '@/components/chrome/HeaderControls';
 import type { OpenFeedItem } from '@/lib/open-content-feed';
 import type { OpenReviewDetail } from '@/lib/open-content-detail-query';
+import type {
+  OpenContentProvenanceStatus,
+  OpenContentProvenanceSummary,
+} from '@/lib/open-content-provenance';
 
 export function OpenPublicChrome({ children }: { children: React.ReactNode }) {
   return (
@@ -157,17 +161,42 @@ export function MarkdownPane({ content }: { content: string }) {
   );
 }
 
-export function RecordSideMeta({ item }: { item: OpenFeedItem }) {
+export function RecordSideMeta({
+  item,
+  provenance,
+}: {
+  item: OpenFeedItem;
+  provenance: OpenContentProvenanceSummary;
+}) {
+  const provenanceHref = provenanceApiHref(item);
+  const verifierCommand =
+    'pnpm --filter @collaborationtool/open-content verify:provenance provenance.json';
+  const recordMode = provenanceRecordVerificationMode(item.kind);
   const rows = [
     ['status', item.status],
     ['pid', item.pid ?? 'pending'],
-    ['signed', item.signed ? 'yes' : 'no'],
-    ['merkle', item.merkleLogEntryId],
+    ['integrity', provenanceStatusLabel(provenance.status)],
+    ['algorithm', provenance.signatureAlgorithm ?? 'pending'],
+    ['content hash', provenance.contentHashHex ?? 'unavailable'],
+    ['merkle', provenance.merkleLogEntryId || item.merkleLogEntryId],
+    ['signer', provenance.signerPrincipalId ?? 'unavailable'],
+    ['public key', provenance.publicKeyFingerprint ?? 'not registered'],
     ['reviews', String(item.reviewCount)],
   ];
   return (
     <section className="flex flex-col gap-3">
       <p className="label-cap">provenance</p>
+      <div
+        className="border-y py-3"
+        style={{ borderColor: provenanceStatusColor(provenance.status) }}
+      >
+        <p
+          className="font-serif text-sm italic leading-[1.55]"
+          style={{ color: 'var(--color-ink-2)' }}
+        >
+          {provenanceStatusCopy(provenance.status)}
+        </p>
+      </div>
       <dl className="flex flex-col">
         {rows.map(([label, value]) => (
           <div
@@ -190,6 +219,56 @@ export function RecordSideMeta({ item }: { item: OpenFeedItem }) {
           </div>
         ))}
       </dl>
+      <Link
+        href={provenanceHref}
+        prefetch={false}
+        className="btn-ghost w-fit font-mono text-[11px]"
+      >
+        Provenance JSON
+      </Link>
+      <div
+        className="flex flex-col gap-3 border-y py-3"
+        style={{ borderColor: 'var(--color-hairline)' }}
+      >
+        <div className="grid gap-2">
+          <p className="label-cap">verification packet</p>
+          <dl className="grid gap-2 font-mono text-[11px] leading-[1.45]">
+            <div className="grid grid-cols-[92px_1fr] gap-2">
+              <dt style={{ color: 'var(--color-ink-3)' }}>record</dt>
+              <dd style={{ color: 'var(--color-ink-2)' }}>{recordMode}</dd>
+            </div>
+            <div className="grid grid-cols-[92px_1fr] gap-2">
+              <dt style={{ color: 'var(--color-ink-3)' }}>reviews</dt>
+              <dd style={{ color: 'var(--color-ink-2)' }}>public replay</dd>
+            </div>
+          </dl>
+        </div>
+        <pre
+          className="whitespace-pre-wrap break-all border-l pl-3 font-mono text-[10px] leading-[1.55]"
+          style={{
+            borderColor: 'var(--color-pencil)',
+            color: 'var(--color-ink-2)',
+          }}
+        >
+          {verifierCommand}
+        </pre>
+        <div className="flex flex-wrap gap-3">
+          <a
+            href={provenanceHref}
+            download={`${item.kind}-${item.id}-provenance.json`}
+            className="btn-link font-mono text-[11px]"
+          >
+            Download JSON
+          </a>
+          <Link
+            href={provenanceHref}
+            prefetch={false}
+            className="btn-link font-mono text-[11px]"
+          >
+            Open JSON
+          </Link>
+        </div>
+      </div>
       {item.tags.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {item.tags.map((tag) => (
@@ -208,6 +287,63 @@ export function RecordSideMeta({ item }: { item: OpenFeedItem }) {
       ) : null}
     </section>
   );
+}
+
+function provenanceApiHref(item: OpenFeedItem): string {
+  const routeId =
+    item.href
+      .split('/')
+      .filter((segment) => segment.length > 0)
+      .at(-1) ?? encodeURIComponent(item.id);
+  return `/api/open-content/provenance/${item.kind}/${routeId}`;
+}
+
+function provenanceRecordVerificationMode(kind: OpenFeedItem['kind']): string {
+  if (kind === 'open_question') return 'public replay';
+  return 'server summary';
+}
+
+function provenanceStatusLabel(status: OpenContentProvenanceStatus): string {
+  if (status === 'verified') return 'verified';
+  if (status === 'missing-public-key') return 'missing key';
+  if (status === 'invalid-signature') return 'bad signature';
+  if (status === 'hash-mismatch') return 'hash mismatch';
+  if (status === 'log-mismatch') return 'log mismatch';
+  if (status === 'missing-merkle-entry') return 'missing log';
+  if (status === 'invalid-public-key') return 'bad key';
+  if (status === 'unsigned') return 'unsigned';
+  return 'unavailable';
+}
+
+function provenanceStatusCopy(status: OpenContentProvenanceStatus): string {
+  if (status === 'verified') {
+    return 'Canonical content, Merkle entry and Ed25519 signature verify.';
+  }
+  if (status === 'missing-public-key') {
+    return 'The record is signed, but this signer has no registered public key yet.';
+  }
+  if (status === 'hash-mismatch') {
+    return 'The public payload no longer matches the Merkle content hash.';
+  }
+  if (status === 'log-mismatch') {
+    return 'The entity row and Merkle log disagree on identity or signature.';
+  }
+  if (status === 'invalid-signature') {
+    return 'The stored Ed25519 public key does not verify this payload.';
+  }
+  if (status === 'unsigned') {
+    return 'This record has no signature payload.';
+  }
+  return 'Verification is temporarily unavailable.';
+}
+
+function provenanceStatusColor(status: OpenContentProvenanceStatus): string {
+  if (status === 'verified') return 'var(--color-accent-moss)';
+  if (status === 'missing-public-key' || status === 'unsigned') {
+    return 'var(--color-accent-ox)';
+  }
+  if (status === 'unavailable') return 'var(--color-hairline)';
+  return 'var(--color-accent-ink)';
 }
 
 export function ReviewThread({ reviews }: { reviews: OpenReviewDetail[] }) {
@@ -244,6 +380,9 @@ export function ReviewThread({ reviews }: { reviews: OpenReviewDetail[] }) {
                 <span style={{ color: 'var(--color-ink)' }}>
                   {review.verdict}
                 </span>
+                <span style={{ color: provenanceStatusColor(review.provenance.status) }}>
+                  {provenanceStatusLabel(review.provenance.status)}
+                </span>
                 <span style={{ color: 'var(--color-ink-3)' }}>
                   ORCID {review.reviewerOrcidId}
                 </span>
@@ -266,6 +405,32 @@ export function ReviewThread({ reviews }: { reviews: OpenReviewDetail[] }) {
                   evidence: {review.evidenceRefs.join(', ')}
                 </p>
               ) : null}
+              <dl
+                className="grid gap-x-4 gap-y-2 border-y py-2 font-mono text-[11px] sm:grid-cols-3"
+                style={{
+                  borderColor: 'var(--color-hairline)',
+                  color: 'var(--color-ink-3)',
+                }}
+              >
+                <div className="min-w-0">
+                  <dt className="uppercase tracking-[0.16em]">merkle</dt>
+                  <dd className="break-words text-[10px] leading-[1.45]">
+                    {review.provenance.merkleLogEntryId || review.merkleLogEntryId}
+                  </dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="uppercase tracking-[0.16em]">hash</dt>
+                  <dd className="break-words text-[10px] leading-[1.45]">
+                    {review.provenance.contentHashHex ?? 'unavailable'}
+                  </dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="uppercase tracking-[0.16em]">key</dt>
+                  <dd className="break-words text-[10px] leading-[1.45]">
+                    {review.provenance.publicKeyFingerprint ?? 'not registered'}
+                  </dd>
+                </div>
+              </dl>
             </li>
           ))}
         </ol>

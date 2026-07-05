@@ -78,3 +78,34 @@ Sources:
 ## This Turn's Implementation Slice
 
 This turn updates the public website to expose the research-system diagnosis and product response in one bilingual section. It keeps the existing editorial landing style and avoids introducing a separate marketing aesthetic.
+
+## Continuation Slice: Public Provenance Verification
+
+The next implementation step moves from "signed records exist" to "public records can be inspected." This follows the same external evidence: open science monitoring needs observable practice, reproducibility needs inspectable artifacts, and PID infrastructure only helps when identity, output and contribution metadata are visible at the point of use.
+
+Implemented product response:
+
+1. Add a server-side provenance assessment layer for open questions, datasets and snapshots.
+2. Verify that entity rows agree with their Merkle log entry, content hash and Ed25519 signature.
+3. Extend the same verification path to public peer-review responses, so review labor is not only visible but independently checkable.
+4. Read hidden payload fields only inside the verification helper, preserving the public detail loader boundary that avoids exposing dataset storage refs or snapshot binaries.
+5. Show compact public provenance status: integrity, algorithm, content hash, Merkle entry, signer principal and public-key fingerprint.
+6. Add a public machine-readable provenance endpoint for record + review summaries, giving external auditors a stable JSON surface instead of forcing them to scrape HTML.
+7. Make open questions and peer reviews publicly replayable by returning canonical content, signed payload, Merkle entry and signer public key; keep datasets and snapshots server-verified only when their canonical payload includes hidden storage/archive fields, and declare those redactions explicitly.
+8. Add a shared offline verifier and package script so external researchers can verify public replayable bundles from a downloaded file or provenance URL without trusting the website renderer.
+9. Surface the verifier at the point of use: public record sidebars now expose the JSON packet, download affordance, replay mode and verifier command; provenance JSON embeds package and replay/redaction metadata so the packet remains understandable outside the website.
+
+Updated evidence checked this continuation:
+
+- UNESCO open science monitoring: persistent challenges include fragmented data, limited institutional coordination and low awareness; monitoring is now about measuring practical progress, not only policy alignment.
+- NIH replication and reproducibility initiative: replication, data sharing, standardization, independent replication and incentives are being treated as infrastructure for scientific rigor.
+- EOSC / European open science direction: FAIR data, interoperable services, assessment reform and open science skills remain explicit infrastructure priorities.
+- ORCID / ROR / PID guidance: researcher identity, organizations, outputs, reviews, datasets and funding need persistent, machine-readable links.
+
+Sources:
+
+- https://www.unesco.org/en/articles/step-towards-global-open-science-monitoring
+- https://www.nih.gov/replicationandreproducibility
+- https://digital-strategy.ec.europa.eu/en/policies/open-science-cloud
+- https://info.orcid.org/documentation/integration-best-practices/
+- https://ror.readme.io/docs/orcid

@@ -14,6 +14,9 @@ export function AnswerOpenQuestionForm({ questionId }: { questionId: string }) {
   const [verdict, setVerdict] = React.useState<Verdict>('refines');
   const [bodyMd, setBodyMd] = React.useState('');
   const [evidenceRefs, setEvidenceRefs] = React.useState('');
+  const [signatureOpen, setSignatureOpen] = React.useState(false);
+  const [signaturePublicKey, setSignaturePublicKey] = React.useState('');
+  const [signedPayloadJws, setSignedPayloadJws] = React.useState('');
   const [status, setStatus] = React.useState<
     'idle' | 'submitting' | 'submitted' | 'error'
   >('idle');
@@ -35,6 +38,12 @@ export function AnswerOpenQuestionForm({ questionId }: { questionId: string }) {
         verdict,
         bodyMd,
         evidenceRefs: refs,
+        ...(signaturePublicKey.trim()
+          ? { signaturePublicKey: signaturePublicKey.trim() }
+          : {}),
+        ...(signedPayloadJws.trim()
+          ? { signedPayloadJws: signedPayloadJws.trim() }
+          : {}),
       }),
     });
     if (response.ok) {
@@ -113,6 +122,50 @@ export function AnswerOpenQuestionForm({ questionId }: { questionId: string }) {
           }}
         />
       </label>
+
+      <div
+        className="border-t pt-3"
+        style={{ borderColor: 'var(--color-hairline)' }}
+        data-testid="answer-signature-material"
+      >
+        <button
+          type="button"
+          className="btn-link"
+          onClick={() => setSignatureOpen((value) => !value)}
+        >
+          {signatureOpen ? 'Hide signature · 隐藏签名' : 'Signature · 签名材料'}
+        </button>
+        {signatureOpen ? (
+          <div className="mt-3 grid gap-3">
+            <label className="flex flex-col gap-2">
+              <span className="label-cap">ed25519 public key</span>
+              <input
+                value={signaturePublicKey}
+                onChange={(event) => setSignaturePublicKey(event.target.value)}
+                placeholder="ed25519:..."
+                className="w-full border bg-transparent px-3 py-2 font-mono text-xs outline-none"
+                style={{
+                  borderColor: 'var(--color-hairline)',
+                  color: 'var(--color-ink)',
+                }}
+              />
+            </label>
+            <label className="flex flex-col gap-2">
+              <span className="label-cap">detached signature</span>
+              <textarea
+                value={signedPayloadJws}
+                onChange={(event) => setSignedPayloadJws(event.target.value)}
+                rows={3}
+                className="w-full resize-y border bg-transparent p-3 font-mono text-xs leading-[1.55] outline-none"
+                style={{
+                  borderColor: 'var(--color-hairline)',
+                  color: 'var(--color-ink)',
+                }}
+              />
+            </label>
+          </div>
+        ) : null}
+      </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <button

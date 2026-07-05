@@ -29,6 +29,8 @@
     "drizzle:check": "drizzle-kit check"
   },
   "dependencies": {
+    "@collaborationtool/identity": "workspace:*",
+    "@collaborationtool/open-content": "workspace:*",
     "@collaborationtool/schema": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "postgres": "^3.4.5",
