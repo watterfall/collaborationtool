@@ -8,6 +8,7 @@
 // Public surface:
 //   - VaultSession — open a vault, open documents, watch, flush, close
 //   - loadOrCreateIdentity / signWithKeypair — vault keypair + signing
+//   - createVaultHostServer — stdio ndjson JSON-RPC transport (dev-tier)
 //   - createFileSystemHooks — the vault-fs → doc-store binding (escape hatch)
 //   - deriveDocId / ensureVaultSkeleton / VAULT_CONTROL_DIRS — layout helpers
 
@@ -26,6 +27,16 @@ export { createFileSystemHooks } from './hooks';
 
 export { VaultSession } from './vault-session';
 export type { VaultEvent, VaultWatchHandle } from './vault-session';
+
+export {
+  createVaultHostServer,
+  VAULT_HOST_PROTOCOL_VERSION,
+} from './server';
+export type {
+  VaultHostErrorCode,
+  VaultHostServer,
+  VaultHostServerOptions,
+} from './server';
 
 export {
   loadOrCreateIdentity,

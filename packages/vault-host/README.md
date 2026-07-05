@@ -23,10 +23,32 @@ The Tauri shell (`apps/desktop`) owns native path operations
 (`commands/vault.rs`: validate + create the `.vault/` skeleton, list docs,
 read the plaintext public key); this package owns the CRDT reconcile + signing.
 
-The **transport** that lets the Tauri webview talk to this host (bundling a
-Node runtime + Tauri sidecar spawn + IPC) is deliberately **not** built here —
-it needs a runtime-bundling dependency decision. Until then, `vault-host` is
-consumed as a library (and is fully unit-tested as one).
+## Transport (dev-tier, zero new dependencies)
+
+The webview reaches this host over **stdio ndjson JSON-RPC**:
+
+```
+webview (vault-host-bridge.ts)
+  → tauri invoke vault_host_rpc          (apps/desktop commands/vault_host.rs)
+  → spawn: node --import tsx src/server-main.ts   (system Node, repo checkout)
+  → createVaultHostServer (src/server.ts)
+```
+
+Methods: `host.ping / vault.open|close|watch|unwatch / doc.open|state|
+applyUpdate|flush / identity.load|sign / host.shutdown`. Y.Doc bytes travel
+base64-encoded through the `DocumentHandle` abstract API (the `.yDoc` escape
+hatch stays untouched). Server push events reach the webview on the
+`vault-host://event` Tauri event.
+
+**Deliberately deferred**: bundling a Node runtime into the desktop release
+(Tauri sidecar `externalBin` / Node SEA, ±60MB per platform). That is release
+engineering gated behind the Phase 6 W2-W3 runtime gates — dev machines and
+dogfood run from the repo checkout (`VAULT_HOST_ENTRY` overrides the entry
+path; `VAULT_HOST_NODE` overrides the Node binary). Until it lands, a packaged
+desktop build reports a bilingual "entry not found" error instead of
+pretending vault features work.
+打包 Node runtime 进发行版被显式推迟——dev/dogfood 走仓库 checkout；发行版在
+打包决策落地前会返回双语"未找到入口"错误，而不是假装可用。
 
 ## API
 

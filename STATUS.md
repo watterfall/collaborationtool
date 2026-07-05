@@ -157,10 +157,11 @@ Phase 5 由 improvement-plan-2026-05.md §三 Wave A/B/C/D 4 段 + ADR-0020 §2.
 | 1+3 | 七处文档 SoT 对齐（README / ADR-INDEX 15→20 / system-prompt / Design.md #12#13 / CLAUDE.md / improvement-plan-2026-05 归档）+ `docs/dogfood-runbook.md` | `0fbe438` | ✅ |
 | 2.1 | strict verify 收紧：dev fallback 改显式 opt-in，默认全环境缺 key 即拒 + /api/publish 双语 detail（migration 0017 本体已于 `0d8308b` landed） | `9806158` | ✅ |
 | 2.2 | `packages/vault-host/` 接通 doc-store FileSystemHooks ↔ vault-fs ↔ identity + Tauri vault.rs 3 命令 + vault-bridge.ts | `9e52d2f` | ✅ |
+| 2.3 | **stdio IPC 传输层**（dev-tier，零新依赖）：server.ts 12 方法（host/vault/doc/identity）+ Rust vault_host.rs（spawn 系统 Node + 请求关联 + `vault-host://event`）+ vault-host-bridge.ts typed client；Node runtime 打包显式推迟到 release 工程（ADR-0017 §8 review log） | branch `claude/vault-host-ipc` | ✅ |
 
-测试：vault-host 8 / vault-fs 31 / doc-store 30 / cargo vault 3 / web 524 / db 21 全 PASS；typecheck 全 workspace 0 err。
+测试（2.3 后累计）：vault-host 14 / vault-fs 31 / doc-store 30 / cargo 11 / web 524 / db 21 全 PASS；typecheck 全 workspace 0 err。
 
-剩余：W2-W3 runtime gates（user）· Wave D-5 30 天 dogfood（user）· Node sidecar IPC（AI，需加依赖决策）· nightly verify-merkle-log worker（AI ~1-2 天）。
+剩余：W2-W3 runtime gates（user）· Wave D-5 30 天 dogfood（user）· vault UI 波次接 `vault-host://event` webview 监听（AI）· Node runtime 打包（release 工程，gated on W2-W3）· nightly verify-merkle-log worker（AI ~1-2 天）。
 
 ---
 

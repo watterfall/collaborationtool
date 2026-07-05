@@ -269,3 +269,24 @@ W12 末 dogfood gate retrospective 时统一 review 本 ADR：
 - Yjs subdocuments: https://docs.yjs.dev/api/subdocuments
 - minisign: https://jedisct1.github.io/minisign/
 - Local-first software (Kleppmann et al 2019): https://www.inkandswitch.com/local-first/
+
+---
+
+## 8. Phase 6 W3 Implementation Review Log
+
+### 2026-07-05 — vault-host stdio IPC 传输层（dev-tier，零新依赖）
+
+- **落地**：webview ↔ Node host 真通路 = `vault-host-bridge.ts` → tauri
+  `vault_host_rpc`（`commands/vault_host.rs`，std::process spawn 系统 Node +
+  ndjson JSON-RPC + 请求关联 + `vault-host://event` 事件转发）→
+  `packages/vault-host/src/server{,-main}.ts`（12 方法：host/vault/doc/identity）。
+  Y.Doc 字节 base64 过线，全程走 DocumentHandle 抽象 API（`.yDoc` grep gate 0 命中）。
+- **显式推迟（trade-off）**：打包 Node runtime 进发行版（Tauri sidecar
+  externalBin / Node SEA，±60MB/平台）→ release 工程，gated on W2-W3 runtime
+  gates。代价：发行版在打包落地前 vault 功能返回双语 "entry not found"，
+  不假装可用。dev/dogfood 走仓库 checkout（`VAULT_HOST_ENTRY` / `VAULT_HOST_NODE` 可覆写）。
+- **测试**：vault-host 14（+6 server：ping / 错误路径 / doc 全回路含 applyUpdate→
+  markdown twin / identity sign→verify / shutdown）+ cargo 11（+5 classify_line /
+  entry 解析）+ web 524 + typecheck 全 workspace 0 err。
+- **残余**：webview 侧事件监听（`vault-host://event`）等 vault UI 波次接；
+  identity keypair 缓存于 Node host 进程内存（同信任域，发行版打包时复审）。
