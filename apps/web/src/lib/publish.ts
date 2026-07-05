@@ -290,9 +290,12 @@ export function validateShareSnapshotContent(c: unknown): ValidateContentResult 
  * Convenience for routes that pre-flight body before signature verify.
  */
 export function validateContentForKind(
-  kind: EntityKind,
+  kind: unknown,
   content: unknown,
 ): ValidateContentResult {
+  if (!isEntityKind(kind)) {
+    return { ok: false, reason: 'invalid-kind' };
+  }
   switch (kind) {
     case 'open_question':
       return validateOpenQuestionContent(content);

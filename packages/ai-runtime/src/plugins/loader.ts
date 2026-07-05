@@ -118,7 +118,7 @@ export async function loadAgentPlugin(
 
   let mod: unknown;
   try {
-    mod = await import(pathToFileURL(entry).href);
+    mod = await import(/* webpackIgnore: true */ pathToFileURL(entry).href);
   } catch (cause) {
     throw new PluginLoadError(
       loaded.pluginRoot,

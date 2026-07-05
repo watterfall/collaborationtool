@@ -35,8 +35,8 @@ const repoRoot = path.resolve(here, '../../..');
 test('dogfood G3 #1 — coordinator plugin declares 3 sub-agents', async () => {
   // Look for coordinator plugin sources. Path layout per CLAUDE.md
   // §3: plugins/<name>/{plugin.yaml, prompt.md, agent.ts}.
-  const coordinatorDir = path.join(repoRoot, 'plugins', 'coordinator');
-  expect(existsSync(coordinatorDir), 'plugins/coordinator missing').toBe(true);
+  const coordinatorDir = path.join(repoRoot, 'plugins', 'coordinator-agent');
+  expect(existsSync(coordinatorDir), 'plugins/coordinator-agent missing').toBe(true);
 
   // Aggregate all source files in the coordinator dir for shape match.
   const fs = await import('node:fs/promises');

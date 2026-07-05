@@ -42,7 +42,7 @@ test('dogfood G5 #1 — cross-ref-sync.ts exposes the documented API', async () 
     'CrossRefEntry',
   ]) {
     expect(src, `cross-ref-sync.ts must export ${sym}`).toMatch(
-      new RegExp(`export (function|interface|const) ${sym}\\b`),
+      new RegExp(`export (async function|function|interface|const) ${sym}\\b`),
     );
   }
 

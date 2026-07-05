@@ -468,4 +468,10 @@ describe('validateContentForKind dispatch', () => {
       true,
     );
   });
+
+  it('rejects invalid kind instead of returning undefined', () => {
+    const r = validateContentForKind('not-a-kind', { questionMd: '?', domainTags: [] });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.equal(r.reason, 'invalid-kind');
+  });
 });

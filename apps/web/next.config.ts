@@ -1,7 +1,10 @@
 import type { NextConfig } from 'next';
 import { createRequire } from 'node:module';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
+const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
 // Dedupe yjs to a single resolved file path. Without this, pnpm symlinks
 // + transpilePackages can surface yjs to webpack from two different
@@ -15,6 +18,9 @@ const require = createRequire(import.meta.url);
 const yjsEntry = require.resolve('yjs');
 
 const config: NextConfig = {
+  // The user's home directory has unrelated lockfiles. Pin the trace
+  // root to this monorepo so production builds do not infer /Users/jili.
+  outputFileTracingRoot: workspaceRoot,
   // Drizzle + postgres-js are CommonJS-friendly server-only deps; mark
   // them as external so Next's bundler doesn't try to bundle them into
   // the edge runtime.

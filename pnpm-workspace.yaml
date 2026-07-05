@@ -12,6 +12,10 @@ allowBuilds:
   leveldown: true
   sharp: true
 
+overrides:
+  '@types/react': '^19.2.0'
+  '@types/react-dom': '^19.2.0'
+
 # `apps/sync-gateway` matches `apps/*` and is therefore included
 # automatically; `apps/prototypes/*` is the nested glob for Phase 0
 # prototypes that share the workspace; `plugins/*` is the Phase 2 W2

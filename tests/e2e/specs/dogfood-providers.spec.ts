@@ -45,7 +45,7 @@ test('dogfood G2 #1 — all 4 provider source files expose factory functions', a
     expect(src, `${spec.file} missing factory ${spec.factory}`).toContain(
       `export function ${spec.factory}`,
     );
-    expect(src).toMatch(/runOnce/);
+    expect(src).toMatch(/runAgent/);
   }
 });
 
