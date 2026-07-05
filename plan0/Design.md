@@ -44,6 +44,8 @@ accent · provenance 是布局不是 popup · 中英都是一等公民。
 9. 协作是动词不是名词
 10. 可演化性 > 当下完备
 11. Provenance 即一等数据
+12. 三类产出等价（ADR-0020：Night / Bridge / Day 在 attribution / citation / metric 上完全等价——设计上 Night/Bridge artifact 的视觉分量不低于论文卡片，不做"草稿感"降级处理）
+13. 6 种交互流是双向 metabolic loop（ADR-0020：cross-layer 动线是一等 UI 对象，带 `interaction_mode` 语义；反 always-on——intense engagement 后建议 incubation break，UI 不制造 FOMO）
 
 设计层面对应的具体红线见 §11 reject criteria。
 

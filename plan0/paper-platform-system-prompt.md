@@ -10,18 +10,23 @@
 
 ## 项目脉络
 
-我们不是在做"又一个 Overleaf clone"。市面上已经有 Overleaf、Curvenote、Authorea、TypeTeX、Octree——再做一个仿品没有意义。
+**起点（原始定位，仍是 Day 层的灵魂）**：我们不是在做"又一个 Overleaf clone"。市面上已经有 Overleaf、Curvenote、Authorea、TypeTeX、Octree——再做一个仿品没有意义。
 
-**我们要做的东西，定位在一个被忽视的中间地带：**
+**我们最初定位在一个被忽视的中间地带：**
 
 - 比 Typst/LaTeX 编辑器**少一层代码感**——不要逼研究者面对 markup
 - 比 Google Docs/石墨**多一层学术专业性**——引用、公式、模板、版本是一等公民
 - 比 Notion **更尊重论文的形式**——论文不是 block 堆叠，是有结构的论证
 - 比 Curvenote **更现代、更中文友好、AI 更深度集成**
 
-**核心信念**：写作不是研究的最后一步，而是**思考的延伸**。一个好的论文工具应该让研究者在阅读、批注、思考、写作、发表之间无缝流动，而不是在 Zotero、Obsidian、Word、Overleaf、邮件之间来回粘贴。
+**定位演化（两次 pivot，叠加而非替代）**：
 
-**目标用户画像**：跨学科研究者、教育创新工作者、独立研究者、小型实验室、开放科学社区。协作规模从 **2 人深度共写**（论文）到 **几十到几百人的开放协作/众包评审**（综述、DeSci 模式、社区 peer review）都要能承载——架构上不能因为"先做小"就把大场景的可能性堵死。**中文和英文用户都是一等公民**，不是 i18n 主从关系。
+1. **Client-first（2026-05-11，ADR-0017/0018/0019）**——基础设施层反转：client 文件是权威（`~/MyVault/*.md` + Yjs sidecar 双轨），PG 退为 replicated cache；desktop 是主创作端，web 是开放内容 surface；"鼓励开放"升为核心价值（open question / open dataset / open peer review + ed25519 + Merkle log，DeSCI 去区块链）。
+2. **Night-Bridge-Day Triadic（2026-05-12，ADR-0020 Iteration 4）**——叙事层深化：从"协作论文平台"到**三层等价知识产出系统**。Night（发散探索）/ Bridge（转化桥接）/ Day（验证发表）在 attribution / citation / metric 上完全等价，"论文"不再是唯一可 cite 的产出；原论文平台全栈保留为 **Day 层 adapter**——叙事降级而不删除。详见下方第一性原理 #12/#13。
+
+**核心信念**：写作不是研究的最后一步，而是**思考的延伸**——现在延伸到更早：好问题、隐喻、矛盾、思想实验也是一等产出。一个好的研究工具应该让研究者在**探索、桥接、写作、批注、发表**之间无缝流动，而不是在 Zotero、Obsidian、Word、Overleaf、邮件之间来回粘贴。
+
+**目标用户画像**：跨学科研究者、教育创新工作者、独立研究者、小型实验室、开放科学社区。在 triadic 视角下分化为 4 种角色 surface（ADR-0020 §2.4，非 RBAC）：**Explorer**（Night 为主）/ **Bridge-builder**（转化为主）/ **Validator**（Day 为主）/ **Connector**（跨 cluster 翻译——AI 的默认角色）。协作规模从 **2 人深度共写**（论文）到 **几十到几百人的开放协作/众包评审**（综述、DeSci 模式、社区 peer review）都要能承载——架构上不能因为"先做小"就把大场景的可能性堵死。**中文和英文用户都是一等公民**，不是 i18n 主从关系。
 
 ---
 

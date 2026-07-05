@@ -1,13 +1,13 @@
 # ADR Index · 架构决策记录导航
 
-> 15 ADR 的 single page 导航。**当前状态以根目录 [`STATUS.md`](../STATUS.md) §2 为准**——
+> 20 ADR 的 single page 导航。**当前状态以根目录 [`STATUS.md`](../STATUS.md) §2 为准**——
 > 个别 ADR 的文件头 `Status:` 字段在 promote 后未必每次都同步更新，本 index
 > 给出 reconcile 后的视图（标 † 的项目即文件头滞后）。
 >
 > 模板：[`adr/0000-template.md`](./adr/0000-template.md)。新增 ADR 顺序写
 > `00NN-<slug>.md`，落盘前在本 index 加一行 + 在 STATUS.md §2 表加一行。
 
-最后更新：2026-05-10（Phase 4 W4 backend）
+最后更新：2026-07-05（2026-07 迭代 · 定位收敛——补入 0017-0020 四个 pivot ADR）
 
 ---
 
@@ -31,6 +31,10 @@
 | [0014](./adr/0014-yjs-subdocument-and-crossref.md) | Yjs subdocument 章节级拆分 + cross-reference sync | Proposed | 4 W1（draft）| Phase 4 W5-W6 dogfood gate（50 客户端 stress + cross-doc reference sync） |
 | [0015](./adr/0015-open-peer-review-and-orcid.md) | Open peer review + ORCID-signed reviews | Proposed | 4 W1（draft）| Phase 4 W8 dogfood gate（真 ORCID 端到端 + author reject-review + withdrawn archive） |
 | [0016](./adr/0016-claim-on-claim-review.md) | Claim-on-Claim Review — annotation on claim 的 ORCID-signed provenance lineage | Proposed | 5 Wave B（draft）| Phase 5 Wave B dogfood gate（1 篇双语论文 / 10 claim / 5 真 ORCID reviewer / 公共 review DAG 渲染） |
+| [0017](./adr/0017-client-first-runtime.md) | Client-first Runtime — Desktop Truth + Relay Server + Markdown-Yjs 双轨 | Proposed | 6 W2（3 Spike ✅） | Phase 6 W2-W3 runtime gates（3 平台 binary + notarize/signing）+ ADR-0001 §5.A revision log |
+| [0018](./adr/0018-open-content-mechanisms.md) | Open Content — Open Question / Dataset / Peer Review + Merkle-signed Provenance（DeSCI 去区块链） | Proposed | 6 W2（migration 0016 + publish route ✅） | Phase 6 W6-W7 dogfood gate G4（open question 陌生人回答闭环）+ G8（DOI mint + Merkle log 完整） |
+| [0019](./adr/0019-plugin-runtime-cross-platform.md) | 跨平台 plugin runtime — WASM Extism 为主 + 各 OS 原生沙箱 fallback | Proposed | 6 W2（起草） | Phase 6 W9-W10 dogfood gate G7（3 OS 同一 plugin 安装 + sandbox spawn + secret-reject） |
+| [0020](./adr/0020-night-bridge-day-triadic-architecture.md) | Night-Bridge-Day Triadic — 三层等价知识产出系统（**战略 ADR**，定位权威） | Proposed | 5 W3+ 横跨 5/6（Wave D-1~D-4 契约层 ✅） | 30 天 dogfood gate（每周 ≥5 Night + ≥2 Bridge + ≥1 Day promotion + 6 交互模式触发 ≥4） |
 
 † 文件头 `Status:` 字段未同步 —— Reconcile 视图见 STATUS.md §2 / Phase implementation review log。
 
@@ -62,6 +66,11 @@ Phase 4  ─┬─ ADR-0014  Yjs subdocument（W5-W6 dogfood gate）
 W1-W10   └─ ADR-0015  Open peer review + ORCID（W8 dogfood gate）
                                                        │
 Phase 5  ─┬─ ADR-0016  Claim-on-Claim Review（Wave B kickoff draft；Wave B 末 dogfood gate）
+         └─ ADR-0020  Night-Bridge-Day Triadic（W3+ 起草；横跨 5/6；30 天 dogfood gate）
+                                                       │
+Phase 6  ─┬─ ADR-0017  Client-first runtime（W2 起草；3 Spike ✅；W2-W3 runtime gates）
+W1-W12   ├─ ADR-0018  Open content mechanisms（W2 起草；W6-W7 dogfood gate G4/G8）
+         └─ ADR-0019  跨平台 plugin runtime（W2 起草；W9-W10 dogfood gate G7）
 ```
 
 ---
@@ -82,10 +91,16 @@ Phase 5  ─┬─ ADR-0016  Claim-on-Claim Review（Wave B kickoff draft；Wave
 0009 ←─────┬─ 0014
 0010 ←─────┬─ 0011, 0012, 0013, 0014, 0015
 0011 ←─────┬─ 0014, 0015, 0016
-0012 ←─────┬─ 0013
+0012 ←─────┬─ 0013, 0019
 0014 ←─────┬─ 0015
-0015 ←─────┬─ 0016
+0015 ←─────┬─ 0016, 0018
+0017 ←─────┬─ 0018, 0019, 0020
+0018 ←─────┬─ 0020
 ```
+
+Pivot 层补充：**0001 亦被 0017（§5.A "PG truth"→"PG replicated cache" major revision）与
+0020（PM tree 之外新增 discovery-graph + bridge-layer 两个 first-class data model）修订/扩展**；
+0008 被 0020 重定义（coordinator = 双向 metabolic orchestrator）。
 
 **核心枢纽**：
 
@@ -93,6 +108,8 @@ Phase 5  ─┬─ ADR-0016  Claim-on-Claim Review（Wave B kickoff draft；Wave
 - **ADR-0002**（权限模型）：除了 0005/0009/0013 之外都依赖
 - **ADR-0010**（扩展系统）：Phase 2-4 所有 plugin / sandbox / model / review ADR 都建在它之上
 - **ADR-0008**（agent runtime）：reviewer / researcher / coordinator / open peer review 都引用它
+- **ADR-0017**（client-first）：Phase 6 基础设施枢纽——0018 open content 与 0019 plugin runtime 都建在它之上
+- **ADR-0020**（triadic，战略 ADR）：定位权威——不锁 schema，锁"架构哲学"；后续 feature ADR 0021（discovery-graph schema）/ 0022（bridge-layer schema）/ 0023（triadic UI）受 moratorium 约束，等 30 天 dogfood gate 后起草
 
 ---
 
@@ -130,6 +147,14 @@ Phase 5  ─┬─ ADR-0016  Claim-on-Claim Review（Wave B kickoff draft；Wave
 - [ADR-0015](./adr/0015-open-peer-review-and-orcid.md) ORCID OAuth + JWS-signed review + visibility 矩阵（document-level review）
 - [ADR-0016](./adr/0016-claim-on-claim-review.md) Claim-on-Claim Review（claim-level verdict + reused ORCID-sign + maintenance unverified-claim finding）
 
+### Client-first / 开放科学（Phase 6 pivot）
+- [ADR-0017](./adr/0017-client-first-runtime.md) Desktop truth + relay server + markdown-Yjs 双轨（修订 ADR-0001 §5.A）
+- [ADR-0018](./adr/0018-open-content-mechanisms.md) Open question / dataset / peer review + ed25519 + Merkle log（DeSCI 去区块链）
+- [ADR-0019](./adr/0019-plugin-runtime-cross-platform.md) WASM Extism 为主 + 原生沙箱 fallback
+
+### 定位 / Triadic（战略层）
+- [ADR-0020](./adr/0020-night-bridge-day-triadic-architecture.md) Night-Bridge-Day 三层等价 + 6 InteractionMode + 4 角色 + contribution-graph attribution
+
 ---
 
 ## 5. 读 ADR 的顺序建议
@@ -154,6 +179,16 @@ Phase 5  ─┬─ ADR-0016  Claim-on-Claim Review（Wave B kickoff draft；Wave
 **做 Phase 5 Wave B 工作**先看：
 
 - Wave B Claim-on-Claim Review → ADR-0016 + ADR-0011（claim 基线）+ ADR-0015（ORCID 签名机制复用）+ ADR-0008（AI ↔ 人类区分）
+
+**做 Phase 6 client-first / open-content 工作**先看：
+
+- desktop / vault-fs / doc-store → ADR-0017 + client-first spec（`docs/superpowers/specs/2026-05-11-client-first-pivot-design.md`）
+- publish / identity / Merkle log → ADR-0018 + ADR-0015（签名机制前身）
+- plugin 跨平台 → ADR-0019 + ADR-0012（原生沙箱基线）
+
+**理解项目定位 / 做 triadic（Night/Bridge/Day）工作**先看：
+
+- ADR-0020 全文（战略 ADR，定位权威）+ system-prompt 第一性原理 #12/#13 + `packages/discovery-graph` / `packages/bridge-layer` 类型 SoT
 
 ---
 
