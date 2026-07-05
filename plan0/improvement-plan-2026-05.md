@@ -1,9 +1,15 @@
 # 改进计划 · 2026-05（Council 评审驱动）
 
+> ⚠️ **历史文档（2026-07-05 归档）**：本计划的 Wave A-D 已全部执行完毕（Phase 5 closeout landed）。
+> 当前迭代计划见 [`improvement-plan-2026-07.md`](./improvement-plan-2026-07.md)；
+> 当前 phase 承接 doc 见 [`phase-6-plan-stub.md`](./phase-6-plan-stub.md)。
+> **§四 砍/推清单及其复活条件仍然有效**（引用它不受本归档影响）。
+> 注意"Wave D"双关：本文档 §三 Wave D = Phase 5 closeout（已完成）≠ ADR-0020 §2.7 Triadic Wave D-1~D-5。
+
 > 基于 `.brainstorm/COUNCIL.md` + 5 份 role 报告（产品/架构/用户/AI/设计），调整 Phase 4 收尾 + Phase 5 范围。
 > 目的：把 D1-D9 内核差异化翻译成用户可感知的动作 + 堵 3 处 ADR-vs-代码诚实度赤字 + 砍掉无锚点 feature。
 > 日期：2026-05-10。
-> Status：**Proposed** — 待项目所有者评审 / 调整 / kickoff。
+> Status：**Done** —— 已执行完毕并归档（原 Proposed → 项目所有者 kickoff → Phase 5 全 Wave landed）。
 
 ---
 

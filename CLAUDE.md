@@ -24,6 +24,8 @@
 9. 协作是动词不是名词（人 / agent / 社区 / reviewer 异质叠加）
 10. 可演化性 > 当下完备（Phase 1 必须扛 Phase 3/4 场景）
 11. Provenance 即一等数据（每段文字、每次 AI 介入可追溯）
+12. 三类产出等价（ADR-0020：Night / Bridge / Day 三层在 attribution / citation / metric 上完全等价，论文不是唯一可 cite 产出）
+13. 6 种交互流是双向 metabolic loop（ADR-0020：cross-layer reference 必带 `interaction_mode`；coordinator 是双向 orchestrator；反 always-on）
 
 冲突时按上面顺序判断。
 
@@ -38,10 +40,10 @@
 2. [`plan0/paper-platform-system-prompt.md`](./plan0/paper-platform-system-prompt.md) — 项目所有者的技术品味与第一性原理
 3. 当前 phase 的 plan stub：`plan0/phase-{0,1,2,3,4}-execution-plan.md` /
    `phase-*-plan-stub.md`（看 STATUS §1 知道当前在哪个 phase）
-4. [`plan0/improvement-plan-2026-05.md`](./plan0/improvement-plan-2026-05.md)
-   — Council 评审驱动的 Phase 4 W6-W10 + Phase 5 范围调整（Proposed），含
-   砍 / 推 Phase 6+ 清单 + ADR 影响表 + 9 项 dogfood gate +
-   §11 Design.md 对齐章节
+4. [`plan0/improvement-plan-2026-07.md`](./plan0/improvement-plan-2026-07.md)
+   — 当前迭代计划（定位收敛 + client-first substrate + dogfood 铺路）。
+   前序 [`improvement-plan-2026-05.md`](./plan0/improvement-plan-2026-05.md) 已执行完毕
+   归档，但其 **§四 砍 / 推清单 + 复活条件仍然有效**
 5. [`plan0/Design.md`](./plan0/Design.md) — 设计 SoT（2026-06-03 **v2**：warmth +
    concretization）：tokens（颜色 / 字体 / 间距 / 半径 / 描边 + v2 暖色 / 无阴影立体 /
    motion / accent wash）+ 9 surface 准则 + **reject criteria 16 条** +
@@ -326,11 +328,14 @@ W6.1 + W7.2 → 阻塞 W6.3 DOI 一键。
 - **Phase 1 SQL grant 已废弃**：用 document-level invitation flow 替代
 - **CrossRef MCP 默认走 in-memory mock**（5 条 fixture）；真 stdio MCP 要
   设 `CROSSREF_MCP_COMMAND`
-- **3 处 ADR-vs-代码诚实度赤字**（Phase 4 W7-W8 必须堵）：
-  (1) `packages/doc-store/` ADR-0001 §5.D 承诺但从未存在 → W7.1 落地；
-  (2) `AgentPluginInput.anthropic` 仍在 → W7.2 改 `provider: ModelProvider`；
-  (3) macOS / Windows sandbox 是字符串占位 → W8 真写 OR UI 显式拦截。
-  详见 `.brainstorm/role-architecture.md` + `improvement-plan-2026-05.md §五`
+- **诚实度赤字现状（2026-07-05 复核）**：原 3 处已消解 2 处——
+  (1) `packages/doc-store/` ✅ 已真实现（filesystem-backend + yjs-backend）；
+  (2) `AgentPluginInput.provider: ModelProvider` ✅ 已迁移；
+  (3) macOS / Windows sandbox **仍是占位**，但属公开披露式（UI 显式拦截 +
+  i18n 文案告知），ADR-0019 主路径是 WASM Extism，不要先修 fallback
+- **"Wave D" 一词双关**：improvement-plan-2026-05 §三 Wave D（Phase 5
+  closeout，已完成）≠ ADR-0020 §2.7 Triadic Wave D-1~D-5（D-1~D-4 契约层已
+  landed；D-5 = 30 天 dogfood，用户亲自）。引用时写全称
 - **Phase 5+ 砍 / 推清单**：spatial canvas / 章节 fork-merge UI / Loro 切换
   评估 / 跨设备 storage adapter / plugin marketplace —— 触碰前先读
   `improvement-plan-2026-05.md §四`，每条都有"复活条件"

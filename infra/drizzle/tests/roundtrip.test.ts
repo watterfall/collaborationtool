@@ -563,6 +563,58 @@ if (SHOULD_SKIP) {
       assert.ok(principalsAfter[0]!.createdAt.getTime() <= before + 1000);
     });
 
+    // ---------- ADR-0018 principal.ed25519_public_key (migration 0017) ----------
+
+    it('principal.ed25519_public_key round-trips, is unique on non-null keys, and permits multiple NULLs', async () => {
+      const keyA = `ed25519:${'a'.repeat(64)}`;
+
+      const idA = `service:ed25519-rt-${newId()}`;
+      const idNull1 = `service:ed25519-null-${newId()}`;
+      const idNull2 = `service:ed25519-null-${newId()}`;
+      await dbHandle.db.insert(schema.principal).values([
+        { id: idA, kind: 'service', displayName: 'ed25519 round-trip', ed25519PublicKey: keyA },
+        { id: idNull1, kind: 'service', displayName: 'no key 1' },
+        { id: idNull2, kind: 'service', displayName: 'no key 2' },
+      ]);
+
+      // stored key round-trips byte-for-byte
+      const rowA = await dbHandle.db
+        .select({ ed25519PublicKey: schema.principal.ed25519PublicKey })
+        .from(schema.principal)
+        .where(eq(schema.principal.id, idA));
+      assert.equal(rowA[0]?.ed25519PublicKey, keyA);
+
+      // exactly one principal holds keyA (unique index)
+      const holders = await dbHandle.db
+        .select({ id: schema.principal.id })
+        .from(schema.principal)
+        .where(eq(schema.principal.ed25519PublicKey, keyA));
+      assert.equal(holders.length, 1);
+
+      // a second principal cannot reuse a non-null key
+      await assert.rejects(
+        dbHandle.db.insert(schema.principal).values({
+          id: `service:ed25519-dup-${newId()}`,
+          kind: 'service',
+          displayName: 'ed25519 duplicate',
+          ed25519PublicKey: keyA,
+        }),
+        matchPgError('principal_ed25519_public_key_uniq'),
+      );
+
+      // NULLs are distinct → the two unregistered principals both persist
+      const null1 = await dbHandle.db
+        .select({ id: schema.principal.id })
+        .from(schema.principal)
+        .where(eq(schema.principal.id, idNull1));
+      const null2 = await dbHandle.db
+        .select({ id: schema.principal.id })
+        .from(schema.principal)
+        .where(eq(schema.principal.id, idNull2));
+      assert.equal(null1.length, 1);
+      assert.equal(null2.length, 1);
+    });
+
     // raw SQL escape hatch verified
     it('raw sql tag works for ad-hoc queries', async () => {
       const result = await dbHandle.db.execute(rawSql`SELECT 1 AS x`);

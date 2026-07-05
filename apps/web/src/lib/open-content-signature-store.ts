@@ -10,6 +10,8 @@ import {
   normalizeEd25519PublicKeyText,
 } from '@/lib/open-content-signature';
 
+export { allowOpenContentDevSignatureFallback } from '@/lib/open-content-signature';
+
 export interface PrincipalSignatureVerifierInput {
   db: DbExecutor;
   principalId: string;
@@ -82,8 +84,4 @@ export async function persistPrincipalEd25519PublicKeyIfNeeded(
         isNull(schema.principal.ed25519PublicKey),
       ),
     );
-}
-
-export function allowOpenContentDevSignatureFallback(): boolean {
-  return process.env['NODE_ENV'] !== 'production';
 }

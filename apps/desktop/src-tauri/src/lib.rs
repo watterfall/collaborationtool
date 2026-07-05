@@ -36,6 +36,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::ollama::detect_ollama_available,
             commands::system::open_external_url,
+            commands::vault::vault_open,
+            commands::vault::vault_list_documents,
+            commands::vault::vault_public_key,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

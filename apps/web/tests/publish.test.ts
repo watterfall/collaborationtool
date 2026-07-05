@@ -14,10 +14,12 @@ import {
 import { generateKeypair, sign, toHex } from '@collaborationtool/identity';
 
 import {
+  allowOpenContentDevSignatureFallback,
   buildOpenContentSignatureVerifier,
   normalizeEd25519PublicKeyText,
   parseEd25519PublicKey,
   parseEd25519Signature,
+  signatureRejectDetail,
 } from '@/lib/open-content-signature';
 import { assessOpenContentProvenance } from '@/lib/open-content-provenance';
 import {
@@ -159,6 +161,68 @@ describe('open content Ed25519 signature verifier', () => {
     assert.equal(verifier('sig', { x: 1 }), false);
   });
 
+  it('rejects a valid signature when no public key is on file and dev fallback is off (strict)', () => {
+    // 缺 key 即拒：even a genuinely-signed payload cannot be accepted
+    // without a key to verify it against. This is the strict-verify path
+    // that guards every non-dev environment (prod + default self-host).
+    const kp = generateKeypair();
+    const payload = { questionMd: '# Real signature, no key on file', domainTags: ['methods'] };
+    const signatureHex = toHex(sign(canonicalBytes(payload), kp.secretKey));
+
+    const verifier = buildOpenContentSignatureVerifier({
+      scope: 'test',
+      publicKey: null,
+      allowDevFallback: false,
+    });
+    assert.equal(verifier(signatureHex, payload), false);
+  });
+
+  it('skips verification only when no key is present AND dev fallback is explicitly on', () => {
+    const verifier = buildOpenContentSignatureVerifier({
+      scope: 'test',
+      publicKey: null,
+      allowDevFallback: true,
+    });
+    // Dev escape hatch: no key + opted-in fallback accepts an unverified sig.
+    assert.equal(verifier('anything', { x: 1 }), true);
+  });
+
+  it('allowOpenContentDevSignatureFallback: off by default, opt-in only, never in production', () => {
+    const savedNodeEnv = process.env['NODE_ENV'];
+    const savedFlag = process.env['OPEN_CONTENT_DEV_SIGNATURE_FALLBACK'];
+    const restore = (key: string, val: string | undefined) => {
+      if (val === undefined) Reflect.deleteProperty(process.env, key);
+      else Object.assign(process.env, { [key]: val });
+    };
+    try {
+      // Non-production, flag unset → strict (no skip).
+      Object.assign(process.env, { NODE_ENV: 'development' });
+      Reflect.deleteProperty(process.env, 'OPEN_CONTENT_DEV_SIGNATURE_FALLBACK');
+      assert.equal(allowOpenContentDevSignatureFallback(), false);
+
+      // Non-production + explicit opt-in → skip allowed.
+      Object.assign(process.env, { OPEN_CONTENT_DEV_SIGNATURE_FALLBACK: '1' });
+      assert.equal(allowOpenContentDevSignatureFallback(), true);
+
+      // Production ignores the flag entirely.
+      Object.assign(process.env, { NODE_ENV: 'production' });
+      assert.equal(allowOpenContentDevSignatureFallback(), false);
+    } finally {
+      restore('NODE_ENV', savedNodeEnv);
+      restore('OPEN_CONTENT_DEV_SIGNATURE_FALLBACK', savedFlag);
+    }
+  });
+
+  it('signatureRejectDetail returns a bilingual detail for signature reasons only', () => {
+    const failed = signatureRejectDetail('signature-verify-failed');
+    assert.ok(failed && /Ed25519/.test(failed) && /公钥/.test(failed));
+    const threw = signatureRejectDetail('signature-verify-threw');
+    assert.ok(threw && /签名验证/.test(threw));
+    // Non-signature reasons carry no detail (route omits the field).
+    assert.equal(signatureRejectDetail('invalid-kind'), null);
+    assert.equal(signatureRejectDetail('content-hash-mismatch'), null);
+  });
+
   it('parses strict public keys and raw signatures only', () => {
     const kp = generateKeypair();
     const payload = { x: 1 };
@@ -215,6 +279,10 @@ describe('open content principal key persistence contract', () => {
       path.join(repoWebSrc, 'lib/open-content-signature-store.ts'),
       'utf8',
     );
+    const signatureSrc = readFileSync(
+      path.join(repoWebSrc, 'lib/open-content-signature.ts'),
+      'utf8',
+    );
 
     assert.match(routeSrc, /buildPrincipalOpenContentSignatureVerifier/);
     assert.match(routeSrc, /persistPrincipalEd25519PublicKeyIfNeeded/);
@@ -222,7 +290,9 @@ describe('open content principal key persistence contract', () => {
     assert.match(storeSrc, /schema\.principal\.ed25519PublicKey/);
     assert.match(storeSrc, /submittedPublicKey !== storedPublicKey/);
     assert.match(storeSrc, /isNull\(schema\.principal\.ed25519PublicKey\)/);
-    assert.match(storeSrc, /process\.env\['NODE_ENV'\] !== 'production'/);
+    // Dev-fallback gate is production-aware AND opt-in only (缺 key 默认拒).
+    assert.match(signatureSrc, /process\.env\['NODE_ENV'\] !== 'production'/);
+    assert.match(signatureSrc, /OPEN_CONTENT_DEV_SIGNATURE_FALLBACK/);
   });
 });
 

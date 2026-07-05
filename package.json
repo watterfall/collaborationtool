@@ -61,6 +61,8 @@
     "bridge-layer:typecheck": "pnpm --filter @collaborationtool/bridge-layer typecheck",
     "vault-fs:test": "pnpm --filter @collaborationtool/vault-fs test",
     "vault-fs:typecheck": "pnpm --filter @collaborationtool/vault-fs typecheck",
+    "vault-host:test": "pnpm --filter @collaborationtool/vault-host test",
+    "vault-host:typecheck": "pnpm --filter @collaborationtool/vault-host typecheck",
     "identity:test": "pnpm --filter @collaborationtool/identity test",
     "identity:typecheck": "pnpm --filter @collaborationtool/identity typecheck",
     "open-content:test": "pnpm --filter @collaborationtool/open-content test",
