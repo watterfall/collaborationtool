@@ -2,3 +2,4 @@
 pub mod ollama;
 pub mod system;
 pub mod vault;
+pub mod vault_host;

@@ -9,6 +9,7 @@ use tauri_plugin_deep_link::DeepLinkExt;
 
 pub fn run() {
     tauri::Builder::default()
+        .manage(commands::vault_host::VaultHostState::default())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_os::init())
@@ -39,6 +40,10 @@ pub fn run() {
             commands::vault::vault_open,
             commands::vault::vault_list_documents,
             commands::vault::vault_public_key,
+            commands::vault_host::vault_host_start,
+            commands::vault_host::vault_host_rpc,
+            commands::vault_host::vault_host_status,
+            commands::vault_host::vault_host_stop,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
