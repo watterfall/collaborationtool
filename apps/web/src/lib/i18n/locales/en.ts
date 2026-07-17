@@ -35,8 +35,31 @@ export const en: LocaleDict = {
       settings: 'Settings',
       newOrg: 'New org',
       triadic: 'Triadic',
+      vault: 'Vault',
       brand: 'Inquiry Studio · 探索工作室',
     },
+  },
+  vault: {
+    title: 'Vault',
+    titleEn: '本地文库',
+    lede: 'Open your own vault on the desktop — files live on your disk; edits flush straight to markdown.',
+    webFallback:
+      'The local vault is desktop-only. The web build is the open-content surface; open this page inside the desktop app.',
+    webFallbackEn: '本地文库仅在桌面端可用。请在桌面 app 中打开本页。',
+    rootLabel: 'Vault path / Vault 路径',
+    rootPlaceholder: '/Users/you/MyVault',
+    open: 'Open vault / 打开 vault',
+    opening: 'Opening… / 打开中…',
+    hostError:
+      'Could not start the local host (needs system Node or a dev checkout). / 无法启动本地 host（需要系统 Node 或 dev checkout）。',
+    documents: 'Documents / 文档',
+    noDocuments: 'No markdown documents in this vault yet.',
+    noDocumentsEn: '此 vault 还没有 markdown 文档。',
+    back: '← Back to list / 返回列表',
+    externalEdit: 'File changed on disk / 文件在外部被修改',
+    reload: 'Reload / 重新加载',
+    dismiss: 'Dismiss / 忽略',
+    watching: 'Watching / 监听中',
   },
   landing: {
     meta: {

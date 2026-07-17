@@ -5,6 +5,15 @@
 // future render packages.
 
 export { Editor, type EditorProps } from './Editor';
+export { VaultEditor, type VaultEditorProps } from './VaultEditor';
+export {
+  createVaultDocBinding,
+  seedVaultDocIfEmpty,
+  isVaultFragmentEmpty,
+  VAULT_COLLABORATION_FIELD,
+  VAULT_EXTERNAL_ORIGIN,
+  type VaultDocBinding,
+} from './vault/binding';
 export type { Editor as TipTapEditor } from '@tiptap/core';
 export { paperSchema, freshPaperSchema } from './schema';
 export {
