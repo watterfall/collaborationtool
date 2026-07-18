@@ -63,9 +63,9 @@ export interface DocumentHandle {
    * **Business logic MUST use the abstract API below** (`getText` /
    * `getMap` / `getXmlFragment` / `transact` / `observe` /
    * `encodeStateAsUpdate` / `encodeStateVector` / `encodeDelta` /
-   * `applyUpdate`). The grep gate `grep -rn '\.yDoc\b' apps packages
-   * --include='*.ts' | grep -v -E '(doc-store/src|sync/setup|sync-gateway/src/backends/y-sweet|tests/yjs-backend|tests/subdocument)'`
-   * must return 0 results.
+   * `applyUpdate`). The escape-hatch gate is now enforced by
+   * `pnpm docstore:gate` (`scripts/check-ydoc-gate.sh`) — it must pass
+   * (0 new call sites) before merge; the allow-list lives in that script.
    *
    * Direct mutation is allowed but logically owned by this handle — do
    * not destroy it.

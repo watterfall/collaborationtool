@@ -89,11 +89,11 @@
 
 ### Wave A3 · 真脊柱 e2e + 抽象收敛（~5-7 天）
 
-| 项 | 动作 |
-|----|------|
-| A3.1 | 一条真行为 e2e：web 编辑 → gateway → snapshot → PG → 导出 |
-| A3.2 | vault 落盘往返 e2e（A1 产物防腐） |
-| A3.3 | doc-store 三个 Y.Doc 直穿点收敛 + getText/getMap 返回值抽象化（引擎可换性保险，~2-3 天） |
+| 项 | 动作 | 状态 |
+|----|------|------|
+| A3.1 | web 脊柱：`two-author-mvp.spec.ts` 已是真 HTTP 行为测试（注册→编辑器→agent invoke→propose/reject/accept→contribution），覆盖充分——**不重造** | ✅ 已存在 |
+| A3.2 | vault 落盘往返真脊柱：`vault-host/tests/vault-native-spine.test.ts`——带 frontmatter 的 Night 文件走 createFile → doc.open → 编辑 body → flush → **头部字节保全 + body 含编辑 + sidecar 落盘 + 冷重开恢复**（现有 round-trip 从无 frontmatter 起步不设防，此为真防腐） | ✅ `A3` |
+| A3.3 | doc-store `.yDoc` gate 从 types.ts 注释里的手动 grep 变**可运行门** `pnpm docstore:gate`（`scripts/check-ydoc-gate.sh`，允许清单 = 三 binding 直穿点 + vault 绑定 + drift-detector 自有字段）；确认 A1/A2 零新泄漏。**getText/getMap 返回值全抽象化不做**——审计判定 = 3-4 周等价件替换不增真实度，且 Yjs 14 attributed history 在路上（改向 ADR-0001 §8 trigger 决定） | ✅ `A3`（缩范围，诚实标注） |
 
 ### Wave A4 · 格局修正三小件（~3-4 天）
 
