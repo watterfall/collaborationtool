@@ -1,6 +1,6 @@
 # Improvement Plan · 2026-08 —— Vault-native Triadic 统一升级（路线 A）
 
-> Status: In progress · Date: 2026-07-18 · Driver: 三路系统调研（代码真实度审计 + 2026 年中外部格局刷新 + 结构性死锁诊断）
+> Status: Wave A1-A4 landed（2026-07-18，未开 PR）· Driver: 三路系统调研（代码真实度审计 + 2026 年中外部格局刷新 + 结构性死锁诊断）
 > 前序：`improvement-plan-2026-07.md`（Wave 1/2/3 已完成）→ 本文档
 > 决策：项目所有者 2026-07-18 拍板路线 A（三选一，见 §二）
 
@@ -97,11 +97,11 @@
 
 ### Wave A4 · 格局修正三小件（~3-4 天）
 
-| 项 | 动作 |
-|----|------|
-| A4.1 | C2PA + W3C VC 容器方向写进 ADR-0018 review log（本轮只定方向不实现） |
-| A4.2 | sidecar 打包 Deno compile spike（量化 +90MB 对总包体冲击，产 decision memo） |
-| A4.3 | nightly verify-merkle-log worker（挂账已久，~1-2 天） |
+| 项 | 动作 | 状态 |
+|----|------|------|
+| A4.1 | C2PA + W3C VC 容器方向写进 ADR-0018 §6 review log（Merkle+ed25519 作签名后端，容器对标 C2PA manifest + 内嵌 VC；本轮只定方向，实现 gated on 真发布流量）；DeSci 区块链维持明确不做 | ✅ |
+| A4.2 | sidecar 打包 decision memo `docs/superpowers/reports/2026-07-18-sidecar-packaging-deno-compile.md`——Deno compile 为主（唯一真自包含）/ Bun 备选 / Node SEA 拒；标注 +90MB 包体税 must-measure + fallback 策略；实施 gated on release 工程 | ✅ |
+| A4.3 | nightly verify-merkle-log worker `apps/agent-worker/src/verify-merkle-log.ts`——纯 orchestrator 包 verifyMerkleChain（4 结构不变量）+ 可选注入单行验签 + loadMerkleRows；8 单测；agent-worker 32→40。真 ed25519 验签作可选注入、缺省不跑（需 publish 侧暴露 canonical payload）；调度/告警 gated on 部署 | ✅ |
 
 ### → dogfood 开跑
 
