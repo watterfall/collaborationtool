@@ -60,6 +60,16 @@ export const en: LocaleDict = {
     reload: 'Reload / 重新加载',
     dismiss: 'Dismiss / 忽略',
     watching: 'Watching / 监听中',
+    nightHeading: 'Night thoughts / 夜间想法',
+    nightEmpty: 'No night thoughts yet — your 3am ideas deserve an unwatched home.',
+    nightEmptyEn: '还没有夜间想法——凌晨三点的念头值得一个不被监视的家。',
+    newThought: 'New thought / 新想法',
+    thoughtTitle: 'Title / 标题',
+    thoughtBody: 'Body — night language, anything goes / 正文（markdown，夜间语言随便写）',
+    thoughtTags: 'Mode tags / 创意模式:',
+    create: 'Capture / 记下',
+    creating: 'Writing… / 写入中…',
+    cancel: 'Cancel / 取消',
   },
   landing: {
     meta: {

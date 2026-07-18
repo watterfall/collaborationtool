@@ -269,3 +269,94 @@ test('server: host.shutdown responds, closes vaults and fires onShutdown', async
     await client.close();
   }
 });
+
+test('server: vault.createFile writes night/ file create-only; second write → file-exists', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'vault-host-night-'));
+  const client = new TestClient();
+  try {
+    await client.expectOk('vault.open', { root: dir });
+    const content = '---\nnight: thought\nid: n-1\ntitle: t\n---\n\n凌晨的想法。';
+    const created = await client.expectOk('vault.createFile', {
+      root: dir,
+      relativePath: 'night/2026-07-18-t.md',
+      contentUtf8: content,
+    });
+    assert.equal(created['created'], true);
+    assert.equal(
+      await readFile(join(dir, 'night/2026-07-18-t.md'), 'utf8'),
+      content,
+    );
+    const dup = await client.call('vault.createFile', {
+      root: dir,
+      relativePath: 'night/2026-07-18-t.md',
+      contentUtf8: 'other',
+    });
+    assert.equal(dup.ok, false);
+    assert.equal(dup.error?.code, 'file-exists');
+  } finally {
+    await client.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('server: vault.createFile rejects path traversal out of the vault root', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'vault-host-guard-'));
+  const client = new TestClient();
+  try {
+    await client.expectOk('vault.open', { root: dir });
+    const escape = await client.call('vault.createFile', {
+      root: dir,
+      relativePath: '../outside.md',
+      contentUtf8: 'x',
+    });
+    assert.equal(escape.ok, false);
+    assert.equal(escape.error?.code, 'bad-request');
+  } finally {
+    await client.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('server: vault.listFiles lists night/ recursively, excludes .vault, missing subdir = empty', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'vault-host-list-'));
+  const client = new TestClient();
+  try {
+    await client.expectOk('vault.open', { root: dir });
+    await client.expectOk('vault.createFile', {
+      root: dir,
+      relativePath: 'night/2026-07-18-b.md',
+      contentUtf8: 'b',
+    });
+    await client.expectOk('vault.createFile', {
+      root: dir,
+      relativePath: 'night/2026-07-18-a.md',
+      contentUtf8: 'a',
+    });
+    await writeFile(join(dir, 'top.md'), 'top', 'utf8');
+
+    const night = await client.expectOk('vault.listFiles', {
+      root: dir,
+      subdir: 'night',
+    });
+    assert.deepEqual(night['files'], [
+      'night/2026-07-18-a.md',
+      'night/2026-07-18-b.md',
+    ]);
+
+    const all = await client.expectOk('vault.listFiles', { root: dir });
+    assert.ok((all['files'] as string[]).includes('top.md'));
+    assert.ok(
+      (all['files'] as string[]).every((f) => !f.startsWith('.vault')),
+      '.vault control plane must stay hidden',
+    );
+
+    const missing = await client.expectOk('vault.listFiles', {
+      root: dir,
+      subdir: 'bridge',
+    });
+    assert.deepEqual(missing['files'], []);
+  } finally {
+    await client.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});

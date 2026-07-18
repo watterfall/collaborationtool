@@ -18,8 +18,21 @@ import {
   type VaultDocBinding,
 } from '@collaborationtool/editor-core';
 
+import {
+  MODE_TAGS,
+  MODE_TAG_LABELS_ZH,
+  MODE_TAG_LABELS_EN,
+  NIGHT_DIR,
+  type ModeTag,
+} from '@collaborationtool/discovery-graph';
+
 import { isTauri, safeListen } from '@/lib/desktop-bridge';
-import { openVault, listVaultDocuments, type VaultInfo } from '@/lib/vault-bridge';
+import {
+  openVault,
+  listVaultDocuments,
+  readVaultPublicKey,
+  type VaultInfo,
+} from '@/lib/vault-bridge';
 import {
   startVaultHost,
   openVaultSession,
@@ -28,7 +41,10 @@ import {
   vaultDocumentState,
   applyVaultDocumentUpdate,
   flushVaultDocument,
+  createVaultFile,
+  listVaultFiles,
 } from '@/lib/vault-host-bridge';
+import { buildThoughtDraft } from '@/lib/night-capture';
 import { base64ToBytes, bytesToBase64 } from '@/lib/bytes';
 import {
   parseVaultHostEvent,
@@ -56,6 +72,16 @@ export interface VaultCopy {
   reload: string;
   dismiss: string;
   watching: string;
+  nightHeading: string;
+  nightEmpty: string;
+  nightEmptyEn: string;
+  newThought: string;
+  thoughtTitle: string;
+  thoughtBody: string;
+  thoughtTags: string;
+  create: string;
+  creating: string;
+  cancel: string;
 }
 
 interface OpenDoc {
@@ -76,6 +102,14 @@ export default function VaultClient({ copy }: { copy: VaultCopy }) {
   const [externalEvent, setExternalEvent] = useState<VaultHostEvent | null>(
     null,
   );
+  // Night capture（ADR-0021 切片）。
+  const [nightFiles, setNightFiles] = useState<string[]>([]);
+  const [authorKey, setAuthorKey] = useState<string | null>(null);
+  const [showThoughtForm, setShowThoughtForm] = useState(false);
+  const [thoughtTitle, setThoughtTitle] = useState('');
+  const [thoughtBody, setThoughtBody] = useState('');
+  const [thoughtTags, setThoughtTags] = useState<readonly ModeTag[]>([]);
+  const [creating, setCreating] = useState(false);
 
   const bindingRef = useRef<VaultDocBinding | null>(null);
   const editorRef = useRef<TipTapEditor | null>(null);
@@ -104,10 +138,49 @@ export default function VaultClient({ copy }: { copy: VaultCopy }) {
     }
     await watchVaultSession(trimmed);
     const list = await listVaultDocuments(trimmed);
+    const night = await listVaultFiles(trimmed, NIGHT_DIR);
     setInfo(opened);
     setDocs(list ?? []);
+    setNightFiles(night?.files ?? []);
+    setAuthorKey(await readVaultPublicKey(trimmed));
     setPhase('ready');
   }, [root]);
+
+  const handleCreateThought = useCallback(async () => {
+    if (thoughtTitle.trim() === '' || creating) return;
+    setCreating(true);
+    try {
+      const draft = buildThoughtDraft({
+        title: thoughtTitle,
+        bodyMarkdown: thoughtBody,
+        modeTags: thoughtTags,
+        authorKey,
+        nowIso: new Date().toISOString(),
+        uuid: crypto.randomUUID(),
+      });
+      const created = await createVaultFile(
+        rootRef.current,
+        draft.relativePath,
+        draft.content,
+      );
+      if (created) {
+        const night = await listVaultFiles(rootRef.current, NIGHT_DIR);
+        setNightFiles(night?.files ?? []);
+        setThoughtTitle('');
+        setThoughtBody('');
+        setThoughtTags([]);
+        setShowThoughtForm(false);
+      }
+    } finally {
+      setCreating(false);
+    }
+  }, [thoughtTitle, thoughtBody, thoughtTags, authorKey, creating]);
+
+  const toggleTag = useCallback((tag: ModeTag) => {
+    setThoughtTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
+  }, []);
 
   const handleOpenDocument = useCallback(async (relativePath: string) => {
     const state = await openVaultDocument(rootRef.current, relativePath);
@@ -294,6 +367,104 @@ export default function VaultClient({ copy }: { copy: VaultCopy }) {
               ))}
             </HairlineList>
           )}
+
+          {/* Night capture — ADR-0021 vault-native thought 切片 */}
+          <div className="mt-10" data-night-capture>
+            <div className="flex items-baseline justify-between">
+              <h3 className="text-sm" style={{ color: 'var(--color-ink-2)' }}>
+                {copy.nightHeading}
+              </h3>
+              {!showThoughtForm && (
+                <Button variant="ghost" size="sm" onClick={() => setShowThoughtForm(true)}>
+                  {copy.newThought}
+                </Button>
+              )}
+            </div>
+            <HairlineRule className="mt-2" />
+            {showThoughtForm && (
+              <div className="mt-4 flex flex-col gap-3">
+                <input
+                  value={thoughtTitle}
+                  onChange={(e) => setThoughtTitle(e.target.value)}
+                  placeholder={copy.thoughtTitle}
+                  className="px-3 py-2 text-sm"
+                  style={{
+                    border: '1px solid var(--color-hairline)',
+                    background: 'var(--color-paper)',
+                    color: 'var(--color-ink)',
+                  }}
+                />
+                <textarea
+                  value={thoughtBody}
+                  onChange={(e) => setThoughtBody(e.target.value)}
+                  placeholder={copy.thoughtBody}
+                  rows={4}
+                  className="px-3 py-2 text-sm"
+                  style={{
+                    border: '1px solid var(--color-hairline)',
+                    background: 'var(--color-paper)',
+                    color: 'var(--color-ink)',
+                    resize: 'vertical',
+                  }}
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs" style={{ color: 'var(--color-ink-3)' }}>
+                    {copy.thoughtTags}
+                  </span>
+                  {MODE_TAGS.map((tag) => (
+                    <Button
+                      key={tag}
+                      variant="ghost"
+                      size="sm"
+                      aria-pressed={thoughtTags.includes(tag)}
+                      onClick={() => toggleTag(tag)}
+                      style={
+                        thoughtTags.includes(tag)
+                          ? { background: 'var(--color-warm-wash)' }
+                          : undefined
+                      }
+                    >
+                      {MODE_TAG_LABELS_ZH[tag]} · {MODE_TAG_LABELS_EN[tag]}
+                    </Button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => void handleCreateThought()}
+                    disabled={creating || thoughtTitle.trim() === ''}
+                  >
+                    {creating ? copy.creating : copy.create}
+                  </Button>
+                  <Button variant="ghost" onClick={() => setShowThoughtForm(false)}>
+                    {copy.cancel}
+                  </Button>
+                </div>
+              </div>
+            )}
+            {nightFiles.length === 0 && !showThoughtForm ? (
+              <div className="mt-4">
+                <EmptyState message={copy.nightEmpty} messageEn={copy.nightEmptyEn} />
+              </div>
+            ) : (
+              <HairlineList className="mt-2">
+                {nightFiles.map((relativePath) => (
+                  <ListRow
+                    key={relativePath}
+                    title={relativePath}
+                    trailing={
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => void handleOpenDocument(relativePath)}
+                      >
+                        打开 · Open
+                      </Button>
+                    }
+                  />
+                ))}
+              </HairlineList>
+            )}
+          </div>
         </div>
       )}
 

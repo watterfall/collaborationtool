@@ -139,6 +139,26 @@ export async function flushVaultDocument(
 }
 
 /**
+ * Create a content file inside the vault (create-only; 'file-exists' error
+ * on collision). ADR-0021 §4 — night/ artifact capture path.
+ */
+export async function createVaultFile(
+  root: string,
+  relativePath: string,
+  contentUtf8: string,
+): Promise<{ root: string; relativePath: string; created: boolean } | null> {
+  return rpc('vault.createFile', { root, relativePath, contentUtf8 });
+}
+
+/** Recursively list `*.md` under `subdir` (whole vault when omitted). */
+export async function listVaultFiles(
+  root: string,
+  subdir?: string,
+): Promise<{ root: string; files: string[] } | null> {
+  return rpc('vault.listFiles', { root, ...(subdir ? { subdir } : {}) });
+}
+
+/**
  * Load (or first-run create) the vault's ed25519 identity. The keypair stays
  * in the Node host process; only the public key crosses the wire.
  * 密钥对留在 Node 主机进程内，只有公钥过线。

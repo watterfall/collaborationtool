@@ -18,6 +18,8 @@
 // 这是 dev-tier 传输：由 Tauri 侧 spawn 系统 Node 运行本 server。
 // "打包 Node runtime 进发行版"是被推迟的 release 工程决策（见 README）。
 
+import { mkdir, readdir, writeFile } from 'node:fs/promises';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { createInterface } from 'node:readline';
 import type { Readable, Writable } from 'node:stream';
 
@@ -42,6 +44,7 @@ export type VaultHostErrorCode =
   | 'vault-not-open'
   | 'doc-not-open'
   | 'identity-not-loaded'
+  | 'file-exists'
   | 'internal';
 
 interface RpcError {
@@ -93,6 +96,16 @@ function requireString(params: Record<string, unknown>, key: string): string {
     throw bad(`missing string param "${key}" / 缺少字符串参数 "${key}"`);
   }
   return v;
+}
+
+/** Path-traversal guard: the resolved target must stay inside the vault. */
+function resolveWithinRoot(root: string, relativePath: string): string {
+  const rootAbs = resolve(root);
+  const abs = resolve(rootAbs, relativePath);
+  if (abs !== rootAbs && !abs.startsWith(rootAbs + sep)) {
+    throw bad(`path escapes vault root / 路径越出 vault 根: ${relativePath}`);
+  }
+  return abs;
 }
 
 function optionalNumber(
@@ -215,6 +228,63 @@ export function createVaultHostServer(
       open.watch?.close();
       open.watch = null;
       return { root, watching: false };
+    },
+
+    // ADR-0021 §4：night/ 等子目录内容文件的最小主机能力。Rust 层零改动
+    // （泛型 vault_host_rpc 直通）。
+    'vault.createFile': async (params) => {
+      const root = requireString(params, 'root');
+      const relativePath = requireString(params, 'relativePath');
+      const content = params['contentUtf8'];
+      if (typeof content !== 'string') {
+        throw bad('missing string param "contentUtf8" / 缺少字符串参数 "contentUtf8"');
+      }
+      getVault(root);
+      const abs = resolveWithinRoot(root, relativePath);
+      await mkdir(dirname(abs), { recursive: true });
+      try {
+        await writeFile(abs, content, { encoding: 'utf8', flag: 'wx' });
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === 'EEXIST') {
+          throw new VaultHostRpcError(
+            'file-exists',
+            `file already exists / 文件已存在: ${relativePath}`,
+          );
+        }
+        throw err;
+      }
+      return { root, relativePath, created: true };
+    },
+
+    'vault.listFiles': async (params) => {
+      const root = requireString(params, 'root');
+      const subdir =
+        typeof params['subdir'] === 'string' && params['subdir'].length > 0
+          ? params['subdir']
+          : '.';
+      getVault(root);
+      const base = resolveWithinRoot(root, subdir);
+      const rootAbs = resolve(root);
+      const files: string[] = [];
+      const walk = async (dir: string): Promise<void> => {
+        let entries;
+        try {
+          entries = await readdir(dir, { withFileTypes: true });
+        } catch {
+          return; // subdir 不存在 = 空列表，不是错误
+        }
+        for (const entry of entries) {
+          if (entry.name.startsWith('.')) continue; // .vault/ 与隐藏文件
+          const child = join(dir, entry.name);
+          if (entry.isDirectory()) await walk(child);
+          else if (entry.isFile() && entry.name.endsWith('.md')) {
+            files.push(relative(rootAbs, child).split(sep).join('/'));
+          }
+        }
+      };
+      await walk(base);
+      files.sort();
+      return { root, files };
     },
 
     'doc.open': async (params) => {

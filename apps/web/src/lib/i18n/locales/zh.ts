@@ -59,6 +59,16 @@ export const zh = {
     reload: '重新加载 / Reload',
     dismiss: '忽略 / Dismiss',
     watching: '监听中 / Watching',
+    nightHeading: '夜间想法 / Night thoughts',
+    nightEmpty: '还没有夜间想法——凌晨三点的念头值得一个不被监视的家。',
+    nightEmptyEn: 'No night thoughts yet — your 3am ideas deserve an unwatched home.',
+    newThought: '新想法 / New thought',
+    thoughtTitle: '标题 / Title',
+    thoughtBody: '正文（markdown，夜间语言随便写）/ Body — night language, anything goes',
+    thoughtTags: '创意模式 / Mode tags：',
+    create: '记下 / Capture',
+    creating: '写入中… / Writing…',
+    cancel: '取消 / Cancel',
   },
   landing: {
     meta: {
