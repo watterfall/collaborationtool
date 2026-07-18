@@ -75,3 +75,14 @@ PG 是 replicated cache（ADR-0017，ADR-0001 §8.7 已正式反转）；(2) Nig
   toggle → createVaultFile → 列表刷新）。四包测试 37/69/19/535 全 PASS。
   真机（Tauri webview）端到端 smoke 留 user；dogfood-runbook §1 入口已改指桌面
   /vault。
+- 2026-07-18 **A2.3 全 6 Night kind landed**（同日）：codec 从 thought-only 泛化为
+  `serializeNightArtifactVaultFile` / `parseNightArtifactVaultFile`（thought API 保留为
+  back-compat wrapper）。规则：单 token 枚举 → 可读命名行（lifecycle / metaphor-source /
+  sketch-medium / contradiction-type / resolution-status）；结构化/多行 prose → 单行
+  `data:` JSON（poles / outcomes / resolution / mappingDescription），仍是 key: value
+  文法、round-trip 无损；line 字段禁换行（serializer 抛错）。discovery-graph 69→81
+  （+12：6 kind round-trip + 严格性 5 + thematic-break 安全）；capture UI 升级为
+  `NightCaptureForm` 组件（kind 选择器 + 各 kind 专有字段最小起步态——question
+  lifecycle=open / contradiction status=open / TE outcomes=[]，per 7 原则 #2 不逼
+  完整化）；web 535→538。四包 typecheck + Design grep 0 命中全 PASS。剩余：Bridge
+  kind 切片 gated on thought 跑通 + dogfood 第 1 周反馈（不在本轮）。

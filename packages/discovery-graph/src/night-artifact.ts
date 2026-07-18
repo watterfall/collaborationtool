@@ -32,6 +32,26 @@ export const NIGHT_ARTIFACT_KINDS: readonly NightArtifactKind[] = [
 
 const KIND_SET: ReadonlySet<string> = new Set<string>(NIGHT_ARTIFACT_KINDS);
 
+// Display labels per language — used by UI surfaces (A2.3 capture UI;
+// mirrors MODE_TAG_LABELS_* pattern so labels stay in the type SoT).
+export const NIGHT_ARTIFACT_KIND_LABELS_ZH: Record<NightArtifactKind, string> = {
+  thought: '思考',
+  question: '问题',
+  metaphor: '隐喻',
+  sketch: '草图',
+  contradiction: '矛盾',
+  'thought-experiment': '思想实验',
+};
+
+export const NIGHT_ARTIFACT_KIND_LABELS_EN: Record<NightArtifactKind, string> = {
+  thought: 'Thought',
+  question: 'Question',
+  metaphor: 'Metaphor',
+  sketch: 'Sketch',
+  contradiction: 'Contradiction',
+  'thought-experiment': 'Thought experiment',
+};
+
 export function isNightArtifactKind(value: unknown): value is NightArtifactKind {
   return typeof value === 'string' && KIND_SET.has(value);
 }

@@ -18,13 +18,7 @@ import {
   type VaultDocBinding,
 } from '@collaborationtool/editor-core';
 
-import {
-  MODE_TAGS,
-  MODE_TAG_LABELS_ZH,
-  MODE_TAG_LABELS_EN,
-  NIGHT_DIR,
-  type ModeTag,
-} from '@collaborationtool/discovery-graph';
+import { NIGHT_DIR } from '@collaborationtool/discovery-graph';
 
 import { isTauri, safeListen } from '@/lib/desktop-bridge';
 import {
@@ -44,7 +38,6 @@ import {
   createVaultFile,
   listVaultFiles,
 } from '@/lib/vault-host-bridge';
-import { buildThoughtDraft } from '@/lib/night-capture';
 import { base64ToBytes, bytesToBase64 } from '@/lib/bytes';
 import {
   parseVaultHostEvent,
@@ -52,6 +45,8 @@ import {
   type VaultHostEvent,
 } from '@/lib/vault-events';
 import { Button, EmptyState, HairlineList, HairlineRule, ListRow, StatusPill } from '@/components/design';
+
+import { NightCaptureForm, type NightCaptureCopy } from './NightCaptureForm';
 
 export interface VaultCopy {
   title: string;
@@ -76,12 +71,7 @@ export interface VaultCopy {
   nightEmpty: string;
   nightEmptyEn: string;
   newThought: string;
-  thoughtTitle: string;
-  thoughtBody: string;
-  thoughtTags: string;
-  create: string;
-  creating: string;
-  cancel: string;
+  night: NightCaptureCopy;
 }
 
 interface OpenDoc {
@@ -102,13 +92,10 @@ export default function VaultClient({ copy }: { copy: VaultCopy }) {
   const [externalEvent, setExternalEvent] = useState<VaultHostEvent | null>(
     null,
   );
-  // Night capture（ADR-0021 切片）。
+  // Night capture（ADR-0021 A2.3 全 6 kind）。
   const [nightFiles, setNightFiles] = useState<string[]>([]);
   const [authorKey, setAuthorKey] = useState<string | null>(null);
   const [showThoughtForm, setShowThoughtForm] = useState(false);
-  const [thoughtTitle, setThoughtTitle] = useState('');
-  const [thoughtBody, setThoughtBody] = useState('');
-  const [thoughtTags, setThoughtTags] = useState<readonly ModeTag[]>([]);
   const [creating, setCreating] = useState(false);
 
   const bindingRef = useRef<VaultDocBinding | null>(null);
@@ -146,41 +133,23 @@ export default function VaultClient({ copy }: { copy: VaultCopy }) {
     setPhase('ready');
   }, [root]);
 
-  const handleCreateThought = useCallback(async () => {
-    if (thoughtTitle.trim() === '' || creating) return;
-    setCreating(true);
-    try {
-      const draft = buildThoughtDraft({
-        title: thoughtTitle,
-        bodyMarkdown: thoughtBody,
-        modeTags: thoughtTags,
-        authorKey,
-        nowIso: new Date().toISOString(),
-        uuid: crypto.randomUUID(),
-      });
-      const created = await createVaultFile(
-        rootRef.current,
-        draft.relativePath,
-        draft.content,
-      );
-      if (created) {
-        const night = await listVaultFiles(rootRef.current, NIGHT_DIR);
-        setNightFiles(night?.files ?? []);
-        setThoughtTitle('');
-        setThoughtBody('');
-        setThoughtTags([]);
-        setShowThoughtForm(false);
+  const handleCreateNight = useCallback(
+    async (relativePath: string, content: string) => {
+      if (creating) return;
+      setCreating(true);
+      try {
+        const created = await createVaultFile(rootRef.current, relativePath, content);
+        if (created) {
+          const night = await listVaultFiles(rootRef.current, NIGHT_DIR);
+          setNightFiles(night?.files ?? []);
+          setShowThoughtForm(false);
+        }
+      } finally {
+        setCreating(false);
       }
-    } finally {
-      setCreating(false);
-    }
-  }, [thoughtTitle, thoughtBody, thoughtTags, authorKey, creating]);
-
-  const toggleTag = useCallback((tag: ModeTag) => {
-    setThoughtTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
-    );
-  }, []);
+    },
+    [creating],
+  );
 
   const handleOpenDocument = useCallback(async (relativePath: string) => {
     const state = await openVaultDocument(rootRef.current, relativePath);
@@ -382,64 +351,13 @@ export default function VaultClient({ copy }: { copy: VaultCopy }) {
             </div>
             <HairlineRule className="mt-2" />
             {showThoughtForm && (
-              <div className="mt-4 flex flex-col gap-3">
-                <input
-                  value={thoughtTitle}
-                  onChange={(e) => setThoughtTitle(e.target.value)}
-                  placeholder={copy.thoughtTitle}
-                  className="px-3 py-2 text-sm"
-                  style={{
-                    border: '1px solid var(--color-hairline)',
-                    background: 'var(--color-paper)',
-                    color: 'var(--color-ink)',
-                  }}
-                />
-                <textarea
-                  value={thoughtBody}
-                  onChange={(e) => setThoughtBody(e.target.value)}
-                  placeholder={copy.thoughtBody}
-                  rows={4}
-                  className="px-3 py-2 text-sm"
-                  style={{
-                    border: '1px solid var(--color-hairline)',
-                    background: 'var(--color-paper)',
-                    color: 'var(--color-ink)',
-                    resize: 'vertical',
-                  }}
-                />
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs" style={{ color: 'var(--color-ink-3)' }}>
-                    {copy.thoughtTags}
-                  </span>
-                  {MODE_TAGS.map((tag) => (
-                    <Button
-                      key={tag}
-                      variant="ghost"
-                      size="sm"
-                      aria-pressed={thoughtTags.includes(tag)}
-                      onClick={() => toggleTag(tag)}
-                      style={
-                        thoughtTags.includes(tag)
-                          ? { background: 'var(--color-warm-wash)' }
-                          : undefined
-                      }
-                    >
-                      {MODE_TAG_LABELS_ZH[tag]} · {MODE_TAG_LABELS_EN[tag]}
-                    </Button>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => void handleCreateThought()}
-                    disabled={creating || thoughtTitle.trim() === ''}
-                  >
-                    {creating ? copy.creating : copy.create}
-                  </Button>
-                  <Button variant="ghost" onClick={() => setShowThoughtForm(false)}>
-                    {copy.cancel}
-                  </Button>
-                </div>
-              </div>
+              <NightCaptureForm
+                copy={copy.night}
+                authorKey={authorKey}
+                creating={creating}
+                onCreate={handleCreateNight}
+                onCancel={() => setShowThoughtForm(false)}
+              />
             )}
             {nightFiles.length === 0 && !showThoughtForm ? (
               <div className="mt-4">
