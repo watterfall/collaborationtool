@@ -21,7 +21,12 @@
 - [ ] 4 角色 surface 切换 ≥ 2 次（Explorer / Bridge-builder / Validator / Connector）
 - [ ] 5 创意触发模式分布 ≥ 4 种（metaphor / contradiction / reframe / cross-domain / thought-experiment）
 
-**操作入口**：`apps/web` `/triadic` 六页（当前为 contract-tier skeleton + jsonb 侧通道）。
+**操作入口**（2026-07-18 更新，ADR-0021 Wave A2）：**桌面 app `/vault` 页**——打开
+vault → "夜间想法 / Night thoughts" 区块直接捕捉 thought（落 `<vault>/night/*.md`，
+frontmatter 带 mode-tags / visibility / provenance，编辑往返头部保全）。其余 5 个
+Night kind 与 Bridge kind 同构复制中（A2.3），未就绪前对应 artifact 先用 thought
+kind 记录、frontmatter 手工改 kind 字段亦可（parse 会拒但文件仍是合法 markdown，
+升级时批量迁移）。`/triadic` 六页仍是概念导览（contract-tier skeleton）。
 **记录**：每周在 `plan0/dogfood-log/`（首次创建）追加一篇周记：数量 + 触发的交互模式 + 摩擦点。
 **通过后**：ADR-0020 Proposed → Accepted；解除 ADR-0021/0022/0023（discovery-graph / bridge-layer schema / triadic UI）moratorium，契约层升 real。
 **失败信号**（诚实记录）：连续 2 周达不到节奏 → 回到 ADR-0020 §4 反思架构假设，不硬凑数。

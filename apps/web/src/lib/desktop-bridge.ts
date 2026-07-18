@@ -6,6 +6,8 @@
 
 interface TauriInternals {
   invoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T>;
+  /** Tauri 2 registers callbacks for event push through this helper. */
+  transformCallback?<T>(cb: (payload: T) => void, once?: boolean): number;
 }
 
 function getInternals(): TauriInternals | null {
@@ -31,4 +33,37 @@ export async function safeInvoke<T>(
   } catch {
     return null;
   }
+}
+
+/**
+ * Subscribe to a Tauri event (e.g. "vault-host://event") without pulling
+ * in @tauri-apps/api — uses the same __TAURI_INTERNALS__ surface as
+ * safeInvoke (zero new deps, PR #10 约束). Returns an unlisten function,
+ * or null outside Tauri / when the internals lack transformCallback.
+ */
+export async function safeListen<T>(
+  event: string,
+  handler: (payload: T) => void,
+): Promise<(() => void) | null> {
+  const internals = getInternals();
+  if (!internals || typeof internals.transformCallback !== 'function') {
+    return null;
+  }
+  const callbackId = internals.transformCallback<{ payload: T }>((evt) => {
+    handler(evt.payload);
+  });
+  try {
+    await internals.invoke('plugin:event|listen', {
+      event,
+      target: { kind: 'Any' },
+      handler: callbackId,
+    });
+  } catch {
+    return null;
+  }
+  return () => {
+    void internals
+      .invoke('plugin:event|unlisten', { event, eventId: callbackId })
+      .catch(() => {});
+  };
 }

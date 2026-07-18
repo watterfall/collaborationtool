@@ -14,6 +14,8 @@ import {
   parseMarkdown,
   readSidecar,
   writeSidecar,
+  splitFrontmatter,
+  joinFrontmatter,
 } from '@collaborationtool/vault-fs';
 
 /**
@@ -28,10 +30,20 @@ import {
  * splits them, promote `yjs` to a shared peer dependency here.
  */
 export function createFileSystemHooks(): FileSystemHooks {
+  // Frontmatter 保全（ADR-0021 §3）：markdown ↔ Y.Doc 往返不理解 frontmatter
+  // ——parse 前原样剥离暂存、emit 时原样回贴，否则 night/ 类型化头部在一次
+  // 编辑往返后损毁。Per-doc 闭包：vault-session 对每个 openDocument 单独
+  // 调用本工厂，stash 不会跨文档串。
+  let stashedFrontmatter: string | null = null;
   return {
     readSidecar,
     writeSidecar,
-    emitMarkdown,
-    parseMarkdown: (markdown: string) => parseMarkdown(markdown),
+    emitMarkdown: (yDoc) =>
+      joinFrontmatter(stashedFrontmatter, emitMarkdown(yDoc)),
+    parseMarkdown: (markdown: string) => {
+      const { frontmatter, body } = splitFrontmatter(markdown);
+      stashedFrontmatter = frontmatter;
+      return parseMarkdown(body);
+    },
   };
 }

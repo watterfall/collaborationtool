@@ -255,6 +255,33 @@ per spec §13：
 - F4 publish + F7 open question end-to-end e2e（W6）跑通后追
 - dogfood gate G4（open question → stranger reply → owner accept）+ G8（DOI mint + Merkle log 完整）跑通后 promote Proposed → Accepted
 
+### 2026-07-18（improvement-plan-2026-08 Wave A4）
+
+- **nightly verify-merkle-log worker landed**：`apps/agent-worker/src/verify-merkle-log.ts`
+  ——纯 orchestrator `verifyMerkleLog(rows, {now, entryResolver?})` 包 open-content 的
+  `verifyMerkleChain`（4 结构不变量：单 genesis / entry_seq 严格单调 / prev 可解析 /
+  无 fork）+ 可选注入的单行签名验证（`verifyMerkleEntry`）；`loadMerkleRows(db)` 从
+  `provenance_merkle_log` 按 entry_seq 读全链。8 单测（healthy / fork / 双 genesis /
+  断链 / 重复 seq / 签名失败 / null-skip / 全 valid）PASS。**分层边界（诚实标注）**：
+  结构完整性是纯 PG 行可查的主职，本轮做实；单行 ed25519 真验签是**可选注入**、缺省
+  不跑——它需要重建当初签名的 canonical payload（publish 路径关注点）+ signer 公钥
+  （migration 0017 principal.ed25519_public_key），接 `@collaborationtool/identity.verify`
+  的真验签待 F4 publish 侧暴露 stored canonical payload 后启用。调度（nightly cron /
+  pgboss schedule）+ 告警接线属 worker 运维，gated on 部署，不在本轮。
+
+- **C2PA + W3C VC 容器方向确立（2026 外部格局调研 REPLACE 判定）**：本 ADR §2 的 Merkle
+  log + ed25519 detached JWS 是**签名后端**，正确保留；但 provenance **序列化容器**不应是
+  私有 wire format——2026 年中 C2PA / Content Credentials 已成内容真实性全球事实标准
+  （6000+ 成员，EU AI Act Art.50 + California SB 942 部分场景法定要求），且 W3C
+  Verifiable Credentials 可内嵌 C2PA manifest 作 actor 信任信号。**方向**：发布物的对外
+  provenance 容器对标 **C2PA manifest + 内嵌 W3C VC**，ed25519 签名作 claim generator
+  后端、Merkle log 作本地 tamper-evidence，三者叠加不冲突。这同时兑现第一性原理 #5（不
+  发明私有格式）+ #11（provenance 一等）。**本轮只定方向不实现**——C2PA 完整实现 gated on
+  open-content 有真实发布流量（improvement-plan-2026-08 §四不做清单）。参考：C2PA spec
+  https://spec.c2pa.org/ ；Content Credentials https://contentcredentials.org/ 。
+  DeSci 区块链层维持**明确不做**（§4 Alternatives A 已拒；调研确认 DeSci 仍 crypto/DAO/
+  token 重绑，与研究者数据所有权诉求不同频）。
+
 ---
 
 ## 7. References

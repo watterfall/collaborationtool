@@ -10,6 +10,7 @@ export * from './sidecar-io';
 export * from './file-watcher';
 export * from './drift-detector';
 export * from './three-way-merge';
+export * from './frontmatter';
 // export * from './markdown-to-ydoc';
 // export * from './sidecar-io';
 // export * from './file-watcher';

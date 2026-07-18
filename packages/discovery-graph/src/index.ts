@@ -29,3 +29,4 @@ export * from './night-artifact';
 // Wave D-3: 6 interaction modes + cross-layer reference edges.
 export * from './interaction-mode';
 export * from './cross-layer-reference';
+export * from './vault-file';
