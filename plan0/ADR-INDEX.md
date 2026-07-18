@@ -1,13 +1,13 @@
 # ADR Index · 架构决策记录导航
 
-> 20 ADR 的 single page 导航。**当前状态以根目录 [`STATUS.md`](../STATUS.md) §2 为准**——
+> 22 ADR 的 single page 导航。**当前状态以根目录 [`STATUS.md`](../STATUS.md) §2 为准**——
 > 个别 ADR 的文件头 `Status:` 字段在 promote 后未必每次都同步更新，本 index
 > 给出 reconcile 后的视图（标 † 的项目即文件头滞后）。
 >
 > 模板：[`adr/0000-template.md`](./adr/0000-template.md)。新增 ADR 顺序写
 > `00NN-<slug>.md`，落盘前在本 index 加一行 + 在 STATUS.md §2 表加一行。
 
-最后更新：2026-07-05（2026-07 迭代 · 定位收敛——补入 0017-0020 四个 pivot ADR）
+最后更新：2026-07-18（补登记 ADR-0021 vault-native + ADR-0025 贡献声明/验证协议）
 
 ---
 
@@ -35,6 +35,8 @@
 | [0018](./adr/0018-open-content-mechanisms.md) | Open Content — Open Question / Dataset / Peer Review + Merkle-signed Provenance（DeSCI 去区块链） | Proposed | 6 W2（migration 0016 + publish route ✅） | Phase 6 W6-W7 dogfood gate G4（open question 陌生人回答闭环）+ G8（DOI mint + Merkle log 完整） |
 | [0019](./adr/0019-plugin-runtime-cross-platform.md) | 跨平台 plugin runtime — WASM Extism 为主 + 各 OS 原生沙箱 fallback | Proposed | 6 W2（起草） | Phase 6 W9-W10 dogfood gate G7（3 OS 同一 plugin 安装 + sandbox spawn + secret-reject） |
 | [0020](./adr/0020-night-bridge-day-triadic-architecture.md) | Night-Bridge-Day Triadic — 三层等价知识产出系统（**战略 ADR**，定位权威） | Proposed | 5 W3+ 横跨 5/6（Wave D-1~D-4 契约层 ✅） | 30 天 dogfood gate（每周 ≥5 Night + ≥2 Bridge + ≥1 Day promotion + 6 交互模式触发 ≥4） |
+| [0021](./adr/0021-discovery-graph-vault-native-storage.md) | Discovery-graph vault-native 存储 — Night artifact 长在用户 vault | Proposed | 6 Wave A2（6 kind + vault spine ✅） | 30 天 Night dogfood + 分享投影 Principal 映射 + 并发窗口实证 |
+| [0025](./adr/0025-contribution-claims-attestations-verification.md) | Contribution Claims & Attestations — 协作贡献信用与验证协议 | Proposed | 6 post-A4（设计） | Night 本地签名 + Bridge 双人 claim/ack/challenge + agent 三主体 + public receipt |
 
 † 文件头 `Status:` 字段未同步 —— Reconcile 视图见 STATUS.md §2 / Phase implementation review log。
 
@@ -70,7 +72,9 @@ Phase 5  ─┬─ ADR-0016  Claim-on-Claim Review（Wave B kickoff draft；Wave
                                                        │
 Phase 6  ─┬─ ADR-0017  Client-first runtime（W2 起草；3 Spike ✅；W2-W3 runtime gates）
 W1-W12   ├─ ADR-0018  Open content mechanisms（W2 起草；W6-W7 dogfood gate G4/G8）
-         └─ ADR-0019  跨平台 plugin runtime（W2 起草；W9-W10 dogfood gate G7）
+         ├─ ADR-0019  跨平台 plugin runtime（W2 起草；W9-W10 dogfood gate G7）
+         ├─ ADR-0021  Discovery-graph vault-native（Wave A2；6 kind + spine ✅）
+         └─ ADR-0025  Contribution claims/attestations（post-A4；Bridge slice 前置）
 ```
 
 ---
@@ -93,9 +97,11 @@ W1-W12   ├─ ADR-0018  Open content mechanisms（W2 起草；W6-W7 dogfood ga
 0011 ←─────┬─ 0014, 0015, 0016
 0012 ←─────┬─ 0013, 0019
 0014 ←─────┬─ 0015
-0015 ←─────┬─ 0016, 0018
-0017 ←─────┬─ 0018, 0019, 0020
-0018 ←─────┬─ 0020
+0015 ←─────┬─ 0016, 0018, 0025
+0017 ←─────┬─ 0018, 0019, 0020, 0021, 0025
+0018 ←─────┬─ 0020, 0025
+0020 ←─────┬─ 0021, 0025
+0021 ←─────┬─ 0025
 ```
 
 Pivot 层补充：**0001 亦被 0017（§5.A "PG truth"→"PG replicated cache" major revision）与
@@ -109,7 +115,9 @@ Pivot 层补充：**0001 亦被 0017（§5.A "PG truth"→"PG replicated cache" 
 - **ADR-0010**（扩展系统）：Phase 2-4 所有 plugin / sandbox / model / review ADR 都建在它之上
 - **ADR-0008**（agent runtime）：reviewer / researcher / coordinator / open peer review 都引用它
 - **ADR-0017**（client-first）：Phase 6 基础设施枢纽——0018 open content 与 0019 plugin runtime 都建在它之上
-- **ADR-0020**（triadic，战略 ADR）：定位权威——不锁 schema，锁"架构哲学"；后续 feature ADR 0021（discovery-graph schema）/ 0022（bridge-layer schema）/ 0023（triadic UI）受 moratorium 约束，等 30 天 dogfood gate 后起草
+- **ADR-0020**（triadic，战略 ADR）：定位权威——不锁 schema，锁"架构哲学"；ADR-0021 已按 client-first 修订为 vault-native，0022/0023/0024 仍受 dogfood gate 约束
+- **ADR-0021**（vault-native）：Night 内容权威与私密边界；ADR-0025 的本地 attestation 存储建在其上
+- **ADR-0025**（贡献验证窄腰）：连接 0001 operational contribution、0018 public integrity 与 0020 contribution-graph，不替换三者
 
 ---
 
@@ -146,6 +154,7 @@ Pivot 层补充：**0001 亦被 0017（§5.A "PG truth"→"PG replicated cache" 
 ### 协作 / 评审 / Identity
 - [ADR-0015](./adr/0015-open-peer-review-and-orcid.md) ORCID OAuth + JWS-signed review + visibility 矩阵（document-level review）
 - [ADR-0016](./adr/0016-claim-on-claim-review.md) Claim-on-Claim Review（claim-level verdict + reused ORCID-sign + maintenance unverified-claim finding）
+- [ADR-0025](./adr/0025-contribution-claims-attestations-verification.md) Contribution claim / acknowledge / challenge / verify DAG + identity/content-signature 分离
 
 ### Client-first / 开放科学（Phase 6 pivot）
 - [ADR-0017](./adr/0017-client-first-runtime.md) Desktop truth + relay server + markdown-Yjs 双轨（修订 ADR-0001 §5.A）
@@ -154,6 +163,8 @@ Pivot 层补充：**0001 亦被 0017（§5.A "PG truth"→"PG replicated cache" 
 
 ### 定位 / Triadic（战略层）
 - [ADR-0020](./adr/0020-night-bridge-day-triadic-architecture.md) Night-Bridge-Day 三层等价 + 6 InteractionMode + 4 角色 + contribution-graph attribution
+- [ADR-0021](./adr/0021-discovery-graph-vault-native-storage.md) Night artifact vault-native 存储 + 私密默认的物理兑现
+- [ADR-0025](./adr/0025-contribution-claims-attestations-verification.md) 三层共享贡献声明协议 + 不同 proof policy
 
 ---
 
@@ -188,7 +199,11 @@ Pivot 层补充：**0001 亦被 0017（§5.A "PG truth"→"PG replicated cache" 
 
 **理解项目定位 / 做 triadic（Night/Bridge/Day）工作**先看：
 
-- ADR-0020 全文（战略 ADR，定位权威）+ system-prompt 第一性原理 #12/#13 + `packages/discovery-graph` / `packages/bridge-layer` 类型 SoT
+- ADR-0020 全文（战略 ADR，定位权威）+ ADR-0021（vault-native truth）+ system-prompt 第一性原理 #12/#13 + `packages/discovery-graph` / `packages/bridge-layer` 类型 SoT
+
+**做协作归属 / 贡献验证 / public provenance 工作**先看：
+
+- ADR-0025（claim/attestation 窄腰）+ ADR-0001（operational contribution）+ ADR-0018（公开签名/receipt）+ ADR-0015/0016（identity/review）
 
 ---
 

@@ -282,6 +282,24 @@ per spec §13：
   DeSci 区块链层维持**明确不做**（§4 Alternatives A 已拒；调研确认 DeSci 仍 crypto/DAO/
   token 重绑，与研究者数据所有权诉求不同频）。
 
+### 2026-07-18（ADR-0025 贡献验证边界修订）
+
+- **收紧“Merkle log / 第三方独立可验证”的措辞**：当前 `provenance_merkle_log` 是
+  `prev_entry_id + entry_seq + content_hash + per-entity signature` 的**签名条目线性索引**。
+  `verifyMerkleChain` 能在所给行集合中发现断链 / fork / 双 genesis / 重复序号，
+  `verifyMerkleEntry` 能在 canonical payload 可重建时检查内容 hash + signature；但当前
+  `prev_entry_id` 没有被纳入 signer 所签 statement，也没有 signed tree head / tree size /
+  inclusion proof / consistency proof / 外部 witness。故只凭当前数据库快照不能可靠发现
+  整体重写或尾部截断。§2.3 / §3 中“Merkle / entire chain / 不需信任 server”的表述按本
+  review log 限定解释；代码与表名暂不机械重命名，避免无收益 migration。
+- **目标模型转交 ADR-0025**：公开贡献/内容证明升级为 `TransparencyReceipt`（entry digest +
+  inclusion proof + signed checkpoint + witness），并要求 verifier 用 consistency proof 验证新旧
+  checkpoint 的 append-only 关系。完成前 UI/API 只可称 signed / structurally checked /
+  server-summary-only / public-replayable，不得称 independently witnessed transparency。
+- **ORCID 语义分离**：ORCID OIDC token 只作 `IdentityBindingAttestation` evidence；具体 review /
+  contribution statement 必须由 contributor key 另签。此项修订 ADR-0015/0016 复用
+  “ORCID-signed review”时的含义，不撤销 ORCID 作为 persistent identity 的价值。
+
 ---
 
 ## 7. References
